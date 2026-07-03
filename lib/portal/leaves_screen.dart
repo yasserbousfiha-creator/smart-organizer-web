@@ -1,0 +1,593 @@
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart' as intl;
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'portal_client.dart';
+
+class PortalLeavesScreen extends StatefulWidget {
+  final String employeeId;
+  final String employeeName;
+  const PortalLeavesScreen({
+    super.key,
+    required this.employeeId,
+    required this.employeeName,
+  });
+
+  @override
+  State<PortalLeavesScreen> createState() => _PortalLeavesScreenState();
+}
+
+class _PortalLeavesScreenState extends State<PortalLeavesScreen> {
+  List<Map<String, dynamic>> _requests = [];
+  Map<String, dynamic>? _balance;
+  bool _loading = true;
+  bool _showForm = false;
+
+  String _type = 'سنوية';
+  DateTime? _start;
+  DateTime? _end;
+  final _reasonCtrl = TextEditingController();
+  bool _submitting = false;
+  late final RealtimeChannel _channel;
+
+  static const _indigo = Color(0xFF6366F1);
+  static const _green = Color(0xFF34D399);
+  static const _amber = Color(0xFFF59E0B);
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+    _channel = portalClient
+        .channel('emp-leaves-${widget.employeeId}')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'leave_requests',
+          callback: (_) { if (mounted) _load(); },
+        )
+        .subscribe();
+  }
+
+  @override
+  void dispose() {
+    _reasonCtrl.dispose();
+    portalClient.removeChannel(_channel);
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    setState(() => _loading = true);
+    try {
+      final year = DateTime.now().year;
+      final [requests, balance] = await Future.wait([
+        portalClient
+            .from('leave_requests')
+            .select()
+            .eq('employee_id', widget.employeeId)
+            .order('submitted_at', ascending: false),
+        portalClient
+            .from('leave_balances')
+            .select()
+            .eq('employee_id', widget.employeeId)
+            .eq('year', year)
+            .maybeSingle(),
+      ]);
+      if (mounted) {
+        setState(() {
+          _requests = List<Map<String, dynamic>>.from(requests as List);
+          _balance = balance as Map<String, dynamic>?;
+          _loading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _submit() async {
+    if (_start == null || _end == null) {
+      _snack('يرجى تحديد تاريخ البداية والنهاية');
+      return;
+    }
+
+    final today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+    final startDay = DateTime(_start!.year, _start!.month, _start!.day);
+
+    if (startDay.isBefore(today)) {
+      _snack('لا يمكن تسجيل إجازة بتاريخ في الماضي');
+      return;
+    }
+
+    if (_end!.isBefore(_start!) || _end!.isAtSameMomentAs(_start!.subtract(const Duration(days: 1)))) {
+      _snack('تاريخ النهاية يجب أن يكون بعد البداية');
+      return;
+    }
+
+    final days = _end!.difference(_start!).inDays + 1;
+
+    // فحص تعارض مع طلبات موجودة (غير مرفوضة)
+    final overlapping = _requests.where((r) {
+      if (r['status'] == 'مرفوضة') return false;
+      final existStart = DateTime.tryParse(r['start_date'] as String? ?? '');
+      final existEnd = DateTime.tryParse(r['end_date'] as String? ?? '');
+      if (existStart == null || existEnd == null) return false;
+      return _start!.isBefore(existEnd.add(const Duration(days: 1))) &&
+             _end!.isAfter(existStart.subtract(const Duration(days: 1)));
+    }).toList();
+
+    if (overlapping.isNotEmpty) {
+      final o = overlapping.first;
+      _snack('يوجد طلب إجازة في نفس الفترة (${o['start_date']} → ${o['end_date']})');
+      return;
+    }
+
+    // تحذير عند تجاوز الرصيد السنوي
+    if (_type == 'سنوية') {
+      final quota = _balance?['annual_quota'] as int? ?? 21;
+      final used = _balance?['used_days'] as int? ?? 0;
+      final remaining = quota - used;
+      if (days > remaining) {
+        final proceed = await showDialog<bool>(
+          context: context,
+          builder: (c) => AlertDialog(
+            backgroundColor: const Color(0xFF1E2235),
+            title: const Text('تجاوز الرصيد', style: TextStyle(color: Colors.white)),
+            content: Text(
+              'تطلب $days يوم والرصيد المتبقي $remaining يوم فقط.\n'
+              'هل تريد إرسال الطلب رغم ذلك؟',
+              style: const TextStyle(color: Color(0x99FFFFFF)),
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('إلغاء')),
+              TextButton(
+                onPressed: () => Navigator.pop(c, true),
+                child: const Text('إرسال رغم التجاوز', style: TextStyle(color: Color(0xFFF59E0B))),
+              ),
+            ],
+          ),
+        );
+        if (proceed != true) return;
+      }
+    }
+
+    setState(() => _submitting = true);
+    try {
+      await portalClient.from('leave_requests').insert({
+        'employee_id': widget.employeeId,
+        'employee_name': widget.employeeName,
+        'type': _type,
+        'start_date': _start!.toIso8601String().substring(0, 10),
+        'end_date': _end!.toIso8601String().substring(0, 10),
+        'days_count': days,
+        'reason': _reasonCtrl.text.isEmpty ? null : _reasonCtrl.text,
+        'status': 'قيد المراجعة',
+        'source': 'portal',
+      });
+      if (mounted) {
+        setState(() { _showForm = false; _submitting = false; });
+        _snack('تم إرسال طلب الإجازة بنجاح ✓');
+        _load();
+      }
+    } catch (e) {
+      if (mounted) { setState(() => _submitting = false); _snack('خطأ: $e'); }
+    }
+  }
+
+  void _snack(String msg) => ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(content: Text(msg), backgroundColor: const Color(0xFF1E2235)),
+  );
+
+  Color _statusColor(String s) {
+    if (s == 'موافق عليها') return _green;
+    if (s == 'مرفوضة') return const Color(0xFFF87171);
+    return _amber;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final quota = _balance?['annual_quota'] as int? ?? 21;
+    final used = _balance?['used_days'] as int? ?? 0;
+    final remaining = quota - used;
+
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Header ──────────────────────────────────
+          Row(
+            children: [
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('الإجازات',
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700,
+                            color: Colors.white)),
+                    SizedBox(height: 2),
+                    Text('إدارة إجازاتك وطلباتك',
+                        style: TextStyle(fontSize: 12, color: Color(0x99FFFFFF))),
+                  ],
+                ),
+              ),
+              FilledButton.icon(
+                onPressed: () => setState(() => _showForm = !_showForm),
+                icon: Icon(_showForm ? Icons.close : Icons.add, size: 16),
+                label: Text(_showForm ? 'إلغاء' : 'طلب جديد',
+                    style: const TextStyle(fontSize: 13)),
+                style: FilledButton.styleFrom(
+                  backgroundColor: _indigo,
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // ── بطاقات الرصيد ────────────────────────────
+          Row(
+            children: [
+              _BalCard(label: 'الرصيد', value: quota, color: _indigo),
+              const SizedBox(width: 10),
+              _BalCard(label: 'مستخدم', value: used, color: _amber),
+              const SizedBox(width: 10),
+              _BalCard(label: 'متبقي', value: remaining, color: _green),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // ── نموذج الطلب (قابل للطي) ──────────────────
+          if (_showForm) ...[
+            _LeaveForm(
+              type: _type, start: _start, end: _end,
+              reasonCtrl: _reasonCtrl, submitting: _submitting,
+              onTypeChanged: (v) => setState(() => _type = v),
+              onStartPicked: (d) => setState(() => _start = d),
+              onEndPicked: (d) => setState(() => _end = d),
+              onSubmit: _submit,
+            ),
+            const SizedBox(height: 16),
+          ],
+
+          // ── عنوان السجل ──────────────────────────────
+          const Text('سجل الطلبات',
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600,
+                  color: Color(0xCCFFFFFF))),
+          const SizedBox(height: 10),
+
+          // ── القائمة ───────────────────────────────────
+          Expanded(
+            child: _loading
+                ? const Center(child: CircularProgressIndicator(color: _indigo))
+                : _requests.isEmpty
+                    ? _empty('لا توجد طلبات إجازات')
+                    : ListView.separated(
+                        itemCount: _requests.length,
+                        separatorBuilder: (context, idx) => const SizedBox(height: 8),
+                        itemBuilder: (_, i) {
+                          final r = _requests[i];
+                          final status = r['status'] as String? ?? '';
+                          final sc = _statusColor(status);
+                          return _Card(
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  width: 40, height: 40,
+                                  decoration: BoxDecoration(
+                                    color: _indigo.withValues(alpha: 0.12),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: const Icon(Icons.beach_access_outlined,
+                                      color: _indigo, size: 18),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text('${r['type']} — ${r['days_count']} أيام',
+                                          style: const TextStyle(fontWeight: FontWeight.w600,
+                                              fontSize: 14, color: Colors.white)),
+                                      const SizedBox(height: 3),
+                                      Text('${r['start_date']}  →  ${r['end_date']}',
+                                          style: const TextStyle(fontSize: 12,
+                                              color: Color(0x99FFFFFF))),
+                                      if (r['reason'] != null) ...[
+                                        const SizedBox(height: 2),
+                                        Text('السبب: ${r['reason']}',
+                                            style: const TextStyle(fontSize: 11,
+                                                color: Color(0x66FFFFFF))),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                _StatusBadge(label: status, color: sc),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Balance Card ──────────────────────────────────────────
+class _BalCard extends StatelessWidget {
+  final String label;
+  final int value;
+  final Color color;
+  const _BalCard({required this.label, required this.value, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withValues(alpha: 0.22)),
+        ),
+        child: Column(
+          children: [
+            Text('$value',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: color)),
+            const SizedBox(height: 2),
+            Text(label,
+                style: const TextStyle(fontSize: 11, color: Color(0x99FFFFFF))),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── نموذج الطلب ───────────────────────────────────────────
+class _LeaveForm extends StatelessWidget {
+  final String type;
+  final DateTime? start;
+  final DateTime? end;
+  final TextEditingController reasonCtrl;
+  final bool submitting;
+  final ValueChanged<String> onTypeChanged;
+  final ValueChanged<DateTime> onStartPicked;
+  final ValueChanged<DateTime> onEndPicked;
+  final VoidCallback onSubmit;
+
+  const _LeaveForm({
+    required this.type, required this.start, required this.end,
+    required this.reasonCtrl, required this.submitting,
+    required this.onTypeChanged, required this.onStartPicked,
+    required this.onEndPicked, required this.onSubmit,
+  });
+
+  static const _types = ['سنوية', 'مرضية', 'طارئة', 'بدون راتب', 'أخرى'];
+  static const _indigo = Color(0xFF6366F1);
+
+  String _fmt(DateTime? d) =>
+      d == null ? 'اختر' : intl.DateFormat('yyyy-MM-dd').format(d);
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerRight,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 520),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: _indigo.withValues(alpha: 0.06),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: _indigo.withValues(alpha: 0.25)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('طلب إجازة جديدة',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white)),
+              const SizedBox(height: 10),
+              // نوع الإجازة + التواريخ في صف واحد
+              Row(
+                children: [
+                  Expanded(
+                    flex: 2,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _FieldLabel('نوع الإجازة'),
+                        _inputWrap(
+                          child: DropdownButton<String>(
+                            value: type,
+                            isExpanded: true,
+                            isDense: true,
+                            dropdownColor: const Color(0xFF1A1730),
+                            style: const TextStyle(color: Colors.white, fontSize: 13),
+                            underline: const SizedBox(),
+                            items: _types.map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
+                            onChanged: (v) { if (v != null) onTypeChanged(v); },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    flex: 2,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _FieldLabel('من تاريخ'),
+                        _DateBtn(text: _fmt(start), onTap: () async {
+                          final today = DateTime.now();
+                          final d = await showDatePicker(context: context,
+                              initialDate: start ?? today,
+                              firstDate: today, lastDate: DateTime(today.year + 2, 12, 31));
+                          if (d != null) onStartPicked(d);
+                        }),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    flex: 2,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _FieldLabel('إلى تاريخ'),
+                        _DateBtn(text: _fmt(end), onTap: () async {
+                          final today = DateTime.now();
+                          final d = await showDatePicker(context: context,
+                              initialDate: end ?? start ?? today,
+                              firstDate: start ?? today, lastDate: DateTime(today.year + 2, 12, 31));
+                          if (d != null) onEndPicked(d);
+                        }),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              // السبب + زر الإرسال في صف واحد
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _FieldLabel('السبب (اختياري)'),
+                        TextField(
+                          controller: reasonCtrl,
+                          style: const TextStyle(color: Colors.white, fontSize: 13),
+                          maxLines: 1,
+                          decoration: _decor(),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  FilledButton(
+                    onPressed: submitting ? null : onSubmit,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: _indigo,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+                    ),
+                    child: submitting
+                        ? const SizedBox(width: 16, height: 16,
+                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                        : const Text('إرسال', style: TextStyle(fontSize: 13)),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _inputWrap({required Widget child}) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+    decoration: BoxDecoration(
+      color: const Color(0x0AFFFFFF),
+      borderRadius: BorderRadius.circular(10),
+      border: Border.all(color: const Color(0x1AFFFFFF)),
+    ),
+    child: child,
+  );
+
+  InputDecoration _decor() => InputDecoration(
+    filled: true,
+    fillColor: const Color(0x0AFFFFFF),
+    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: Color(0x1AFFFFFF))),
+    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: Color(0x1AFFFFFF))),
+    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: _indigo, width: 1.5)),
+    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+  );
+}
+
+class _FieldLabel extends StatelessWidget {
+  final String text;
+  const _FieldLabel(this.text);
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(bottom: 3),
+    child: Text(text,
+        style: const TextStyle(fontSize: 11, color: Color(0x99FFFFFF),
+            fontWeight: FontWeight.w500)),
+  );
+}
+
+class _DateBtn extends StatelessWidget {
+  final String text;
+  final VoidCallback onTap;
+  const _DateBtn({required this.text, required this.onTap});
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+    onTap: onTap,
+    child: Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0x0AFFFFFF),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0x1AFFFFFF)),
+      ),
+      child: Text(text,
+          style: const TextStyle(color: Color(0xFF6366F1), fontSize: 13)),
+    ),
+  );
+}
+
+// ── Shared Widgets ─────────────────────────────────────────
+class _Card extends StatelessWidget {
+  final Widget child;
+  const _Card({required this.child});
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.all(14),
+    decoration: BoxDecoration(
+      color: const Color(0x0AFFFFFF),
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: const Color(0x14FFFFFF)),
+    ),
+    child: child,
+  );
+}
+
+class _StatusBadge extends StatelessWidget {
+  final String label;
+  final Color color;
+  const _StatusBadge({required this.label, required this.color});
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+    decoration: BoxDecoration(
+      color: color.withValues(alpha: 0.12),
+      borderRadius: BorderRadius.circular(20),
+    ),
+    child: Text(label,
+        style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.w600)),
+  );
+}
+
+Widget _empty(String msg) => Center(
+  child: Column(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Icon(Icons.inbox_outlined, size: 48, color: Colors.white.withValues(alpha: 0.2)),
+      const SizedBox(height: 10),
+      Text(msg, style: const TextStyle(color: Color(0x66FFFFFF), fontSize: 14)),
+    ],
+  ),
+);

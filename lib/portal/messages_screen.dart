@@ -1,0 +1,308 @@
+import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'portal_client.dart';
+
+class PortalMessagesScreen extends StatefulWidget {
+  final String employeeId;
+  const PortalMessagesScreen(
+      {super.key, required this.employeeId});
+
+  @override
+  State<PortalMessagesScreen> createState() =>
+      _PortalMessagesScreenState();
+}
+
+class _PortalMessagesScreenState extends State<PortalMessagesScreen> {
+  List<Map<String, dynamic>> _messages = [];
+  bool _loading = true;
+  bool _sending = false;
+  final _ctrl = TextEditingController();
+  final _scroll = ScrollController();
+  late final RealtimeChannel _channel;
+
+  static const _indigo = Color(0xFF6366F1);
+  static const _border = Color(0x14FFFFFF);
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+    _channel = portalClient
+        .channel('emp-messages-${widget.employeeId}')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'portal_messages',
+          callback: (_) { if (mounted) _load(); },
+        )
+        .subscribe();
+  }
+
+  @override
+  void dispose() {
+    portalClient.removeChannel(_channel);
+    _ctrl.dispose();
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    try {
+      final data = await portalClient
+          .from('portal_messages')
+          .select()
+          .eq('employee_id', widget.employeeId)
+          .order('sent_at', ascending: false);
+      if (!mounted) return;
+      setState(() {
+        _messages = List<Map<String, dynamic>>.from(data as List);
+        _loading = false;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _send() async {
+    final text = _ctrl.text.trim();
+    if (text.isEmpty || _sending) return;
+    setState(() => _sending = true);
+    _ctrl.clear();
+    try {
+      await portalClient.from('portal_messages').insert({
+        'employee_id': widget.employeeId,
+        'sender': 'employee',
+        'message': text,
+        'is_read': false,
+      });
+      await _load();
+    } catch (e) {
+      if (mounted) {
+        _ctrl.text = text; // أعد النص لحقل الإرسال عند الفشل
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('فشل إرسال الرسالة — يرجى التواصل مع المسؤول لإعداد النظام'),
+            backgroundColor: Color(0xFFF87171),
+            duration: Duration(seconds: 4),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _sending = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── الرأس ──
+          const Text('المراسلات',
+              style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white)),
+          const SizedBox(height: 4),
+          const Text('تواصل مع إدارة الموارد البشرية',
+              style: TextStyle(fontSize: 12, color: Color(0x99FFFFFF))),
+          const SizedBox(height: 16),
+
+          // ── قائمة الرسائل ──
+          Expanded(
+            child: _loading
+                ? const Center(
+                    child:
+                        CircularProgressIndicator(color: _indigo))
+                : _messages.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.chat_bubble_outline,
+                                size: 52,
+                                color: Colors.white
+                                    .withValues(alpha: 0.1)),
+                            const SizedBox(height: 14),
+                            const Text(
+                              'ابدأ محادثة مع الإدارة',
+                              style: TextStyle(
+                                  color: Color(0x66FFFFFF),
+                                  fontSize: 13),
+                            ),
+                            const SizedBox(height: 6),
+                            const Text(
+                              'يمكنك إرسال أي استفسار أو طلب',
+                              style: TextStyle(
+                                  color: Color(0x44FFFFFF),
+                                  fontSize: 11),
+                            ),
+                          ],
+                        ),
+                      )
+                    : ListView.builder(
+                        controller: _scroll,
+                        reverse: true,
+                        itemCount: _messages.length,
+                        itemBuilder: (_, i) {
+                          final m = _messages[i];
+                          final isEmp = m['sender'] == 'employee';
+                          final text =
+                              m['message'] as String? ?? '';
+                          final sentAt =
+                              m['sent_at'] as String? ?? '';
+                          // sentAt is like "2025-01-01T14:30:00+03:00"
+                          String time = '';
+                          try {
+                            final dt =
+                                DateTime.parse(sentAt).toLocal();
+                            time =
+                                '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+                          } catch (_) {}
+
+                          return Padding(
+                            padding:
+                                const EdgeInsets.only(bottom: 10),
+                            child: Row(
+                              // RTL: start=right, end=left
+                              mainAxisAlignment: isEmp
+                                  ? MainAxisAlignment.start
+                                  : MainAxisAlignment.end,
+                              crossAxisAlignment:
+                                  CrossAxisAlignment.end,
+                              children: [
+                                if (!isEmp)
+                                  const SizedBox(width: 52),
+                                Flexible(
+                                  child: Container(
+                                    padding:
+                                        const EdgeInsets.symmetric(
+                                            horizontal: 14,
+                                            vertical: 10),
+                                    decoration: BoxDecoration(
+                                      color: isEmp
+                                          ? const Color(0x0AFFFFFF)
+                                          : _indigo.withValues(
+                                              alpha: 0.18),
+                                      borderRadius:
+                                          BorderRadius.circular(14),
+                                      border: Border.all(
+                                        color: isEmp
+                                            ? _border
+                                            : _indigo.withValues(
+                                                alpha: 0.35),
+                                      ),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment: isEmp
+                                          ? CrossAxisAlignment.end
+                                          : CrossAxisAlignment.start,
+                                      children: [
+                                        if (!isEmp)
+                                          const Padding(
+                                            padding: EdgeInsets.only(
+                                                bottom: 4),
+                                            child: Text('الإدارة',
+                                                style: TextStyle(
+                                                    color:
+                                                        Color(0xFF818CF8),
+                                                    fontSize: 11,
+                                                    fontWeight:
+                                                        FontWeight.w600)),
+                                          ),
+                                        Text(text,
+                                            style: const TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 13,
+                                                height: 1.4)),
+                                        const SizedBox(height: 4),
+                                        Text(time,
+                                            style: const TextStyle(
+                                                color:
+                                                    Color(0x66FFFFFF),
+                                                fontSize: 10)),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                if (isEmp)
+                                  const SizedBox(width: 52),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+          ),
+
+          // ── حقل الإرسال ──
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _ctrl,
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontFamily: 'Tajawal'),
+                  textInputAction: TextInputAction.send,
+                  onSubmitted: (_) => _send(),
+                  maxLines: null,
+                  decoration: InputDecoration(
+                    hintText: 'اكتب رسالتك هنا...',
+                    hintStyle: const TextStyle(
+                        color: Color(0x55FFFFFF),
+                        fontSize: 13,
+                        fontFamily: 'Tajawal'),
+                    filled: true,
+                    fillColor: const Color(0x0AFFFFFF),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide:
+                            const BorderSide(color: _border)),
+                    enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide:
+                            const BorderSide(color: _border)),
+                    focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide:
+                            const BorderSide(color: _indigo)),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Material(
+                color: _indigo,
+                borderRadius: BorderRadius.circular(12),
+                child: InkWell(
+                  onTap: _sending ? null : _send,
+                  borderRadius: BorderRadius.circular(12),
+                  child: SizedBox(
+                    width: 48,
+                    height: 48,
+                    child: Center(
+                      child: _sending
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2))
+                          : const Icon(Icons.send_rounded,
+                              color: Colors.white, size: 20),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
