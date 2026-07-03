@@ -20,7 +20,7 @@ class _PortalMessagesScreenState extends State<PortalMessagesScreen> {
   final _scroll = ScrollController();
   late final RealtimeChannel _channel;
 
-  static const _indigo = Color(0xFF6366F1);
+  static const _indigo = Color(0xFF06B6D4);
   static const _border = Color(0x14FFFFFF);
 
   @override
@@ -94,20 +94,23 @@ class _PortalMessagesScreenState extends State<PortalMessagesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 700;
     return Padding(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(isMobile ? 12 : 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // ── الرأس ──
-          const Text('المراسلات',
+          Text('المراسلات',
               style: TextStyle(
-                  fontSize: 20,
+                  fontSize: isMobile ? 17 : 20,
                   fontWeight: FontWeight.w700,
                   color: Colors.white)),
           const SizedBox(height: 4),
-          const Text('تواصل مع إدارة الموارد البشرية',
-              style: TextStyle(fontSize: 12, color: Color(0x99FFFFFF))),
+          Text('تواصل مع إدارة الموارد البشرية',
+              style: TextStyle(
+                  fontSize: isMobile ? 11 : 12,
+                  color: const Color(0x99FFFFFF))),
           const SizedBox(height: 16),
 
           // ── قائمة الرسائل ──
@@ -174,13 +177,12 @@ class _PortalMessagesScreenState extends State<PortalMessagesScreen> {
                                   CrossAxisAlignment.end,
                               children: [
                                 if (!isEmp)
-                                  const SizedBox(width: 52),
+                                  SizedBox(width: isMobile ? 20 : 52),
                                 Flexible(
                                   child: Container(
-                                    padding:
-                                        const EdgeInsets.symmetric(
-                                            horizontal: 14,
-                                            vertical: 10),
+                                    padding: EdgeInsets.symmetric(
+                                        horizontal: isMobile ? 10 : 14,
+                                        vertical: isMobile ? 8 : 10),
                                     decoration: BoxDecoration(
                                       color: isEmp
                                           ? const Color(0x0AFFFFFF)
@@ -207,15 +209,16 @@ class _PortalMessagesScreenState extends State<PortalMessagesScreen> {
                                             child: Text('الإدارة',
                                                 style: TextStyle(
                                                     color:
-                                                        Color(0xFF818CF8),
+                                                        Color(0xFF22D3EE),
                                                     fontSize: 11,
                                                     fontWeight:
                                                         FontWeight.w600)),
                                           ),
                                         Text(text,
-                                            style: const TextStyle(
+                                            style: TextStyle(
                                                 color: Colors.white,
-                                                fontSize: 13,
+                                                fontSize:
+                                                    isMobile ? 12 : 13,
                                                 height: 1.4)),
                                         const SizedBox(height: 4),
                                         Text(time,
@@ -228,7 +231,7 @@ class _PortalMessagesScreenState extends State<PortalMessagesScreen> {
                                   ),
                                 ),
                                 if (isEmp)
-                                  const SizedBox(width: 52),
+                                  SizedBox(width: isMobile ? 20 : 52),
                               ],
                             ),
                           );
@@ -243,18 +246,18 @@ class _PortalMessagesScreenState extends State<PortalMessagesScreen> {
               Expanded(
                 child: TextField(
                   controller: _ctrl,
-                  style: const TextStyle(
+                  style: TextStyle(
                       color: Colors.white,
-                      fontSize: 14,
+                      fontSize: isMobile ? 13 : 14,
                       fontFamily: 'Tajawal'),
                   textInputAction: TextInputAction.send,
                   onSubmitted: (_) => _send(),
                   maxLines: null,
                   decoration: InputDecoration(
                     hintText: 'اكتب رسالتك هنا...',
-                    hintStyle: const TextStyle(
-                        color: Color(0x55FFFFFF),
-                        fontSize: 13,
+                    hintStyle: TextStyle(
+                        color: const Color(0x55FFFFFF),
+                        fontSize: isMobile ? 12 : 13,
                         fontFamily: 'Tajawal'),
                     filled: true,
                     fillColor: const Color(0x0AFFFFFF),
@@ -270,12 +273,13 @@ class _PortalMessagesScreenState extends State<PortalMessagesScreen> {
                         borderRadius: BorderRadius.circular(12),
                         borderSide:
                             const BorderSide(color: _indigo)),
-                    contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 12),
+                    contentPadding: EdgeInsets.symmetric(
+                        horizontal: isMobile ? 12 : 16,
+                        vertical: isMobile ? 10 : 12),
                   ),
                 ),
               ),
-              const SizedBox(width: 10),
+              SizedBox(width: isMobile ? 8 : 10),
               Material(
                 color: _indigo,
                 borderRadius: BorderRadius.circular(12),
@@ -283,8 +287,8 @@ class _PortalMessagesScreenState extends State<PortalMessagesScreen> {
                   onTap: _sending ? null : _send,
                   borderRadius: BorderRadius.circular(12),
                   child: SizedBox(
-                    width: 48,
-                    height: 48,
+                    width: isMobile ? 42 : 48,
+                    height: isMobile ? 42 : 48,
                     child: Center(
                       child: _sending
                           ? const SizedBox(

@@ -28,8 +28,8 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> {
   bool _hasLeaveUpdate = false;
   RealtimeChannel? _badgeChannel;
 
-  static const _bgColor = Color(0xFF0A0E1A);
-  static const _indigo = Color(0xFF6366F1);
+  static const _bgColor = Color(0xFF061A22);
+  static const _indigo = Color(0xFF06B6D4);
 
   @override
   void initState() {
@@ -227,7 +227,7 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> {
       bottomNavigationBar: isMobile
           ? Container(
               decoration: const BoxDecoration(
-                color: Color(0xFF0D1120),
+                color: Color(0xFF061A22),
                 border: Border(top: BorderSide(color: Color(0x14FFFFFF))),
               ),
               child: SafeArea(
@@ -278,7 +278,7 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> {
       // ── AppBar (mobile) ──
       appBar: isMobile
           ? AppBar(
-              backgroundColor: const Color(0xFF0D1120),
+              backgroundColor: const Color(0xFF061A22),
               elevation: 0,
               automaticallyImplyLeading: false,
               titleSpacing: 12,
@@ -288,7 +288,7 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> {
                     width: 32, height: 32,
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
-                          colors: [_indigo, Color(0xFF8B5CF6)]),
+                          colors: [_indigo, Color(0xFF0EA5E9)]),
                       borderRadius: BorderRadius.circular(9),
                     ),
                     child: Center(
@@ -351,7 +351,7 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> {
                               width: 52, height: 52,
                               decoration: BoxDecoration(
                                 gradient: const LinearGradient(
-                                    colors: [_indigo, Color(0xFF8B5CF6)]),
+                                    colors: [_indigo, Color(0xFF0EA5E9)]),
                                 borderRadius: BorderRadius.circular(14),
                               ),
                               child: Center(
@@ -470,7 +470,7 @@ class _AdminHomeTab extends StatelessWidget {
   final String name;
   const _AdminHomeTab({required this.name});
 
-  static const _indigo = Color(0xFF6366F1);
+  static const _indigo = Color(0xFF06B6D4);
 
   @override
   Widget build(BuildContext context) {
@@ -637,7 +637,7 @@ class _DashboardTab extends StatelessWidget {
   final void Function(int) onTabSwitch;
   const _DashboardTab({this.profile, required this.isMedical, required this.onTabSwitch});
 
-  static const _indigo = Color(0xFF6366F1);
+  static const _indigo = Color(0xFF06B6D4);
 
   @override
   Widget build(BuildContext context) {
@@ -689,14 +689,14 @@ class _DashboardTab extends StatelessWidget {
                   label: 'كشف الراتب', color: const Color(0xFFF59E0B),
                   onTap: () => onTabSwitch(4)),
               _ActionBtn(icon: Icons.description_outlined,
-                  label: 'طلباتي', color: const Color(0xFF8B5CF6),
+                  label: 'طلباتي', color: const Color(0xFF0EA5E9),
                   onTap: () => onTabSwitch(5)),
               _ActionBtn(icon: Icons.chat_outlined,
                   label: 'مراسلة الإدارة', color: const Color(0xFF0EA5E9),
                   onTap: () => onTabSwitch(6)),
               if (isMedical)
                 _ActionBtn(icon: Icons.mood_outlined,
-                    label: 'جدول العيادات', color: const Color(0xFF14B8A6),
+                    label: 'جدول العيادات', color: const Color(0xFF06B6D4),
                     onTap: () => onTabSwitch(7)),
             ],
           ),

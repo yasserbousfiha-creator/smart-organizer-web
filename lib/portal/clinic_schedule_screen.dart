@@ -36,8 +36,8 @@ class _ClinicScheduleScreenState extends State<ClinicScheduleScreen> {
   // ترتيب الأسبوع: السبت(6) → الجمعة(5) — الجمعة إجازة
   static const _weekOrder = [6, 7, 1, 2, 3, 4, 5];
 
-  static const _indigo = Color(0xFF6366F1);
-  static const _teal   = Color(0xFF14B8A6);
+  static const _indigo = Color(0xFF06B6D4);
+  static const _teal   = Color(0xFF06B6D4);
 
   @override
   void initState() {
@@ -221,7 +221,7 @@ class _ClinicSummaryCard extends StatelessWidget {
   final List<String> dayNames;
   const _ClinicSummaryCard({required this.clinic, required this.dayNames});
 
-  static const _teal = Color(0xFF14B8A6);
+  static const _teal = Color(0xFF06B6D4);
 
   @override
   Widget build(BuildContext context) => Container(
@@ -268,15 +268,100 @@ class _DayRow extends StatelessWidget {
     this.shift,
   });
 
-  static const _indigo = Color(0xFF6366F1);
-  static const _teal   = Color(0xFF14B8A6);
+  static const _indigo = Color(0xFF06B6D4);
+  static const _teal   = Color(0xFF06B6D4);
   static const _amber  = Color(0xFFF59E0B);
-  static const _purple = Color(0xFF8B5CF6);
+  static const _purple = Color(0xFF0EA5E9);
 
   bool get _isMorning => (shift ?? '').contains('صباح');
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 700;
+
+    // دائرة اليوم
+    final circleAvatar = Container(
+      width: 42, height: 42,
+      decoration: BoxDecoration(
+        color: isToday
+            ? _indigo.withValues(alpha: 0.2)
+            : isOff
+                ? const Color(0x06FFFFFF)
+                : _teal.withValues(alpha: 0.1),
+        shape: BoxShape.circle,
+        border: isToday
+            ? Border.all(color: _indigo.withValues(alpha: 0.5), width: 1.5)
+            : null,
+      ),
+      child: Center(
+        child: Text(
+          dayName.length >= 2 ? dayName.substring(0, 2) : dayName,
+          style: TextStyle(
+            fontSize: 11, fontWeight: FontWeight.w700,
+            color: isToday ? _indigo : isOff
+                ? const Color(0x44FFFFFF) : _teal,
+          ),
+        ),
+      ),
+    );
+
+    // اسم اليوم + شارة "اليوم"
+    final dayNameSection = Expanded(
+      child: Row(
+        children: [
+          Text(dayName,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: isToday ? FontWeight.w700 : FontWeight.w500,
+                color: isOff && !isToday
+                    ? const Color(0x55FFFFFF) : Colors.white,
+              )),
+          if (isToday) ...[
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+              decoration: BoxDecoration(
+                color: _indigo.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: _indigo.withValues(alpha: 0.5)),
+              ),
+              child: const Text('اليوم',
+                  style: TextStyle(fontSize: 9, color: _indigo,
+                      fontWeight: FontWeight.w700)),
+            ),
+          ],
+        ],
+      ),
+    );
+
+    // العيادة والدوام أو إجازة
+    final Widget trailingSection = isOff
+        ? Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: const Color(0x08FFFFFF),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Text('إجازة',
+                style: TextStyle(fontSize: 12, color: Color(0x44FFFFFF))),
+          )
+        : Wrap(
+            spacing: 8,
+            children: [
+              _Badge(
+                icon: Icons.door_front_door_outlined,
+                label: 'عيادة $clinicNumber',
+                color: _teal,
+              ),
+              if (shift != null && shift!.isNotEmpty)
+                _Badge(
+                  emoji: _isMorning ? '🌅' : '🌙',
+                  label: shift!,
+                  color: _isMorning ? _amber : _purple,
+                ),
+            ],
+          );
+
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -294,94 +379,31 @@ class _DayRow extends StatelessWidget {
           width: isToday ? 1.5 : 1,
         ),
       ),
-      child: Row(
-        children: [
-          // دائرة اليوم
-          Container(
-            width: 42, height: 42,
-            decoration: BoxDecoration(
-              color: isToday
-                  ? _indigo.withValues(alpha: 0.2)
-                  : isOff
-                      ? const Color(0x06FFFFFF)
-                      : _teal.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-              border: isToday
-                  ? Border.all(color: _indigo.withValues(alpha: 0.5), width: 1.5)
-                  : null,
-            ),
-            child: Center(
-              child: Text(
-                dayName.length >= 2 ? dayName.substring(0, 2) : dayName,
-                style: TextStyle(
-                  fontSize: 11, fontWeight: FontWeight.w700,
-                  color: isToday ? _indigo : isOff
-                      ? const Color(0x44FFFFFF) : _teal,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 14),
-
-          // اسم اليوم + شارة "اليوم"
-          Expanded(
-            child: Row(
+      // على الموبايل: صف الاسم أعلى، وصف العيادة/الدوام أسفله لتفادي
+      // ضيق المساحة الأفقي. على الديسكتوب: نفس الصف الأصلي بلا تغيير.
+      child: isMobile
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(dayName,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: isToday ? FontWeight.w700 : FontWeight.w500,
-                      color: isOff && !isToday
-                          ? const Color(0x55FFFFFF) : Colors.white,
-                    )),
-                if (isToday) ...[
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: _indigo.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: _indigo.withValues(alpha: 0.5)),
-                    ),
-                    child: const Text('اليوم',
-                        style: TextStyle(fontSize: 9, color: _indigo,
-                            fontWeight: FontWeight.w700)),
-                  ),
-                ],
+                Row(
+                  children: [
+                    circleAvatar,
+                    const SizedBox(width: 14),
+                    dayNameSection,
+                  ],
+                ),
+                const SizedBox(height: 10),
+                trailingSection,
               ],
-            ),
-          ),
-
-          // العيادة والدوام أو إجازة
-          if (isOff)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: const Color(0x08FFFFFF),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Text('إجازة',
-                  style: TextStyle(fontSize: 12, color: Color(0x44FFFFFF))),
             )
-          else
-            Wrap(
-              spacing: 8,
+          : Row(
               children: [
-                _Badge(
-                  icon: Icons.door_front_door_outlined,
-                  label: 'عيادة $clinicNumber',
-                  color: _teal,
-                ),
-                if (shift != null && shift!.isNotEmpty)
-                  _Badge(
-                    emoji: _isMorning ? '🌅' : '🌙',
-                    label: shift!,
-                    color: _isMorning ? _amber : _purple,
-                  ),
+                circleAvatar,
+                const SizedBox(width: 14),
+                dayNameSection,
+                trailingSection,
               ],
             ),
-        ],
-      ),
     );
   }
 }

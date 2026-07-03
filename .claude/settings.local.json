@@ -7,7 +7,22 @@
       "Bash(git config *)",
       "Bash(git remote *)",
       "Bash(git add *)",
-      "Bash(git commit -m ' *)"
+      "Bash(git commit -m ' *)",
+      "PowerShell(flutter --version)",
+      "Bash(find /c/src /c/flutter /c/tools \"/c/Users/Windows\" -maxdepth 3 -iname \"flutter*\" -type d 2>/dev/null | head -20)",
+      "Read(//c/src/**)",
+      "Bash(ls /c/src/flutter/bin/flutter* 2>/dev/null)",
+      "Read(//c/src/flutter/bin/**)",
+      "Bash(/c/src/flutter/bin/flutter analyze *)",
+      "Skill(run)",
+      "Skill(run:*)",
+      "Bash(nohup /c/src/flutter/bin/flutter run -d web-server --web-port=8765 --web-hostname=127.0.0.1)",
+      "Bash(echo \"PID:$!\")",
+      "Bash(disown)",
+      "Bash(timeout 90 bash -c 'until curl -sf http://127.0.0.1:8765 >/dev/null 2>&1; do sleep 2; done; echo READY')",
+      "Bash(mkdir -p /tmp/shots)",
+      "Bash(\"/c/Program Files \\(x86\\)/Microsoft/Edge/Application/msedge.exe\" --headless=new --disable-gpu --no-sandbox --window-size=1600,1400 --virtual-time-budget=8000 --screenshot=/tmp/shots/desktop.png \"http://127.0.0.1:8765\")",
+      "Read(//tmp/**)"
     ]
   }
 }

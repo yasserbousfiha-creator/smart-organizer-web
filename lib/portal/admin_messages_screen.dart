@@ -14,8 +14,8 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
   bool _loading = true;
   late final RealtimeChannel _channel;
 
-  static const _indigo = Color(0xFF6366F1);
-  static const _surface = Color(0xFF12172A);
+  static const _indigo = Color(0xFF06B6D4);
+  static const _surface = Color(0xFF0D2731);
 
   @override
   void initState() {
@@ -115,28 +115,31 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 700;
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0E1A),
+      backgroundColor: const Color(0xFF061A22),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+            padding: EdgeInsets.fromLTRB(
+                isMobile ? 14 : 20, isMobile ? 14 : 20, isMobile ? 14 : 20, 12),
             child: Row(
               children: [
-                const Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text('المراسلات',
                           style: TextStyle(
-                              fontSize: 20,
+                              fontSize: isMobile ? 17 : 20,
                               fontWeight: FontWeight.w700,
                               color: Colors.white)),
-                      SizedBox(height: 2),
+                      const SizedBox(height: 2),
                       Text('محادثات الموظفين مع الإدارة',
                           style: TextStyle(
-                              fontSize: 12, color: Color(0x99FFFFFF))),
+                              fontSize: isMobile ? 11 : 12,
+                              color: const Color(0x99FFFFFF))),
                     ],
                   ),
                 ),
@@ -197,7 +200,7 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
                               _load(); // تحديث عند العودة
                             },
                             child: Container(
-                              padding: const EdgeInsets.all(14),
+                              padding: EdgeInsets.all(isMobile ? 10 : 14),
                               decoration: BoxDecoration(
                                 color: _surface,
                                 borderRadius: BorderRadius.circular(12),
@@ -211,8 +214,8 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
                                 children: [
                                   // أفاتار الموظف
                                   Container(
-                                    width: 44,
-                                    height: 44,
+                                    width: isMobile ? 38 : 44,
+                                    height: isMobile ? 38 : 44,
                                     decoration: BoxDecoration(
                                       color: _indigo.withValues(
                                           alpha: 0.15),
@@ -222,14 +225,14 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
                                     child: Center(
                                       child: Text(
                                         name.isNotEmpty ? name[0] : '?',
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                             color: _indigo,
                                             fontWeight: FontWeight.w700,
-                                            fontSize: 18),
+                                            fontSize: isMobile ? 15 : 18),
                                       ),
                                     ),
                                   ),
-                                  const SizedBox(width: 12),
+                                  SizedBox(width: isMobile ? 8 : 12),
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment:
@@ -241,13 +244,18 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
                                                 fontWeight: unread > 0
                                                     ? FontWeight.w700
                                                     : FontWeight.w500,
-                                                fontSize: 14)),
+                                                fontSize: isMobile ? 13 : 14),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis),
                                         if (dept.isNotEmpty)
                                           Text(dept,
-                                              style: const TextStyle(
+                                              style: TextStyle(
                                                   color:
-                                                      Color(0x66FFFFFF),
-                                                  fontSize: 11)),
+                                                      const Color(0x66FFFFFF),
+                                                  fontSize: isMobile ? 10 : 11),
+                                              maxLines: 1,
+                                              overflow:
+                                                  TextOverflow.ellipsis),
                                         const SizedBox(height: 3),
                                         Text(
                                           lastMsg,
@@ -257,22 +265,22 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
                                                       0xCCFFFFFF)
                                                   : const Color(
                                                       0x66FFFFFF),
-                                              fontSize: 12),
+                                              fontSize: isMobile ? 11 : 12),
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
                                         ),
                                       ],
                                     ),
                                   ),
-                                  const SizedBox(width: 8),
+                                  SizedBox(width: isMobile ? 6 : 8),
                                   Column(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.end,
                                     children: [
                                       Text(lastTime,
-                                          style: const TextStyle(
-                                              color: Color(0x66FFFFFF),
-                                              fontSize: 11)),
+                                          style: TextStyle(
+                                              color: const Color(0x66FFFFFF),
+                                              fontSize: isMobile ? 10 : 11)),
                                       if (unread > 0) ...[
                                         const SizedBox(height: 4),
                                         Container(
@@ -330,7 +338,7 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
   final _scroll = ScrollController();
   late final RealtimeChannel _channel;
 
-  static const _indigo = Color(0xFF6366F1);
+  static const _indigo = Color(0xFF06B6D4);
   static const _border = Color(0x14FFFFFF);
 
   @override
@@ -411,12 +419,13 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 700;
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        backgroundColor: const Color(0xFF0A0E1A),
+        backgroundColor: const Color(0xFF061A22),
         appBar: AppBar(
-          backgroundColor: const Color(0xFF0D1120),
+          backgroundColor: const Color(0xFF061A22),
           elevation: 0,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back_ios_new,
@@ -426,8 +435,8 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
           title: Row(
             children: [
               Container(
-                width: 34,
-                height: 34,
+                width: isMobile ? 30 : 34,
+                height: isMobile ? 30 : 34,
                 decoration: BoxDecoration(
                   color: _indigo.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(9),
@@ -437,19 +446,23 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
                     widget.employeeName.isNotEmpty
                         ? widget.employeeName[0]
                         : '?',
-                    style: const TextStyle(
+                    style: TextStyle(
                         color: _indigo,
                         fontWeight: FontWeight.w700,
-                        fontSize: 15),
+                        fontSize: isMobile ? 13 : 15),
                   ),
                 ),
               ),
-              const SizedBox(width: 10),
-              Text(widget.employeeName,
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600)),
+              SizedBox(width: isMobile ? 8 : 10),
+              Flexible(
+                child: Text(widget.employeeName,
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: isMobile ? 14 : 15,
+                        fontWeight: FontWeight.w600),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis),
+              ),
             ],
           ),
           actions: [
@@ -503,7 +516,7 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
                                       CrossAxisAlignment.end,
                                   children: [
                                     if (isEmp)
-                                      const SizedBox(width: 52),
+                                      SizedBox(width: isMobile ? 28 : 52),
                                     Flexible(
                                       child: Container(
                                         padding:
@@ -536,7 +549,7 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
                                                 child: Text('الإدارة',
                                                     style: TextStyle(
                                                         color: Color(
-                                                            0xFF818CF8),
+                                                            0xFF22D3EE),
                                                         fontSize: 11,
                                                         fontWeight:
                                                             FontWeight
@@ -573,7 +586,7 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
                                       ),
                                     ),
                                     if (!isEmp)
-                                      const SizedBox(width: 52),
+                                      SizedBox(width: isMobile ? 28 : 52),
                                   ],
                                 ),
                               );
@@ -609,12 +622,13 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
                             borderRadius: BorderRadius.circular(12),
                             borderSide:
                                 const BorderSide(color: _indigo)),
-                        contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 12),
+                        contentPadding: EdgeInsets.symmetric(
+                            horizontal: isMobile ? 12 : 16,
+                            vertical: isMobile ? 10 : 12),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  SizedBox(width: isMobile ? 8 : 10),
                   Material(
                     color: _indigo,
                     borderRadius: BorderRadius.circular(12),
@@ -622,8 +636,8 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
                       onTap: _sending ? null : _send,
                       borderRadius: BorderRadius.circular(12),
                       child: SizedBox(
-                        width: 48,
-                        height: 48,
+                        width: isMobile ? 44 : 48,
+                        height: isMobile ? 44 : 48,
                         child: Center(
                           child: _sending
                               ? const SizedBox(

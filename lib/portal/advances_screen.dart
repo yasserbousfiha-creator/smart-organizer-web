@@ -20,7 +20,7 @@ class _PortalAdvancesScreenState extends State<PortalAdvancesScreen> {
   final _reasonCtrl = TextEditingController();
   bool _submitting = false;
 
-  static const _indigo = Color(0xFF6366F1);
+  static const _indigo = Color(0xFF06B6D4);
   static const _green = Color(0xFF34D399);
   static const _amber = Color(0xFFF59E0B);
 
@@ -98,7 +98,7 @@ class _PortalAdvancesScreenState extends State<PortalAdvancesScreen> {
   }
 
   void _snack(String msg) => ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(content: Text(msg), backgroundColor: const Color(0xFF1E2235)),
+    SnackBar(content: Text(msg), backgroundColor: const Color(0xFF123540)),
   );
 
   Color _statusColor(String s) {
@@ -109,9 +109,34 @@ class _PortalAdvancesScreenState extends State<PortalAdvancesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 700;
     final totalActive = _advances
         .where((a) => a['status'] == 'موافق عليها')
         .fold<double>(0, (s, a) => s + ((a['remaining_amount'] as num?)?.toDouble() ?? 0));
+
+    final titleBlock = const Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('السلف',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700,
+                color: Colors.white)),
+        SizedBox(height: 2),
+        Text('إدارة سلفك وطلباتك',
+            style: TextStyle(fontSize: 12, color: Color(0x99FFFFFF))),
+      ],
+    );
+    final requestButton = FilledButton.icon(
+      onPressed: () => setState(() => _showForm = !_showForm),
+      icon: Icon(_showForm ? Icons.close : Icons.add, size: 16),
+      label: Text(_showForm ? 'إلغاء' : 'طلب جديد',
+          style: const TextStyle(fontSize: 13)),
+      style: FilledButton.styleFrom(
+        backgroundColor: _green,
+        foregroundColor: Colors.black,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
 
     return Padding(
       padding: const EdgeInsets.all(20),
@@ -119,35 +144,21 @@ class _PortalAdvancesScreenState extends State<PortalAdvancesScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // ── Header ──────────────────────────────────
-          Row(
-            children: [
-              const Expanded(
-                child: Column(
+          isMobile
+              ? Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('السلف',
-                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700,
-                            color: Colors.white)),
-                    SizedBox(height: 2),
-                    Text('إدارة سلفك وطلباتك',
-                        style: TextStyle(fontSize: 12, color: Color(0x99FFFFFF))),
+                    titleBlock,
+                    const SizedBox(height: 10),
+                    SizedBox(width: double.infinity, child: requestButton),
+                  ],
+                )
+              : Row(
+                  children: [
+                    Expanded(child: titleBlock),
+                    requestButton,
                   ],
                 ),
-              ),
-              FilledButton.icon(
-                onPressed: () => setState(() => _showForm = !_showForm),
-                icon: Icon(_showForm ? Icons.close : Icons.add, size: 16),
-                label: Text(_showForm ? 'إلغاء' : 'طلب جديد',
-                    style: const TextStyle(fontSize: 13)),
-                style: FilledButton.styleFrom(
-                  backgroundColor: _green,
-                  foregroundColor: Colors.black,
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ),
-              ),
-            ],
-          ),
           const SizedBox(height: 16),
 
           // ── بطاقة إجمالي السلف (تظهر فقط إن وجد) ────
@@ -172,15 +183,17 @@ class _PortalAdvancesScreenState extends State<PortalAdvancesScreen> {
                         color: _amber, size: 20),
                   ),
                   const SizedBox(width: 12),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('إجمالي السلف المتبقية',
-                          style: TextStyle(fontSize: 12, color: Color(0x99FFFFFF))),
-                      Text('${totalActive.toStringAsFixed(2)} ريال',
-                          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700,
-                              color: _amber)),
-                    ],
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('إجمالي السلف المتبقية',
+                            style: TextStyle(fontSize: 12, color: Color(0x99FFFFFF))),
+                        Text('${totalActive.toStringAsFixed(2)} ريال',
+                            style: TextStyle(fontSize: isMobile ? 17 : 20,
+                                fontWeight: FontWeight.w700, color: _amber)),
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -307,8 +320,16 @@ class _AdvanceForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 700;
+    final amountField = TextField(controller: amountCtrl, keyboardType: TextInputType.number,
+        style: const TextStyle(color: Colors.white, fontSize: 14),
+        decoration: _d('المبلغ المطلوب (ريال)'));
+    final deductField = TextField(controller: deductCtrl, keyboardType: TextInputType.number,
+        style: const TextStyle(color: Colors.white, fontSize: 14),
+        decoration: _d('الاستقطاع الشهري (ريال)'));
+
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(isMobile ? 12 : 16),
       decoration: BoxDecoration(
         color: _green.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(14),
@@ -320,21 +341,21 @@ class _AdvanceForm extends StatelessWidget {
           const Text('طلب سلفة جديدة',
               style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white)),
           const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: TextField(controller: amountCtrl, keyboardType: TextInputType.number,
-                    style: const TextStyle(color: Colors.white, fontSize: 14),
-                    decoration: _d('المبلغ المطلوب (ريال)')),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: TextField(controller: deductCtrl, keyboardType: TextInputType.number,
-                    style: const TextStyle(color: Colors.white, fontSize: 14),
-                    decoration: _d('الاستقطاع الشهري (ريال)')),
-              ),
-            ],
-          ),
+          isMobile
+              ? Column(
+                  children: [
+                    amountField,
+                    const SizedBox(height: 10),
+                    deductField,
+                  ],
+                )
+              : Row(
+                  children: [
+                    Expanded(child: amountField),
+                    const SizedBox(width: 10),
+                    Expanded(child: deductField),
+                  ],
+                ),
           const SizedBox(height: 10),
           TextField(controller: reasonCtrl, maxLines: 2,
               style: const TextStyle(color: Colors.white, fontSize: 14),

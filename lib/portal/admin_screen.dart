@@ -13,13 +13,13 @@ class _AdminScreenState extends State<AdminScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tabCtrl;
 
-  static const _bg = Color(0xFF0A0E1A);
-  static const _indigo = Color(0xFF6366F1);
+  static const _bg = Color(0xFF061A22);
+  static const _indigo = Color(0xFF06B6D4);
 
   @override
   void initState() {
     super.initState();
-    _tabCtrl = TabController(length: 3, vsync: this);
+    _tabCtrl = TabController(length: 4, vsync: this);
   }
 
   @override
@@ -33,7 +33,7 @@ class _AdminScreenState extends State<AdminScreen>
     return Scaffold(
       backgroundColor: _bg,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0D1120),
+        backgroundColor: const Color(0xFF061A22),
         elevation: 0,
         automaticallyImplyLeading: false,
         title: Row(
@@ -43,7 +43,7 @@ class _AdminScreenState extends State<AdminScreen>
               height: 32,
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
-                    colors: [_indigo, Color(0xFF8B5CF6)]),
+                    colors: [_indigo, Color(0xFF0EA5E9)]),
                 borderRadius: BorderRadius.circular(9),
               ),
               child: const Icon(Icons.admin_panel_settings_rounded,
@@ -68,6 +68,8 @@ class _AdminScreenState extends State<AdminScreen>
           tabs: const [
             Tab(icon: Icon(Icons.beach_access_outlined, size: 18),
                 text: 'الإجازات'),
+            Tab(icon: Icon(Icons.account_balance_wallet_outlined, size: 18),
+                text: 'السلف'),
             Tab(icon: Icon(Icons.people_outline, size: 18),
                 text: 'الموظفون'),
             Tab(icon: Icon(Icons.access_time_outlined, size: 18),
@@ -79,6 +81,7 @@ class _AdminScreenState extends State<AdminScreen>
         controller: _tabCtrl,
         children: const [
           _LeavesTab(),
+          _AdvancesTab(),
           _EmployeesTab(),
           _ShiftsTab(),
         ],
@@ -102,11 +105,11 @@ class _LeavesTabState extends State<_LeavesTab> {
   String? _error;
   late final RealtimeChannel _channel;
 
-  static const _indigo = Color(0xFF6366F1);
+  static const _indigo = Color(0xFF06B6D4);
   static const _green = Color(0xFF34D399);
   static const _amber = Color(0xFFF59E0B);
-  static const _red = Color(0xFFEF4444);
-  static const _surface = Color(0xFF12172A);
+  static const _red = Color(0xFFF87171);
+  static const _surface = Color(0xFF0D2731);
 
   @override
   void initState() {
@@ -196,53 +199,64 @@ class _LeavesTabState extends State<_LeavesTab> {
           child: CircularProgressIndicator(color: _indigo));
     }
 
+    final isMobile = MediaQuery.of(context).size.width < 700;
+
+    final filterChips = [
+      for (final f in ['قيد المراجعة', 'موافق عليها', 'مرفوضة', 'الكل'])
+        Padding(
+          padding: const EdgeInsets.only(left: 8, bottom: 8),
+          child: GestureDetector(
+            onTap: () => setState(() => _filter = f),
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: _filter == f
+                    ? _indigo
+                    : const Color(0x0AFFFFFF),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: _filter == f
+                      ? _indigo
+                      : const Color(0x1AFFFFFF),
+                ),
+              ),
+              child: Text(f,
+                  style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: _filter == f
+                          ? FontWeight.w600
+                          : FontWeight.normal,
+                      color: _filter == f
+                          ? Colors.white
+                          : const Color(0x99FFFFFF))),
+            ),
+          ),
+        ),
+    ];
+    final refreshButton = IconButton(
+      icon: const Icon(Icons.refresh, color: Color(0x99FFFFFF), size: 18),
+      onPressed: _load,
+      tooltip: 'تحديث',
+    );
+
     return Column(
       children: [
         // Filter chips
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
-            children: [
-              for (final f in ['قيد المراجعة', 'موافق عليها', 'مرفوضة', 'الكل'])
-                Padding(
-                  padding: const EdgeInsets.only(left: 8),
-                  child: GestureDetector(
-                    onTap: () => setState(() => _filter = f),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: _filter == f
-                            ? _indigo
-                            : const Color(0x0AFFFFFF),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: _filter == f
-                              ? _indigo
-                              : const Color(0x1AFFFFFF),
-                        ),
-                      ),
-                      child: Text(f,
-                          style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: _filter == f
-                                  ? FontWeight.w600
-                                  : FontWeight.normal,
-                              color: _filter == f
-                                  ? Colors.white
-                                  : const Color(0x99FFFFFF))),
-                    ),
-                  ),
+          child: isMobile
+              ? Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [...filterChips, refreshButton],
+                )
+              : Row(
+                  children: [
+                    ...filterChips,
+                    const Spacer(),
+                    refreshButton,
+                  ],
                 ),
-              const Spacer(),
-              IconButton(
-                icon: const Icon(Icons.refresh, color: Color(0x99FFFFFF),
-                    size: 18),
-                onPressed: _load,
-                tooltip: 'تحديث',
-              ),
-            ],
-          ),
         ),
 
         // List
@@ -356,26 +370,430 @@ class _LeavesTabState extends State<_LeavesTab> {
                           ],
                           if (status == 'قيد المراجعة') ...[
                             const SizedBox(height: 12),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: [
-                                _actionBtn(
-                                  label: 'رفض',
-                                  color: _red,
-                                  icon: Icons.close_rounded,
-                                  onTap: () => _updateStatus(
-                                      req['id'].toString(), 'مرفوضة'),
+                            isMobile
+                                ? Wrap(
+                                    alignment: WrapAlignment.end,
+                                    spacing: 8,
+                                    runSpacing: 8,
+                                    children: [
+                                      _actionBtn(
+                                        label: 'رفض',
+                                        color: _red,
+                                        icon: Icons.close_rounded,
+                                        onTap: () => _updateStatus(
+                                            req['id'].toString(), 'مرفوضة'),
+                                      ),
+                                      _actionBtn(
+                                        label: 'موافقة',
+                                        color: _green,
+                                        icon: Icons.check_rounded,
+                                        onTap: () => _updateStatus(
+                                            req['id'].toString(),
+                                            'موافق عليها'),
+                                      ),
+                                    ],
+                                  )
+                                : Row(
+                                    mainAxisAlignment: MainAxisAlignment.end,
+                                    children: [
+                                      _actionBtn(
+                                        label: 'رفض',
+                                        color: _red,
+                                        icon: Icons.close_rounded,
+                                        onTap: () => _updateStatus(
+                                            req['id'].toString(), 'مرفوضة'),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      _actionBtn(
+                                        label: 'موافقة',
+                                        color: _green,
+                                        icon: Icons.check_rounded,
+                                        onTap: () => _updateStatus(
+                                            req['id'].toString(),
+                                            'موافق عليها'),
+                                      ),
+                                    ],
+                                  ),
+                          ],
+                        ],
+                      ),
+                    );
+                  },
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _infoChip(IconData icon, String text) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 12, color: const Color(0x66FFFFFF)),
+        const SizedBox(width: 4),
+        Text(text,
+            style: const TextStyle(
+                fontSize: 12, color: Color(0x99FFFFFF))),
+      ],
+    );
+  }
+
+  Widget _actionBtn({
+    required String label,
+    required Color color,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: color.withValues(alpha: 0.4)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 14, color: color),
+            const SizedBox(width: 5),
+            Text(label,
+                style: TextStyle(
+                    fontSize: 12, fontWeight: FontWeight.w600, color: color)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Advances Tab ───────────────────────────────────────────────
+class _AdvancesTab extends StatefulWidget {
+  const _AdvancesTab();
+  @override
+  State<_AdvancesTab> createState() => _AdvancesTabState();
+}
+
+class _AdvancesTabState extends State<_AdvancesTab> {
+  List<Map<String, dynamic>> _requests = [];
+  Map<String, Map<String, dynamic>> _empMap = {};
+  bool _loading = true;
+  String _filter = 'قيد المراجعة';
+  String? _error;
+  late final RealtimeChannel _channel;
+
+  static const _indigo = Color(0xFF06B6D4);
+  static const _green = Color(0xFF34D399);
+  static const _amber = Color(0xFFF59E0B);
+  static const _red = Color(0xFFF87171);
+  static const _surface = Color(0xFF0D2731);
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+    _channel = portalClient
+        .channel('admin-advances-tab')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'advance_requests',
+          callback: (_) { if (mounted) _load(); },
+        )
+        .subscribe();
+  }
+
+  @override
+  void dispose() {
+    portalClient.removeChannel(_channel);
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    setState(() { _loading = true; _error = null; });
+    try {
+      final results = await Future.wait([
+        portalClient.from('advance_requests').select().order('submitted_at', ascending: false),
+        portalClient.from('employee_profiles').select('id, name, department'),
+      ]);
+      final requests = List<Map<String, dynamic>>.from(results[0] as List);
+      final emps = List<Map<String, dynamic>>.from(results[1] as List);
+      final empMap = <String, Map<String, dynamic>>{
+        for (final e in emps) e['id'].toString(): e,
+      };
+      if (mounted) {
+        setState(() {
+          _requests = requests;
+          _empMap = empMap;
+          _loading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() { _loading = false; _error = e.toString(); });
+    }
+  }
+
+  Future<void> _updateStatus(String id, String status) async {
+    try {
+      await portalClient
+          .from('advance_requests')
+          .update({'status': status})
+          .eq('id', id);
+      await _load();
+      if (mounted) {
+        _snack(status == 'موافق عليها' ? 'تمت الموافقة' : 'تم الرفض',
+            status == 'موافق عليها' ? _green : _red);
+      }
+    } catch (e) {
+      if (mounted) _snack('خطأ: $e', _red);
+    }
+  }
+
+  void _snack(String msg, Color color) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(msg),
+      backgroundColor: color,
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+    ));
+  }
+
+  Color _statusColor(String status) {
+    if (status == 'موافق عليها') return _green;
+    if (status == 'مرفوضة') return _red;
+    return _amber;
+  }
+
+  List<Map<String, dynamic>> get _filtered {
+    if (_filter == 'الكل') return _requests;
+    return _requests.where((r) => r['status'] == _filter).toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) {
+      return const Center(
+          child: CircularProgressIndicator(color: _indigo));
+    }
+
+    final isMobile = MediaQuery.of(context).size.width < 700;
+
+    final filterChips = [
+      for (final f in ['قيد المراجعة', 'موافق عليها', 'مرفوضة', 'الكل'])
+        Padding(
+          padding: const EdgeInsets.only(left: 8, bottom: 8),
+          child: GestureDetector(
+            onTap: () => setState(() => _filter = f),
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: _filter == f
+                    ? _indigo
+                    : const Color(0x0AFFFFFF),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: _filter == f
+                      ? _indigo
+                      : const Color(0x1AFFFFFF),
+                ),
+              ),
+              child: Text(f,
+                  style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: _filter == f
+                          ? FontWeight.w600
+                          : FontWeight.normal,
+                      color: _filter == f
+                          ? Colors.white
+                          : const Color(0x99FFFFFF))),
+            ),
+          ),
+        ),
+    ];
+    final refreshButton = IconButton(
+      icon: const Icon(Icons.refresh, color: Color(0x99FFFFFF), size: 18),
+      onPressed: _load,
+      tooltip: 'تحديث',
+    );
+
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: isMobile
+              ? Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [...filterChips, refreshButton],
+                )
+              : Row(
+                  children: [
+                    ...filterChips,
+                    const Spacer(),
+                    refreshButton,
+                  ],
+                ),
+        ),
+        Expanded(
+          child: _error != null
+              ? Center(child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Text('خطأ: $_error',
+                      style: const TextStyle(color: Color(0xFFF87171), fontSize: 12)),
+                ))
+              : _filtered.isEmpty
+              ? const Center(
+                  child: Text('لا توجد طلبات',
+                      style: TextStyle(color: Color(0x66FFFFFF))))
+              : ListView.separated(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 4),
+                  itemCount: _filtered.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 8),
+                  itemBuilder: (_, i) {
+                    final req = _filtered[i];
+                    final empId = req['employee_id']?.toString() ?? '';
+                    final empData = _empMap[empId];
+                    final empName = empData?['name'] as String? ??
+                        (req['employee_name'] as String? ??
+                            empId.substring(0, empId.length.clamp(0, 8)));
+                    final dept = empData?['department'] as String? ?? '';
+                    final status = req['status'] as String? ?? 'قيد الانتظار';
+                    final amount = (req['amount'] as num?)?.toDouble() ?? 0;
+                    final remaining = (req['remaining_amount'] as num?)?.toDouble() ?? amount;
+                    final monthly = (req['monthly_deduction'] as num?)?.toDouble() ?? 0;
+                    final reason = req['reason'] as String? ?? '';
+                    final submittedAt = req['submitted_at'] as String?;
+
+                    String fmtDate(String d) {
+                      try {
+                        return intl.DateFormat('dd/MM/yyyy')
+                            .format(DateTime.parse(d));
+                      } catch (_) {
+                        return d;
+                      }
+                    }
+
+                    return Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: _surface,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                            color: _statusColor(status).withValues(alpha: 0.3)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(empName,
+                                        style: const TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 14)),
+                                    if (dept.isNotEmpty)
+                                      Text(dept,
+                                          style: const TextStyle(
+                                              color: Color(0x66FFFFFF),
+                                              fontSize: 11)),
+                                  ],
                                 ),
-                                const SizedBox(width: 8),
-                                _actionBtn(
-                                  label: 'موافقة',
-                                  color: _green,
-                                  icon: Icons.check_rounded,
-                                  onTap: () => _updateStatus(
-                                      req['id'].toString(), 'موافق عليها'),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: _statusColor(status)
+                                      .withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(
+                                      color: _statusColor(status)
+                                          .withValues(alpha: 0.4)),
                                 ),
-                              ],
-                            ),
+                                child: Text(status,
+                                    style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                        color: _statusColor(status))),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          Wrap(
+                            spacing: 12,
+                            runSpacing: 6,
+                            children: [
+                              _infoChip(Icons.payments_outlined,
+                                  '${amount.toStringAsFixed(0)} ريال'),
+                              _infoChip(Icons.account_balance_wallet_outlined,
+                                  'المتبقي: ${remaining.toStringAsFixed(0)}'),
+                              _infoChip(Icons.calendar_month_outlined,
+                                  'شهري: ${monthly.toStringAsFixed(0)}'),
+                              if (submittedAt != null)
+                                _infoChip(Icons.schedule_outlined,
+                                    fmtDate(submittedAt)),
+                            ],
+                          ),
+                          if (reason.isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            Text(reason,
+                                style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Color(0x99FFFFFF),
+                                    height: 1.5)),
+                          ],
+                          if (status == 'قيد المراجعة') ...[
+                            const SizedBox(height: 12),
+                            isMobile
+                                ? Wrap(
+                                    alignment: WrapAlignment.end,
+                                    spacing: 8,
+                                    runSpacing: 8,
+                                    children: [
+                                      _actionBtn(
+                                        label: 'رفض',
+                                        color: _red,
+                                        icon: Icons.close_rounded,
+                                        onTap: () => _updateStatus(
+                                            req['id'].toString(), 'مرفوضة'),
+                                      ),
+                                      _actionBtn(
+                                        label: 'موافقة',
+                                        color: _green,
+                                        icon: Icons.check_rounded,
+                                        onTap: () => _updateStatus(
+                                            req['id'].toString(),
+                                            'موافق عليها'),
+                                      ),
+                                    ],
+                                  )
+                                : Row(
+                                    mainAxisAlignment: MainAxisAlignment.end,
+                                    children: [
+                                      _actionBtn(
+                                        label: 'رفض',
+                                        color: _red,
+                                        icon: Icons.close_rounded,
+                                        onTap: () => _updateStatus(
+                                            req['id'].toString(), 'مرفوضة'),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      _actionBtn(
+                                        label: 'موافقة',
+                                        color: _green,
+                                        icon: Icons.check_rounded,
+                                        onTap: () => _updateStatus(
+                                            req['id'].toString(),
+                                            'موافق عليها'),
+                                      ),
+                                    ],
+                                  ),
                           ],
                         ],
                       ),
@@ -442,8 +860,8 @@ class _EmployeesTabState extends State<_EmployeesTab> {
   bool _loading = true;
   String _search = '';
 
-  static const _indigo = Color(0xFF6366F1);
-  static const _surface = Color(0xFF12172A);
+  static const _indigo = Color(0xFF06B6D4);
+  static const _surface = Color(0xFF0D2731);
 
   @override
   void initState() {
@@ -485,6 +903,8 @@ class _EmployeesTabState extends State<_EmployeesTab> {
       return const Center(
           child: CircularProgressIndicator(color: _indigo));
     }
+
+    final isMobile = MediaQuery.of(context).size.width < 700;
 
     return Column(
       children: [
@@ -562,6 +982,67 @@ class _EmployeesTabState extends State<_EmployeesTab> {
                     final phone = emp['phone'] as String? ?? '';
                     final clinicNum = emp['clinic_number'];
 
+                    final avatar = Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        color: _indigo.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(11),
+                      ),
+                      child: Center(
+                        child: Text(
+                          name.isNotEmpty ? name[0] : '?',
+                          style: const TextStyle(
+                              color: _indigo,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 17),
+                        ),
+                      ),
+                    );
+                    final nameColumn = Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(name,
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14)),
+                        const SizedBox(height: 2),
+                        Text('$dept  •  $shift',
+                            style: const TextStyle(
+                                color: Color(0x99FFFFFF),
+                                fontSize: 11)),
+                        if (phone.isNotEmpty)
+                          Text(phone,
+                              style: const TextStyle(
+                                  color: Color(0x66FFFFFF),
+                                  fontSize: 11)),
+                      ],
+                    );
+                    final statusBadge = Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: status == 'نشط'
+                            ? const Color(0xFF34D399)
+                                .withValues(alpha: 0.12)
+                            : Colors.red.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(status,
+                          style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: status == 'نشط'
+                                  ? const Color(0xFF34D399)
+                                  : Colors.redAccent)),
+                    );
+                    final clinicText = clinicNum != null
+                        ? Text('عيادة $clinicNum',
+                            style: const TextStyle(
+                                fontSize: 10, color: Color(0x66FFFFFF)))
+                        : null;
+
                     return Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
@@ -570,82 +1051,49 @@ class _EmployeesTabState extends State<_EmployeesTab> {
                         border: Border.all(
                             color: const Color(0x14FFFFFF)),
                       ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 42,
-                            height: 42,
-                            decoration: BoxDecoration(
-                              color: _indigo.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(11),
-                            ),
-                            child: Center(
-                              child: Text(
-                                name.isNotEmpty ? name[0] : '?',
-                                style: const TextStyle(
-                                    color: _indigo,
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 17),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
+                      child: isMobile
+                          ? Column(
                               crossAxisAlignment:
                                   CrossAxisAlignment.start,
                               children: [
-                                Text(name,
-                                    style: const TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 14)),
-                                const SizedBox(height: 2),
-                                Text('$dept  •  $shift',
-                                    style: const TextStyle(
-                                        color: Color(0x99FFFFFF),
-                                        fontSize: 11)),
-                                if (phone.isNotEmpty)
-                                  Text(phone,
-                                      style: const TextStyle(
-                                          color: Color(0x66FFFFFF),
-                                          fontSize: 11)),
+                                Row(
+                                  children: [
+                                    avatar,
+                                    const SizedBox(width: 12),
+                                    Expanded(child: nameColumn),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 4,
+                                  crossAxisAlignment:
+                                      WrapCrossAlignment.center,
+                                  children: [
+                                    statusBadge,
+                                    ?clinicText,
+                                  ],
+                                ),
+                              ],
+                            )
+                          : Row(
+                              children: [
+                                avatar,
+                                const SizedBox(width: 12),
+                                Expanded(child: nameColumn),
+                                Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.end,
+                                  children: [
+                                    statusBadge,
+                                    if (clinicText != null) ...[
+                                      const SizedBox(height: 4),
+                                      clinicText,
+                                    ],
+                                  ],
+                                ),
                               ],
                             ),
-                          ),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 3),
-                                decoration: BoxDecoration(
-                                  color: status == 'نشط'
-                                      ? const Color(0xFF34D399)
-                                          .withValues(alpha: 0.12)
-                                      : Colors.red.withValues(alpha: 0.12),
-                                  borderRadius:
-                                      BorderRadius.circular(12),
-                                ),
-                                child: Text(status,
-                                    style: TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w600,
-                                        color: status == 'نشط'
-                                            ? const Color(0xFF34D399)
-                                            : Colors.redAccent)),
-                              ),
-                              if (clinicNum != null) ...[
-                                const SizedBox(height: 4),
-                                Text('عيادة $clinicNum',
-                                    style: const TextStyle(
-                                        fontSize: 10,
-                                        color: Color(0x66FFFFFF))),
-                              ],
-                            ],
-                          ),
-                        ],
-                      ),
                     );
                   },
                 ),
@@ -667,10 +1115,10 @@ class _ShiftsTabState extends State<_ShiftsTab> {
   bool _loading = true;
   String _search = '';
 
-  static const _indigo = Color(0xFF6366F1);
-  static const _surface = Color(0xFF12172A);
+  static const _indigo = Color(0xFF06B6D4);
+  static const _surface = Color(0xFF0D2731);
   static const _green = Color(0xFF34D399);
-  static const _red = Color(0xFFEF4444);
+  static const _red = Color(0xFFF87171);
 
   static const _shiftOptions = [
     'صباحي',
@@ -863,6 +1311,8 @@ class _ShiftsTabState extends State<_ShiftsTab> {
           child: CircularProgressIndicator(color: _indigo));
     }
 
+    final isMobile = MediaQuery.of(context).size.width < 700;
+
     return Column(
       children: [
         Padding(
@@ -928,6 +1378,65 @@ class _ShiftsTabState extends State<_ShiftsTab> {
                     final dept = emp['department'] as String? ?? '—';
                     final shift = emp['shift'] as String? ?? '—';
 
+                    final avatar = Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: _indigo.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Center(
+                        child: Text(
+                          name.isNotEmpty ? name[0] : '?',
+                          style: const TextStyle(
+                              color: _indigo,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 16),
+                        ),
+                      ),
+                    );
+                    final nameColumn = Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(name,
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 13)),
+                        const SizedBox(height: 2),
+                        Text(dept,
+                            style: const TextStyle(
+                                color: Color(0x66FFFFFF),
+                                fontSize: 11)),
+                      ],
+                    );
+                    final shiftButton = GestureDetector(
+                      onTap: () => _showEditSheet(emp),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: _indigo.withValues(alpha: 0.10),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                              color: _indigo.withValues(alpha: 0.3)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(shift,
+                                style: const TextStyle(
+                                    color: _indigo,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600)),
+                            const SizedBox(width: 5),
+                            const Icon(Icons.edit_outlined,
+                                size: 13, color: _indigo),
+                          ],
+                        ),
+                      ),
+                    );
+
                     return Container(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 14, vertical: 12),
@@ -937,76 +1446,33 @@ class _ShiftsTabState extends State<_ShiftsTab> {
                         border: Border.all(
                             color: const Color(0x14FFFFFF)),
                       ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              color: _indigo.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Center(
-                              child: Text(
-                                name.isNotEmpty ? name[0] : '?',
-                                style: const TextStyle(
-                                    color: _indigo,
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 16),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
+                      child: isMobile
+                          ? Column(
                               crossAxisAlignment:
                                   CrossAxisAlignment.start,
                               children: [
-                                Text(name,
-                                    style: const TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 13)),
-                                const SizedBox(height: 2),
-                                Text(dept,
-                                    style: const TextStyle(
-                                        color: Color(0x66FFFFFF),
-                                        fontSize: 11)),
+                                Row(
+                                  children: [
+                                    avatar,
+                                    const SizedBox(width: 12),
+                                    Expanded(child: nameColumn),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: shiftButton,
+                                ),
+                              ],
+                            )
+                          : Row(
+                              children: [
+                                avatar,
+                                const SizedBox(width: 12),
+                                Expanded(child: nameColumn),
+                                shiftButton,
                               ],
                             ),
-                          ),
-                          GestureDetector(
-                            onTap: () => _showEditSheet(emp),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 10, vertical: 6),
-                              decoration: BoxDecoration(
-                                color:
-                                    _indigo.withValues(alpha: 0.10),
-                                borderRadius:
-                                    BorderRadius.circular(8),
-                                border: Border.all(
-                                    color: _indigo
-                                        .withValues(alpha: 0.3)),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(shift,
-                                      style: const TextStyle(
-                                          color: _indigo,
-                                          fontSize: 12,
-                                          fontWeight:
-                                              FontWeight.w600)),
-                                  const SizedBox(width: 5),
-                                  const Icon(Icons.edit_outlined,
-                                      size: 13, color: _indigo),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
                     );
                   },
                 ),

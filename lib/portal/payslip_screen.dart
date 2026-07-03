@@ -15,7 +15,7 @@ class _PortalPayslipScreenState extends State<PortalPayslipScreen> {
   int? _selectedIdx;
   bool _showDetail = false;
 
-  static const _indigo = Color(0xFF6366F1);
+  static const _indigo = Color(0xFF06B6D4);
   static const _months = [
     '', 'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
     'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر',
@@ -257,7 +257,7 @@ class _PayslipDetail extends StatelessWidget {
     '', 'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
     'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر',
   ];
-  static const _indigo = Color(0xFF6366F1);
+  static const _indigo = Color(0xFF06B6D4);
   static const _green = Color(0xFF34D399);
   static const _red = Color(0xFFF87171);
 
@@ -328,7 +328,7 @@ class _PayslipDetail extends StatelessWidget {
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                  colors: [_indigo, Color(0xFF8B5CF6)]),
+                  colors: [_indigo, Color(0xFF0EA5E9)]),
               borderRadius: BorderRadius.circular(14),
             ),
             child: Column(

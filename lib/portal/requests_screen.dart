@@ -16,7 +16,7 @@ class _PortalRequestsScreenState extends State<PortalRequestsScreen> {
   bool _loading = true;
   bool _sending = false;
 
-  static const _indigo = Color(0xFF6366F1);
+  static const _indigo = Color(0xFF06B6D4);
   static const _bg = Color(0x0AFFFFFF);
   static const _border = Color(0x14FFFFFF);
 
@@ -106,7 +106,7 @@ class _PortalRequestsScreenState extends State<PortalRequestsScreen> {
       builder: (ctx) => Directionality(
         textDirection: TextDirection.rtl,
         child: AlertDialog(
-          backgroundColor: const Color(0xFF111827),
+          backgroundColor: const Color(0xFF061A22),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: const Text('طلب جديد',
               style: TextStyle(color: Colors.white, fontSize: 17, fontFamily: 'Tajawal')),
@@ -182,9 +182,10 @@ class _PortalRequestsScreenState extends State<PortalRequestsScreen> {
   Widget build(BuildContext context) {
     final xpDays = _cooldownDaysLeft('شهادة خبرة');
     final salDays = _cooldownDaysLeft('شهادة راتب');
+    final isMobile = MediaQuery.of(context).size.width < 700;
 
     return Padding(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(isMobile ? 14 : 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -211,7 +212,7 @@ class _PortalRequestsScreenState extends State<PortalRequestsScreen> {
               _ReqBtn(
                 icon: Icons.receipt_outlined,
                 label: 'شهادة راتب',
-                color: const Color(0xFF8B5CF6),
+                color: const Color(0xFF0EA5E9),
                 cooldownDays: salDays,
                 onTap: (_sending || salDays > 0) ? null : () => _submitRequest('شهادة راتب'),
               ),
@@ -307,9 +308,23 @@ class _PortalRequestsScreenState extends State<PortalRequestsScreen> {
                             dateStr = submittedAt.length >= 10 ? submittedAt.substring(0, 10) : submittedAt;
                           }
                           final sc = _statusColor(status);
+                          final typeText = Text(type,
+                              style: const TextStyle(
+                                  color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14));
+                          final statusBadge = Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: sc.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: sc.withValues(alpha: 0.3)),
+                            ),
+                            child: Text(status,
+                                style: TextStyle(
+                                    color: sc, fontSize: 12, fontWeight: FontWeight.w600)),
+                          );
 
                           return Container(
-                            padding: const EdgeInsets.all(14),
+                            padding: EdgeInsets.all(isMobile ? 10 : 14),
                             decoration: BoxDecoration(
                               color: _bg,
                               borderRadius: BorderRadius.circular(14),
@@ -318,26 +333,21 @@ class _PortalRequestsScreenState extends State<PortalRequestsScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: Text(type,
-                                          style: const TextStyle(
-                                              color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14)),
-                                    ),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                      decoration: BoxDecoration(
-                                        color: sc.withValues(alpha: 0.15),
-                                        borderRadius: BorderRadius.circular(20),
-                                        border: Border.all(color: sc.withValues(alpha: 0.3)),
+                                isMobile
+                                    ? Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          typeText,
+                                          const SizedBox(height: 6),
+                                          statusBadge,
+                                        ],
+                                      )
+                                    : Row(
+                                        children: [
+                                          Expanded(child: typeText),
+                                          statusBadge,
+                                        ],
                                       ),
-                                      child: Text(status,
-                                          style: TextStyle(
-                                              color: sc, fontSize: 12, fontWeight: FontWeight.w600)),
-                                    ),
-                                  ],
-                                ),
                                 if (details != null && details.isNotEmpty) ...[
                                   const SizedBox(height: 6),
                                   Text(details,
@@ -408,6 +418,7 @@ class _ReqBtn extends StatelessWidget {
   Widget build(BuildContext context) {
     final disabled = onTap == null;
     final activeColor = disabled ? const Color(0xFF64748B) : color;
+    final isMobile = MediaQuery.of(context).size.width < 700;
 
     return Material(
       color: Colors.transparent,
@@ -415,7 +426,8 @@ class _ReqBtn extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: EdgeInsets.symmetric(
+              horizontal: isMobile ? 12 : 16, vertical: isMobile ? 10 : 12),
           decoration: BoxDecoration(
             color: activeColor.withValues(alpha: disabled ? 0.05 : 0.1),
             borderRadius: BorderRadius.circular(12),
@@ -429,13 +441,13 @@ class _ReqBtn extends StatelessWidget {
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(icon, color: activeColor, size: 18),
+                  Icon(icon, color: activeColor, size: isMobile ? 16 : 18),
                   const SizedBox(width: 8),
                   Text(label,
                       style: TextStyle(
                           color: activeColor,
                           fontWeight: FontWeight.w600,
-                          fontSize: 13)),
+                          fontSize: isMobile ? 12 : 13)),
                 ],
               ),
               if (disabled && cooldownDays > 0)

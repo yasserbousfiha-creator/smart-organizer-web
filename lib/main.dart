@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'portal/supabase_config.dart';
 import 'portal/login_screen.dart';
 import 'portal/home_screen.dart';
+import 'theme/app_colors.dart';
 
 String? _portalInitError;
 bool _supabaseReady = false;
@@ -24,15 +25,74 @@ void main() async {
   }
 }
 
-const Color kBg = Color(0xFF070D1F);
-const Color kBlue = Color(0xFF2563EB);
-const Color kPurple = Color(0xFF7C3AED);
-const Color kCyan = Color(0xFF06B6D4);
-const LinearGradient kMainGradient = LinearGradient(
-  colors: [kBlue, kPurple],
-  begin: Alignment.topLeft,
-  end: Alignment.bottomRight,
-);
+const double kMobileBreakpoint = 700;
+const Color kBg = AppColors.bgDark;
+const Color kBlue = AppColors.secondary;
+const Color kPurple = AppColors.primary;
+const Color kCyan = AppColors.primaryLight;
+const LinearGradient kMainGradient = AppColors.mainGradient;
+
+// ── Reveal-on-scroll wrapper ────────────────────────────────────
+/// يُظهر [child] بحركة ظهور تدريجي (تلاشي + انزلاق للأعلى) في أول مرة
+/// يدخل فيها ضمن نطاق الرؤية أثناء التمرير، ثم يبقى ظاهرًا.
+class _RevealOnScroll extends StatefulWidget {
+  final Widget child;
+  final double triggerOffset;
+  const _RevealOnScroll({required this.child, this.triggerOffset = 80});
+
+  @override
+  State<_RevealOnScroll> createState() => _RevealOnScrollState();
+}
+
+class _RevealOnScrollState extends State<_RevealOnScroll> {
+  bool _visible = false;
+  ScrollPosition? _position;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final newPosition = Scrollable.maybeOf(context)?.position;
+    if (newPosition != _position) {
+      _position?.removeListener(_checkVisibility);
+      _position = newPosition;
+      _position?.addListener(_checkVisibility);
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) => _checkVisibility());
+  }
+
+  void _checkVisibility() {
+    if (_visible || !mounted) return;
+    final renderObject = context.findRenderObject();
+    if (renderObject is! RenderBox || !renderObject.attached) return;
+    final viewportHeight = MediaQuery.of(context).size.height;
+    final position = renderObject.localToGlobal(Offset.zero);
+    if (position.dy < viewportHeight - widget.triggerOffset) {
+      setState(() => _visible = true);
+      _position?.removeListener(_checkVisibility);
+    }
+  }
+
+  @override
+  void dispose() {
+    _position?.removeListener(_checkVisibility);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedOpacity(
+      opacity: _visible ? 1 : 0,
+      duration: const Duration(milliseconds: 700),
+      curve: Curves.easeOut,
+      child: AnimatedSlide(
+        offset: _visible ? Offset.zero : const Offset(0, 0.06),
+        duration: const Duration(milliseconds: 700),
+        curve: Curves.easeOut,
+        child: widget.child,
+      ),
+    );
+  }
+}
 
 // ── Dashed Circle Painter ─────────────────────────────────────
 class _DashedCirclePainter extends CustomPainter {
@@ -169,13 +229,13 @@ class _GridIconWidgetState extends State<GridIconWidget>
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: const LinearGradient(
-                      colors: [Color(0xFF00D4FF), Color(0xFF0060FF)],
+                      colors: [Color(0xFF22D3EE), Color(0xFF0E7490)],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF00C8FF).withValues(alpha: 0.65),
+                        color: const Color(0xFF67E8F9).withValues(alpha: 0.65),
                         blurRadius: sparkSz * 0.5,
                       ),
                     ],
@@ -205,18 +265,18 @@ class _GridIconWidgetState extends State<GridIconWidget>
     switch (type) {
       case 'bright':
         gradient = const LinearGradient(
-          colors: [Color(0xFF0096FF), Color(0xFF00C8FF)],
+          colors: [Color(0xFF06B6D4), Color(0xFF67E8F9)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         );
-        border = const Color(0xFF00D4FF);
+        border = const Color(0xFF22D3EE);
         shadows = [
           BoxShadow(
-            color: const Color(0xFF00C4FF).withValues(alpha: 0.55),
+            color: const Color(0xFF67E8F9).withValues(alpha: 0.55),
             blurRadius: sz * 0.16,
           ),
           BoxShadow(
-            color: const Color(0xFF0096FF).withValues(alpha: 0.2),
+            color: const Color(0xFF06B6D4).withValues(alpha: 0.2),
             blurRadius: sz * 0.32,
           ),
         ];
@@ -224,22 +284,22 @@ class _GridIconWidgetState extends State<GridIconWidget>
       case 'active':
         gradient = LinearGradient(
           colors: [
-            const Color(0xFF0096FF).withValues(alpha: 0.3),
-            const Color(0xFF00C8FF).withValues(alpha: 0.15),
+            const Color(0xFF06B6D4).withValues(alpha: 0.3),
+            const Color(0xFF67E8F9).withValues(alpha: 0.15),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         );
-        border = const Color(0xFF00B4FF).withValues(alpha: 0.5);
+        border = const Color(0xFF22D3EE).withValues(alpha: 0.5);
         break;
       default:
         gradient = LinearGradient(
           colors: [
-            const Color(0xFF008CFF).withValues(alpha: 0.08),
-            const Color(0xFF008CFF).withValues(alpha: 0.08),
+            const Color(0xFF0E7490).withValues(alpha: 0.08),
+            const Color(0xFF0E7490).withValues(alpha: 0.08),
           ],
         );
-        border = const Color(0xFF00A0FF).withValues(alpha: 0.14);
+        border = const Color(0xFF06B6D4).withValues(alpha: 0.14);
     }
 
     return Container(
@@ -344,7 +404,7 @@ class _CircleLogoWidgetState extends State<CircleLogoWidget>
                     shape: BoxShape.circle,
                     gradient: RadialGradient(
                       colors: [
-                        const Color(0xFF00A0FF).withValues(alpha: 0.18),
+                        const Color(0xFF06B6D4).withValues(alpha: 0.18),
                         Colors.transparent,
                       ],
                       stops: const [0.6, 0.75],
@@ -366,7 +426,7 @@ class _CircleLogoWidgetState extends State<CircleLogoWidget>
                 height: s * 1.05,
                 child: CustomPaint(
                   painter: _DashedCirclePainter(
-                    color: const Color(0xFF00B4FF).withValues(alpha: 0.22),
+                    color: const Color(0xFF22D3EE).withValues(alpha: 0.22),
                     strokeWidth: ringW,
                   ),
                 ),
@@ -380,12 +440,12 @@ class _CircleLogoWidgetState extends State<CircleLogoWidget>
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: const Color(0xFF00A0FF).withValues(alpha: 0.18),
+                  color: const Color(0xFF06B6D4).withValues(alpha: 0.18),
                   width: ringW * 1.5,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF00A0FF).withValues(alpha: 0.15),
+                    color: const Color(0xFF06B6D4).withValues(alpha: 0.15),
                     blurRadius: s * 0.12,
                   ),
                 ],
@@ -415,7 +475,7 @@ class _CircleLogoWidgetState extends State<CircleLogoWidget>
                     offset: Offset(0, s * 0.12),
                   ),
                   BoxShadow(
-                    color: const Color(0xFF008CFF).withValues(alpha: 0.09),
+                    color: const Color(0xFF0E7490).withValues(alpha: 0.09),
                     spreadRadius: 1,
                     blurRadius: 0,
                   ),
@@ -435,7 +495,7 @@ class _CircleLogoWidgetState extends State<CircleLogoWidget>
                           shape: BoxShape.circle,
                           gradient: RadialGradient(
                             colors: [
-                              const Color(0xFF00A0FF).withValues(alpha: 0.12),
+                              const Color(0xFF06B6D4).withValues(alpha: 0.12),
                               Colors.transparent,
                             ],
                           ),
@@ -452,7 +512,7 @@ class _CircleLogoWidgetState extends State<CircleLogoWidget>
                           shape: BoxShape.circle,
                           gradient: RadialGradient(
                             colors: [
-                              const Color(0xFF00C8FF).withValues(alpha: 0.07),
+                              const Color(0xFF67E8F9).withValues(alpha: 0.07),
                               Colors.transparent,
                             ],
                           ),
@@ -468,7 +528,7 @@ class _CircleLogoWidgetState extends State<CircleLogoWidget>
                           SizedBox(height: s * 0.055),
                           ShaderMask(
                             shaderCallback: (b) => const LinearGradient(
-                              colors: [Colors.white, Color(0xFF80D8FF)],
+                              colors: [Colors.white, Color(0xFF67E8F9)],
                               stops: [0.3, 1.0],
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
@@ -492,7 +552,7 @@ class _CircleLogoWidgetState extends State<CircleLogoWidget>
                               fontSize: s * 0.036,
                               letterSpacing: 2,
                               color: const Color(
-                                0xFF64B4FF,
+                                0xFF67E8F9,
                               ).withValues(alpha: 0.5),
                             ),
                           ),
@@ -523,13 +583,13 @@ class _CircleLogoWidgetState extends State<CircleLogoWidget>
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: const LinearGradient(
-                    colors: [Color(0xFF00D4FF), Color(0xFF0060FF)],
+                    colors: [Color(0xFF22D3EE), Color(0xFF0E7490)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF00D2FF).withValues(alpha: 0.7),
+                      color: const Color(0xFF22D3EE).withValues(alpha: 0.7),
                       blurRadius: s * 0.05,
                     ),
                   ],
@@ -561,12 +621,12 @@ class SmallLogoWidget extends StatelessWidget {
           end: Alignment.bottomRight,
         ),
         border: Border.all(
-          color: const Color(0xFF00A0FF).withValues(alpha: 0.4),
+          color: const Color(0xFF06B6D4).withValues(alpha: 0.4),
           width: 1.5,
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF0060FF).withValues(alpha: 0.4),
+            color: const Color(0xFF0E7490).withValues(alpha: 0.4),
             blurRadius: size * 0.3,
           ),
         ],
@@ -591,6 +651,19 @@ class SmartOrganizerApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         scaffoldBackgroundColor: kBg,
+        colorScheme: ColorScheme.dark(
+          primary: AppColors.primary,
+          secondary: AppColors.secondary,
+          surface: AppColors.surface,
+          error: AppColors.danger,
+        ),
+        cardTheme: CardThemeData(
+          color: AppColors.surface,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+        ),
         textTheme: ThemeData.dark().textTheme
             .apply(fontFamily: 'Tajawal', bodyColor: Colors.white),
       ),
@@ -614,6 +687,18 @@ class _LandingPageState extends State<LandingPage>
   late AnimationController _heroController;
   late Animation<double> _heroFade;
   late Animation<Offset> _heroSlide;
+  final GlobalKey _supportKey = GlobalKey();
+
+  void _scrollToSupport() {
+    final ctx = _supportKey.currentContext;
+    if (ctx != null) {
+      Scrollable.ensureVisible(
+        ctx,
+        duration: const Duration(milliseconds: 600),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
 
   @override
   void initState() {
@@ -659,11 +744,17 @@ class _LandingPageState extends State<LandingPage>
                     child: _buildHeroSection(context),
                   ),
                 ),
-                _buildFeaturesSection(),
-                _buildScreenshotsSection(context),
-                _buildSupportSection(),
-                _buildEmployeePortalSection(),
-                _buildFooter(),
+                _RevealOnScroll(child: _buildFeaturesSection()),
+                _RevealOnScroll(child: _buildScreenshotsSection(context)),
+                KeyedSubtree(
+                  key: _supportKey,
+                  child: _RevealOnScroll(child: _buildSupportSection()),
+                ),
+                _RevealOnScroll(child: _buildEmployeePortalSection(context)),
+                _RevealOnScroll(
+                  triggerOffset: 40,
+                  child: _buildFooter(),
+                ),
               ],
             ),
           ),
@@ -722,7 +813,7 @@ class _LandingPageState extends State<LandingPage>
   }
 
   Widget _buildNavBar(BuildContext context) {
-    final isMobile = MediaQuery.of(context).size.width < 700;
+    final isMobile = MediaQuery.of(context).size.width < kMobileBreakpoint;
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: isMobile ? 20 : 48,
@@ -749,10 +840,15 @@ class _LandingPageState extends State<LandingPage>
             ),
           ),
           const Spacer(),
-          if (!isMobile) ...[
+          if (isMobile)
+            IconButton(
+              onPressed: () => _showMobileMenu(context),
+              icon: const Icon(Icons.menu_rounded, color: Colors.white),
+            )
+          else ...[
             _navLink('التطبيق', () {}),
             const SizedBox(width: 4),
-            _navLink('الدعم الفني', () {}),
+            _navLink('الدعم الفني', _scrollToSupport),
             const SizedBox(width: 16),
           ],
           _employeePortalButton(),
@@ -772,8 +868,69 @@ class _LandingPageState extends State<LandingPage>
     );
   }
 
+  void _showMobileMenu(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 8),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.apps_rounded, color: Colors.white70),
+                  title: const Text(
+                    'التطبيق',
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                  ),
+                  onTap: () => Navigator.pop(sheetContext),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.support_agent_rounded, color: Colors.white70),
+                  title: const Text(
+                    'الدعم الفني',
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                  ),
+                  onTap: () {
+                    Navigator.pop(sheetContext);
+                    _scrollToSupport();
+                  },
+                ),
+                ListTile(
+                  leading: Icon(Icons.lock_person_rounded, color: kPurple),
+                  title: const Text(
+                    'بوابة الموظفين',
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                  ),
+                  onTap: () {
+                    Navigator.pop(sheetContext);
+                    _openPortal(context);
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildHeroSection(BuildContext context) {
-    final isMobile = MediaQuery.of(context).size.width < 900;
+    final isMobile = MediaQuery.of(context).size.width < kMobileBreakpoint;
     return Container(
       width: double.infinity,
       padding: EdgeInsets.symmetric(
@@ -921,7 +1078,7 @@ class _LandingPageState extends State<LandingPage>
         'icon': Icons.lock_rounded,
         'title': 'خصوصية تامة',
         'desc': 'وصول مؤمَّن بكلمة مرور خاصة لحماية بياناتك الشخصية.',
-        'color': const Color(0xFF10B981),
+        'color': AppColors.info,
       },
     ];
 
@@ -1007,7 +1164,7 @@ class _LandingPageState extends State<LandingPage>
   }
 
   Widget _buildScreenshotsSection(BuildContext context) {
-    final isMobile = MediaQuery.of(context).size.width < 700;
+    final isMobile = MediaQuery.of(context).size.width < kMobileBreakpoint;
     final screenshots = [
       'assets/screenshots/sc1.jpg',
       'assets/screenshots/sc2.jpg',
@@ -1023,7 +1180,7 @@ class _LandingPageState extends State<LandingPage>
       padding: const EdgeInsets.symmetric(vertical: 100),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
-          colors: [kBg, Color(0xFF0D1A30), kBg],
+          colors: [kBg, AppColors.surface, kBg],
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
         ),
@@ -1079,7 +1236,7 @@ class _LandingPageState extends State<LandingPage>
           imagePath,
           fit: BoxFit.cover,
           errorBuilder: (_, error, stack) => Container(
-            color: const Color(0xFF0D1A30),
+            color: AppColors.surface,
             child: Icon(
               Icons.phone_android,
               color: Colors.white.withValues(alpha: 0.2),
@@ -1257,143 +1414,149 @@ class _LandingPageState extends State<LandingPage>
     );
   }
 
-  Widget _buildEmployeePortalSection() {
+  Widget _buildEmployeePortalSection(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < kMobileBreakpoint;
+
+    final badge = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+          decoration: BoxDecoration(
+            color: kPurple.withValues(alpha: 0.18),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: kPurple.withValues(alpha: 0.35)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.lock_person_rounded,
+                size: 13,
+                color: kPurple.withValues(alpha: 0.9),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                'للموظفين فقط',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: kPurple.withValues(alpha: 0.9),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+
+    final textColumn = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        badge,
+        const SizedBox(height: 18),
+        ShaderMask(
+          shaderCallback: (b) =>
+              LinearGradient(colors: [kPurple, kBlue]).createShader(b),
+          child: Text(
+            'بوابة الموظفين',
+            style: TextStyle(fontFamily: 'Tajawal',
+              fontSize: isMobile ? 26 : 30,
+              fontWeight: FontWeight.w900,
+              color: Colors.white,
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        Text(
+          'تحقق من إجازاتك، راتبك، سلفك، وبياناتك الشخصية\nمن أي مكان وفي أي وقت.',
+          style: TextStyle(
+            fontSize: 15,
+            color: Colors.white.withValues(alpha: 0.55),
+            height: 1.7,
+          ),
+        ),
+      ],
+    );
+
+    final loginButton = GestureDetector(
+      onTap: () => _openPortal(context),
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: Container(
+          width: isMobile ? double.infinity : null,
+          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 18),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [kPurple, kBlue],
+              begin: Alignment.topRight,
+              end: Alignment.bottomLeft,
+            ),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: kPurple.withValues(alpha: 0.45),
+                blurRadius: 24,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.login_rounded, color: Colors.white, size: 20),
+              const SizedBox(width: 10),
+              Text(
+                'تسجيل الدخول',
+                style: TextStyle(fontFamily: 'Tajawal',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
     return Container(
       width: double.infinity,
-      margin: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
-      padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 40),
+      margin: EdgeInsets.symmetric(
+        horizontal: isMobile ? 20 : 40,
+        vertical: 20,
+      ),
+      padding: EdgeInsets.symmetric(
+        vertical: isMobile ? 32 : 48,
+        horizontal: isMobile ? 24 : 40,
+      ),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(28),
         gradient: LinearGradient(
-          colors: [
-            kPurple.withValues(alpha: 0.12),
-            kBlue.withValues(alpha: 0.12),
-          ],
+          colors: [kPurple.withValues(alpha: 0.12), kBlue.withValues(alpha: 0.12)],
           begin: Alignment.topRight,
           end: Alignment.bottomLeft,
         ),
         border: Border.all(color: kPurple.withValues(alpha: 0.25)),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          // النص
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      child: isMobile
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 5,
-                      ),
-                      decoration: BoxDecoration(
-                        color: kPurple.withValues(alpha: 0.18),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: kPurple.withValues(alpha: 0.35),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.lock_person_rounded,
-                            size: 13,
-                            color: kPurple.withValues(alpha: 0.9),
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            'للموظفين فقط',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: kPurple.withValues(alpha: 0.9),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 18),
-                ShaderMask(
-                  shaderCallback: (b) => const LinearGradient(
-                    colors: [Color(0xFF7C3AED), Color(0xFF60A5FA)],
-                  ).createShader(b),
-                  child: Text(
-                    'بوابة الموظفين',
-                    style: TextStyle(fontFamily: 'Tajawal',
-                      fontSize: 30,
-                      fontWeight: FontWeight.w900,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  'تحقق من إجازاتك، راتبك، سلفك، وبياناتك الشخصية\nمن أي مكان وفي أي وقت.',
-                  style: TextStyle(
-                    fontSize: 15,
-                    color: Colors.white.withValues(alpha: 0.55),
-                    height: 1.7,
-                  ),
-                ),
+                textColumn,
+                const SizedBox(height: 28),
+                loginButton,
+              ],
+            )
+          : Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(child: textColumn),
+                const SizedBox(width: 40),
+                loginButton,
               ],
             ),
-          ),
-          const SizedBox(width: 40),
-          // الزر
-          GestureDetector(
-            onTap: () => _openPortal(context),
-            child: MouseRegion(
-              cursor: SystemMouseCursors.click,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 32,
-                  vertical: 18,
-                ),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF7C3AED), Color(0xFF2563EB)],
-                    begin: Alignment.topRight,
-                    end: Alignment.bottomLeft,
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: kPurple.withValues(alpha: 0.45),
-                      blurRadius: 24,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.login_rounded,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 10),
-                    Text(
-                      'تسجيل الدخول',
-                      style: TextStyle(fontFamily: 'Tajawal',
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -1609,7 +1772,7 @@ class _LandingPageState extends State<LandingPage>
       builder: (ctx) => Directionality(
         textDirection: TextDirection.rtl,
         child: AlertDialog(
-          backgroundColor: const Color(0xFF0D1A30),
+          backgroundColor: AppColors.surface,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(24),
             side: BorderSide(color: Colors.white.withValues(alpha: 0.08)),

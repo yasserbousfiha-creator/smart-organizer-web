@@ -29,7 +29,7 @@ class _PortalLeavesScreenState extends State<PortalLeavesScreen> {
   bool _submitting = false;
   late final RealtimeChannel _channel;
 
-  static const _indigo = Color(0xFF6366F1);
+  static const _indigo = Color(0xFF06B6D4);
   static const _green = Color(0xFF34D399);
   static const _amber = Color(0xFFF59E0B);
 
@@ -130,7 +130,7 @@ class _PortalLeavesScreenState extends State<PortalLeavesScreen> {
         final proceed = await showDialog<bool>(
           context: context,
           builder: (c) => AlertDialog(
-            backgroundColor: const Color(0xFF1E2235),
+            backgroundColor: const Color(0xFF123540),
             title: const Text('تجاوز الرصيد', style: TextStyle(color: Colors.white)),
             content: Text(
               'تطلب $days يوم والرصيد المتبقي $remaining يوم فقط.\n'
@@ -174,7 +174,7 @@ class _PortalLeavesScreenState extends State<PortalLeavesScreen> {
   }
 
   void _snack(String msg) => ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(content: Text(msg), backgroundColor: const Color(0xFF1E2235)),
+    SnackBar(content: Text(msg), backgroundColor: const Color(0xFF123540)),
   );
 
   Color _statusColor(String s) {
@@ -188,6 +188,7 @@ class _PortalLeavesScreenState extends State<PortalLeavesScreen> {
     final quota = _balance?['annual_quota'] as int? ?? 21;
     final used = _balance?['used_days'] as int? ?? 0;
     final remaining = quota - used;
+    final isMobile = MediaQuery.of(context).size.width < 700;
 
     return Padding(
       padding: const EdgeInsets.all(20),
@@ -195,22 +196,22 @@ class _PortalLeavesScreenState extends State<PortalLeavesScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // ── Header ──────────────────────────────────
-          Row(
-            children: [
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('الإجازات',
-                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700,
-                            color: Colors.white)),
-                    SizedBox(height: 2),
-                    Text('إدارة إجازاتك وطلباتك',
-                        style: TextStyle(fontSize: 12, color: Color(0x99FFFFFF))),
-                  ],
-                ),
-              ),
-              FilledButton.icon(
+          if (isMobile) ...[
+            const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('الإجازات',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700,
+                        color: Colors.white)),
+                SizedBox(height: 2),
+                Text('إدارة إجازاتك وطلباتك',
+                    style: TextStyle(fontSize: 12, color: Color(0x99FFFFFF))),
+              ],
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
                 onPressed: () => setState(() => _showForm = !_showForm),
                 icon: Icon(_showForm ? Icons.close : Icons.add, size: 16),
                 label: Text(_showForm ? 'إلغاء' : 'طلب جديد',
@@ -221,20 +222,59 @@ class _PortalLeavesScreenState extends State<PortalLeavesScreen> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
               ),
-            ],
-          ),
+            ),
+          ] else
+            Row(
+              children: [
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('الإجازات',
+                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700,
+                              color: Colors.white)),
+                      SizedBox(height: 2),
+                      Text('إدارة إجازاتك وطلباتك',
+                          style: TextStyle(fontSize: 12, color: Color(0x99FFFFFF))),
+                    ],
+                  ),
+                ),
+                FilledButton.icon(
+                  onPressed: () => setState(() => _showForm = !_showForm),
+                  icon: Icon(_showForm ? Icons.close : Icons.add, size: 16),
+                  label: Text(_showForm ? 'إلغاء' : 'طلب جديد',
+                      style: const TextStyle(fontSize: 13)),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: _indigo,
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+              ],
+            ),
           const SizedBox(height: 16),
 
           // ── بطاقات الرصيد ────────────────────────────
-          Row(
-            children: [
-              _BalCard(label: 'الرصيد', value: quota, color: _indigo),
-              const SizedBox(width: 10),
-              _BalCard(label: 'مستخدم', value: used, color: _amber),
-              const SizedBox(width: 10),
-              _BalCard(label: 'متبقي', value: remaining, color: _green),
-            ],
-          ),
+          if (isMobile)
+            Column(
+              children: [
+                Row(children: [_BalCard(label: 'الرصيد', value: quota, color: _indigo)]),
+                const SizedBox(height: 10),
+                Row(children: [_BalCard(label: 'مستخدم', value: used, color: _amber)]),
+                const SizedBox(height: 10),
+                Row(children: [_BalCard(label: 'متبقي', value: remaining, color: _green)]),
+              ],
+            )
+          else
+            Row(
+              children: [
+                _BalCard(label: 'الرصيد', value: quota, color: _indigo),
+                const SizedBox(width: 10),
+                _BalCard(label: 'مستخدم', value: used, color: _amber),
+                const SizedBox(width: 10),
+                _BalCard(label: 'متبقي', value: remaining, color: _green),
+              ],
+            ),
           const SizedBox(height: 16),
 
           // ── نموذج الطلب (قابل للطي) ──────────────────
@@ -269,44 +309,77 @@ class _PortalLeavesScreenState extends State<PortalLeavesScreen> {
                           final r = _requests[i];
                           final status = r['status'] as String? ?? '';
                           final sc = _statusColor(status);
+                          final icon = Container(
+                            width: 40, height: 40,
+                            decoration: BoxDecoration(
+                              color: _indigo.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(Icons.beach_access_outlined,
+                                color: _indigo, size: 18),
+                          );
+                          final title = Text('${r['type']} — ${r['days_count']} أيام',
+                              style: const TextStyle(fontWeight: FontWeight.w600,
+                                  fontSize: 14, color: Colors.white));
+                          final dates = Text('${r['start_date']}  →  ${r['end_date']}',
+                              style: const TextStyle(fontSize: 12,
+                                  color: Color(0x99FFFFFF)));
+                          final reasonText = r['reason'] != null
+                              ? Text('السبب: ${r['reason']}',
+                                  style: const TextStyle(fontSize: 11,
+                                      color: Color(0x66FFFFFF)))
+                              : null;
+                          final badge = _StatusBadge(label: status, color: sc);
+
                           return _Card(
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Container(
-                                  width: 40, height: 40,
-                                  decoration: BoxDecoration(
-                                    color: _indigo.withValues(alpha: 0.12),
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  child: const Icon(Icons.beach_access_outlined,
-                                      color: _indigo, size: 18),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
+                            child: isMobile
+                                ? Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text('${r['type']} — ${r['days_count']} أيام',
-                                          style: const TextStyle(fontWeight: FontWeight.w600,
-                                              fontSize: 14, color: Colors.white)),
-                                      const SizedBox(height: 3),
-                                      Text('${r['start_date']}  →  ${r['end_date']}',
-                                          style: const TextStyle(fontSize: 12,
-                                              color: Color(0x99FFFFFF))),
-                                      if (r['reason'] != null) ...[
-                                        const SizedBox(height: 2),
-                                        Text('السبب: ${r['reason']}',
-                                            style: const TextStyle(fontSize: 11,
-                                                color: Color(0x66FFFFFF))),
+                                      Row(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          icon,
+                                          const SizedBox(width: 12),
+                                          Expanded(child: title),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Wrap(
+                                        spacing: 8,
+                                        runSpacing: 4,
+                                        crossAxisAlignment: WrapCrossAlignment.center,
+                                        children: [dates, badge],
+                                      ),
+                                      if (reasonText != null) ...[
+                                        const SizedBox(height: 4),
+                                        reasonText,
                                       ],
                                     ],
+                                  )
+                                : Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      icon,
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            title,
+                                            const SizedBox(height: 3),
+                                            dates,
+                                            if (reasonText != null) ...[
+                                              const SizedBox(height: 2),
+                                              reasonText,
+                                            ],
+                                          ],
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      badge,
+                                    ],
                                   ),
-                                ),
-                                const SizedBox(width: 8),
-                                _StatusBadge(label: status, color: sc),
-                              ],
-                            ),
                           );
                         },
                       ),
@@ -368,13 +441,14 @@ class _LeaveForm extends StatelessWidget {
   });
 
   static const _types = ['سنوية', 'مرضية', 'طارئة', 'بدون راتب', 'أخرى'];
-  static const _indigo = Color(0xFF6366F1);
+  static const _indigo = Color(0xFF06B6D4);
 
   String _fmt(DateTime? d) =>
       d == null ? 'اختر' : intl.DateFormat('yyyy-MM-dd').format(d);
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 700;
     return Align(
       alignment: Alignment.centerRight,
       child: ConstrainedBox(
@@ -392,100 +466,122 @@ class _LeaveForm extends StatelessWidget {
               const Text('طلب إجازة جديدة',
                   style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white)),
               const SizedBox(height: 10),
-              // نوع الإجازة + التواريخ في صف واحد
-              Row(
-                children: [
-                  Expanded(
-                    flex: 2,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _FieldLabel('نوع الإجازة'),
-                        _inputWrap(
-                          child: DropdownButton<String>(
-                            value: type,
-                            isExpanded: true,
-                            isDense: true,
-                            dropdownColor: const Color(0xFF1A1730),
-                            style: const TextStyle(color: Colors.white, fontSize: 13),
-                            underline: const SizedBox(),
-                            items: _types.map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
-                            onChanged: (v) { if (v != null) onTypeChanged(v); },
-                          ),
-                        ),
-                      ],
+              // نوع الإجازة + التواريخ
+              Builder(builder: (context) {
+                final typeField = Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _FieldLabel('نوع الإجازة'),
+                    _inputWrap(
+                      child: DropdownButton<String>(
+                        value: type,
+                        isExpanded: true,
+                        isDense: true,
+                        dropdownColor: const Color(0xFF123540),
+                        style: const TextStyle(color: Colors.white, fontSize: 13),
+                        underline: const SizedBox(),
+                        items: _types.map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
+                        onChanged: (v) { if (v != null) onTypeChanged(v); },
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    flex: 2,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _FieldLabel('من تاريخ'),
-                        _DateBtn(text: _fmt(start), onTap: () async {
-                          final today = DateTime.now();
-                          final d = await showDatePicker(context: context,
-                              initialDate: start ?? today,
-                              firstDate: today, lastDate: DateTime(today.year + 2, 12, 31));
-                          if (d != null) onStartPicked(d);
-                        }),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    flex: 2,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _FieldLabel('إلى تاريخ'),
-                        _DateBtn(text: _fmt(end), onTap: () async {
-                          final today = DateTime.now();
-                          final d = await showDatePicker(context: context,
-                              initialDate: end ?? start ?? today,
-                              firstDate: start ?? today, lastDate: DateTime(today.year + 2, 12, 31));
-                          if (d != null) onEndPicked(d);
-                        }),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+                  ],
+                );
+                final startField = Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _FieldLabel('من تاريخ'),
+                    _DateBtn(text: _fmt(start), onTap: () async {
+                      final today = DateTime.now();
+                      final d = await showDatePicker(context: context,
+                          initialDate: start ?? today,
+                          firstDate: today, lastDate: DateTime(today.year + 2, 12, 31));
+                      if (d != null) onStartPicked(d);
+                    }),
+                  ],
+                );
+                final endField = Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _FieldLabel('إلى تاريخ'),
+                    _DateBtn(text: _fmt(end), onTap: () async {
+                      final today = DateTime.now();
+                      final d = await showDatePicker(context: context,
+                          initialDate: end ?? start ?? today,
+                          firstDate: start ?? today, lastDate: DateTime(today.year + 2, 12, 31));
+                      if (d != null) onEndPicked(d);
+                    }),
+                  ],
+                );
+
+                if (isMobile) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      typeField,
+                      const SizedBox(height: 8),
+                      startField,
+                      const SizedBox(height: 8),
+                      endField,
+                    ],
+                  );
+                }
+                return Row(
+                  children: [
+                    Expanded(flex: 2, child: typeField),
+                    const SizedBox(width: 8),
+                    Expanded(flex: 2, child: startField),
+                    const SizedBox(width: 8),
+                    Expanded(flex: 2, child: endField),
+                  ],
+                );
+              }),
               const SizedBox(height: 8),
-              // السبب + زر الإرسال في صف واحد
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _FieldLabel('السبب (اختياري)'),
-                        TextField(
-                          controller: reasonCtrl,
-                          style: const TextStyle(color: Colors.white, fontSize: 13),
-                          maxLines: 1,
-                          decoration: _decor(),
-                        ),
-                      ],
+              // السبب + زر الإرسال
+              Builder(builder: (context) {
+                final reasonField = Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _FieldLabel('السبب (اختياري)'),
+                    TextField(
+                      controller: reasonCtrl,
+                      style: const TextStyle(color: Colors.white, fontSize: 13),
+                      maxLines: 1,
+                      decoration: _decor(),
                     ),
+                  ],
+                );
+                final submitBtn = FilledButton(
+                  onPressed: submitting ? null : onSubmit,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: _indigo,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
                   ),
-                  const SizedBox(width: 8),
-                  FilledButton(
-                    onPressed: submitting ? null : onSubmit,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: _indigo,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
-                    ),
-                    child: submitting
-                        ? const SizedBox(width: 16, height: 16,
-                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                        : const Text('إرسال', style: TextStyle(fontSize: 13)),
-                  ),
-                ],
-              ),
+                  child: submitting
+                      ? const SizedBox(width: 16, height: 16,
+                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                      : const Text('إرسال', style: TextStyle(fontSize: 13)),
+                );
+
+                if (isMobile) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      reasonField,
+                      const SizedBox(height: 8),
+                      SizedBox(width: double.infinity, child: submitBtn),
+                    ],
+                  );
+                }
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Expanded(child: reasonField),
+                    const SizedBox(width: 8),
+                    submitBtn,
+                  ],
+                );
+              }),
             ],
           ),
         ),
@@ -544,7 +640,7 @@ class _DateBtn extends StatelessWidget {
         border: Border.all(color: const Color(0x1AFFFFFF)),
       ),
       child: Text(text,
-          style: const TextStyle(color: Color(0xFF6366F1), fontSize: 13)),
+          style: const TextStyle(color: Color(0xFF06B6D4), fontSize: 13)),
     ),
   );
 }

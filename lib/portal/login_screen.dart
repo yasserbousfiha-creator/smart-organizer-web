@@ -52,9 +52,9 @@ class _PortalLoginScreenState extends State<PortalLoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0E1A),
+      backgroundColor: const Color(0xFF061A22),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0A0E1A),
+        backgroundColor: const Color(0xFF061A22),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white54, size: 18),
           onPressed: () => Navigator.pop(context),
@@ -69,7 +69,7 @@ class _PortalLoginScreenState extends State<PortalLoginScreen> {
             margin: const EdgeInsets.all(20),
             padding: const EdgeInsets.all(28),
             decoration: BoxDecoration(
-              color: const Color(0xFF12172A),
+              color: const Color(0xFF0D2731),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(color: const Color(0x1AFFFFFF)),
               boxShadow: [
@@ -86,7 +86,7 @@ class _PortalLoginScreenState extends State<PortalLoginScreen> {
                   height: 64,
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
-                      colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+                      colors: [Color(0xFF06B6D4), Color(0xFF0EA5E9)],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
@@ -153,7 +153,7 @@ class _PortalLoginScreenState extends State<PortalLoginScreen> {
                   child: ElevatedButton(
                     onPressed: _loading ? null : _login,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF6366F1),
+                      backgroundColor: const Color(0xFF06B6D4),
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10)),
@@ -195,7 +195,7 @@ class _PortalLoginScreenState extends State<PortalLoginScreen> {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: Color(0xFF6366F1), width: 1.5),
+        borderSide: const BorderSide(color: Color(0xFF06B6D4), width: 1.5),
       ),
     );
   }
