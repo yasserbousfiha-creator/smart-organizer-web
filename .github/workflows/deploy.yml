@@ -2,7 +2,7 @@ name: Deploy web to GitHub Pages
 
 on:
   push:
-    branches: [main]
+    branches: [source]
   workflow_dispatch:
 
 permissions:
@@ -25,7 +25,7 @@ jobs:
           channel: stable
 
       - run: flutter pub get
-      - run: flutter build web --release --base-href /smart-organizer-web/
+      - run: flutter build web --release --base-href /
 
       - uses: actions/upload-pages-artifact@v3
         with:

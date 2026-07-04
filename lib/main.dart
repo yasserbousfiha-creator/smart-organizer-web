@@ -7,6 +7,7 @@ import 'portal/supabase_config.dart';
 import 'portal/login_screen.dart';
 import 'portal/home_screen.dart';
 import 'theme/app_colors.dart';
+import 'moon_abaya/moon_abaya_screen.dart';
 
 String? _portalInitError;
 bool _supabaseReady = false;
@@ -688,6 +689,8 @@ class _LandingPageState extends State<LandingPage>
   late Animation<double> _heroFade;
   late Animation<Offset> _heroSlide;
   final GlobalKey _supportKey = GlobalKey();
+  final ScrollController _scrollController = ScrollController();
+  bool _showScrollTop = false;
 
   void _scrollToSupport() {
     final ctx = _supportKey.currentContext;
@@ -698,6 +701,19 @@ class _LandingPageState extends State<LandingPage>
         curve: Curves.easeInOut,
       );
     }
+  }
+
+  void _onScroll() {
+    final show = _scrollController.offset > 400;
+    if (show != _showScrollTop) setState(() => _showScrollTop = show);
+  }
+
+  void _scrollToTop() {
+    _scrollController.animateTo(
+      0,
+      duration: const Duration(milliseconds: 500),
+      curve: Curves.easeOut,
+    );
   }
 
   @override
@@ -718,11 +734,14 @@ class _LandingPageState extends State<LandingPage>
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _heroController, curve: Curves.easeOut));
     _heroController.forward();
+    _scrollController.addListener(_onScroll);
   }
 
   @override
   void dispose() {
     _heroController.dispose();
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -730,10 +749,21 @@ class _LandingPageState extends State<LandingPage>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: kBg,
+      floatingActionButton: _showScrollTop
+          ? FloatingActionButton(
+              heroTag: 'landingScrollTop',
+              mini: true,
+              onPressed: _scrollToTop,
+              backgroundColor: AppColors.surface,
+              foregroundColor: kCyan,
+              child: const Icon(Icons.arrow_upward_rounded),
+            )
+          : null,
       body: Stack(
         children: [
           _buildBackgroundOrbs(),
           SingleChildScrollView(
+            controller: _scrollController,
             child: Column(
               children: [
                 _buildNavBar(context),
@@ -973,7 +1003,7 @@ class _LandingPageState extends State<LandingPage>
                 ),
                 const SizedBox(height: 26),
                 Text(
-                  'تطبيق Smart Organizer هو رفيقك اليومي لإدارة مهامك وترتيب أفكارك بكفاءة. يتطلب التحميل أو الدخول استخدام رمز المرور الخاص بك.',
+                  'تطبيق Smart Organizer هو رفيقك اليومي لإدارة مهامك وترتيب أفكارك بكفاءة. يتطلب التحميل أو الدخول باستخدام رمز المرور الخاص بك.',
                   style: TextStyle(
                     fontSize: 17,
                     color: Colors.white.withValues(alpha: 0.6),
@@ -1191,7 +1221,7 @@ class _LandingPageState extends State<LandingPage>
           const SizedBox(height: 18),
           _sectionTitle('واجهات التطبيق'),
           const SizedBox(height: 14),
-          _sectionSubtitle('تصميم عصري يركز على سهولة الاستخدام والجماليات'),
+          _sectionSubtitle('تصميم عصري يركز على سهولة الاستخدام والجمالية'),
           const SizedBox(height: 68),
           CarouselSlider.builder(
             itemCount: screenshots.length,
@@ -1590,16 +1620,145 @@ class _LandingPageState extends State<LandingPage>
             ],
           ),
           const SizedBox(height: 16),
-          Text(
-            'جميع الحقوق محفوظة © 2026 — Smart Organizer',
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.28),
-              fontSize: 13,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                'جميع الحقوق محفوظة By YASSER BOUSFIHA © 2026 — Smart Organizer',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.28),
+                  fontSize: 13,
+                ),
+              ),
+              const SizedBox(width: 6),
+              MouseRegion(
+                cursor: SystemMouseCursors.click,
+                child: GestureDetector(
+                  onTap: () => _showMoonAbayaPasscodeDialog(context),
+                  behavior: HitTestBehavior.opaque,
+                  child: Padding(
+                    padding: const EdgeInsets.all(6),
+                    child: Icon(
+                      Icons.circle,
+                      size: 4,
+                      color: Colors.white.withValues(alpha: 0.15),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _showMoonAbayaPasscodeDialog(BuildContext context) async {
+    final codeController = TextEditingController();
+    const correctCode = 'nouri';
+
+    final value = await showDialog(
+      context: context,
+      builder: (ctx) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: AlertDialog(
+          backgroundColor: AppColors.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+            side: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+          ),
+          title: const Text(
+            'وصول مقيّد',
+            style: TextStyle(fontFamily: 'Tajawal',
+              fontWeight: FontWeight.bold,
+              fontSize: 20,
+              color: Colors.white,
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: codeController,
+                obscureText: true,
+                autofocus: true,
+                style: const TextStyle(color: Colors.white),
+                onSubmitted: (_) => Navigator.pop(ctx, codeController.text),
+                decoration: InputDecoration(
+                  hintText: 'كلمة السر',
+                  hintStyle: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.3),
+                  ),
+                  filled: true,
+                  fillColor: Colors.white.withValues(alpha: 0.06),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                      color: Colors.white.withValues(alpha: 0.1),
+                    ),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                      color: Colors.white.withValues(alpha: 0.1),
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: kBlue),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text(
+                'إلغاء',
+                style: TextStyle(color: Colors.white.withValues(alpha: 0.4)),
+              ),
+            ),
+            Container(
+              decoration: BoxDecoration(
+                gradient: kMainGradient,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.transparent,
+                  shadowColor: Colors.transparent,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                onPressed: () => Navigator.pop(ctx, codeController.text),
+                child: const Text('دخول'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (!context.mounted) return;
+    if (value == correctCode) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const MoonAbayaScreen()),
+      );
+    } else if (value != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('رمز الدخول غير صحيح!'),
+          backgroundColor: Colors.red.shade700,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+    }
   }
 
   Widget _sectionBadge(String label) {
