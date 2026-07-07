@@ -1,27 +1,33 @@
-import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../portal/portal_client.dart';
 import 'moon_abaya_models.dart';
 
 class MoonAbayaStorage {
-  static const _key = 'moon_abaya_items_v1';
+  static const table = 'moon_abaya_items';
+  static const paymentsTable = 'moon_abaya_payments';
 
   static Future<List<MoonAbayaItem>> load() async {
-    final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_key);
-    if (raw == null || raw.isEmpty) return [];
-    try {
-      final list = jsonDecode(raw) as List;
-      return list
-          .map((e) => MoonAbayaItem.fromJson(e as Map<String, dynamic>))
-          .toList();
-    } catch (_) {
-      return [];
-    }
+    final rows = await portalClient
+        .from(table)
+        .select('*, $paymentsTable(*)')
+        .order('date', ascending: false);
+    return (rows as List)
+        .map((e) => MoonAbayaItem.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
-  static Future<void> save(List<MoonAbayaItem> items) async {
-    final prefs = await SharedPreferences.getInstance();
-    final raw = jsonEncode(items.map((e) => e.toJson()).toList());
-    await prefs.setString(_key, raw);
+  static Future<void> upsert(MoonAbayaItem item) {
+    return portalClient.from(table).upsert(item.toJson());
+  }
+
+  static Future<void> delete(String id) {
+    return portalClient.from(table).delete().eq('id', id);
+  }
+
+  static Future<void> addPayment(String itemId, MoonAbayaPayment payment) {
+    return portalClient.from(paymentsTable).insert(payment.toJson(itemId));
+  }
+
+  static Future<void> deletePayment(String paymentId) {
+    return portalClient.from(paymentsTable).delete().eq('id', paymentId);
   }
 }

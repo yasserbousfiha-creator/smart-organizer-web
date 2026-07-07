@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../portal/portal_client.dart';
 import 'moon_abaya_models.dart';
 import 'moon_abaya_storage.dart';
 
@@ -38,18 +40,35 @@ class _MoonAbayaScreenState extends State<MoonAbayaScreen> {
   bool _debtOnly = false;
   final ScrollController _scrollController = ScrollController();
   bool _showScrollTop = false;
+  late final RealtimeChannel _channel;
 
   @override
   void initState() {
     super.initState();
     _load();
     _scrollController.addListener(_onScroll);
+    _channel = portalClient
+        .channel('moon-abaya-items')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: MoonAbayaStorage.table,
+          callback: (_) { if (mounted) _load(); },
+        )
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: MoonAbayaStorage.paymentsTable,
+          callback: (_) { if (mounted) _load(); },
+        )
+        .subscribe();
   }
 
   @override
   void dispose() {
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
+    portalClient.removeChannel(_channel);
     super.dispose();
   }
 
@@ -67,12 +86,21 @@ class _MoonAbayaScreenState extends State<MoonAbayaScreen> {
   }
 
   Future<void> _load() async {
-    final items = await MoonAbayaStorage.load();
-    items.sort((a, b) => b.date.compareTo(a.date));
-    if (mounted) setState(() { _items = items; _loading = false; });
+    try {
+      final items = await MoonAbayaStorage.load();
+      items.sort((a, b) => b.date.compareTo(a.date));
+      if (mounted) setState(() { _items = items; _loading = false; });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _loading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('تعذر تحميل البيانات السحابية: $e'),
+          backgroundColor: Colors.red.shade700,
+        ),
+      );
+    }
   }
-
-  Future<void> _persist() => MoonAbayaStorage.save(_items);
 
   List<MoonAbayaItem> get _visible {
     return _items.where((it) {
@@ -92,22 +120,28 @@ class _MoonAbayaScreenState extends State<MoonAbayaScreen> {
   double get _totalDebt => _visible.fold(0, (s, e) => s + e.remainingDebt);
 
   Future<void> _openForm({MoonAbayaItem? existing}) async {
-    final result = await showModalBottomSheet<MoonAbayaItem>(
+    final result = await showModalBottomSheet<_MoonAbayaFormResult>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => _MoonAbayaForm(existing: existing),
     );
     if (result == null) return;
-    setState(() {
-      if (existing != null) {
-        final idx = _items.indexWhere((e) => e.id == existing.id);
-        if (idx != -1) _items[idx] = result;
-      } else {
-        _items.insert(0, result);
+    try {
+      await MoonAbayaStorage.upsert(result.item);
+      if (result.initialPayment != null) {
+        await MoonAbayaStorage.addPayment(result.item.id, result.initialPayment!);
       }
-    });
-    await _persist();
+      await _load();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('فشل الحفظ في السحابة: $e'),
+          backgroundColor: Colors.red.shade700,
+        ),
+      );
+    }
   }
 
   Future<void> _delete(MoonAbayaItem item) async {
@@ -133,9 +167,186 @@ class _MoonAbayaScreenState extends State<MoonAbayaScreen> {
         ],
       ),
     );
-    if (confirm == true) {
-      setState(() => _items.removeWhere((e) => e.id == item.id));
-      await _persist();
+    if (confirm != true) return;
+    try {
+      await MoonAbayaStorage.delete(item.id);
+      await _load();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('فشل الحذف من السحابة: $e'),
+          backgroundColor: Colors.red.shade700,
+        ),
+      );
+    }
+  }
+
+  Future<void> _addPayment(MoonAbayaItem item) async {
+    final amountCtrl = TextEditingController();
+
+    final payment = await showDialog<MoonAbayaPayment>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) {
+          DateTime date = DateTime.now();
+          String? error;
+
+          return Directionality(
+            textDirection: TextDirection.rtl,
+            child: AlertDialog(
+              backgroundColor: _kSurface,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              title: const Text('تسجيل دفعة', style: TextStyle(color: Colors.white)),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('المتبقي حاليًا: ${_money(item.remainingDebt)}',
+                      style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: amountCtrl,
+                    autofocus: true,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    style: const TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      hintText: 'المبلغ (د.م.)',
+                      hintStyle: const TextStyle(color: Colors.white38),
+                      filled: true,
+                      fillColor: _kSurfaceHi,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  InkWell(
+                    borderRadius: BorderRadius.circular(10),
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                        context: ctx,
+                        initialDate: date,
+                        firstDate: DateTime(2023),
+                        lastDate: DateTime(2100),
+                        builder: (c, child) => Theme(
+                          data: ThemeData.dark().copyWith(
+                            colorScheme: const ColorScheme.dark(primary: _kGold, surface: _kSurface),
+                          ),
+                          child: child!,
+                        ),
+                      );
+                      if (picked != null) setDialogState(() => date = picked);
+                    },
+                    child: InputDecorator(
+                      decoration: InputDecoration(
+                        labelText: 'التاريخ',
+                        labelStyle: const TextStyle(color: Colors.white54, fontSize: 12),
+                        filled: true,
+                        fillColor: _kSurfaceHi,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                      child: Text(
+                        '${date.year}/${date.month.toString().padLeft(2, '0')}/${date.day.toString().padLeft(2, '0')}',
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                    ),
+                  ),
+                  if (error != null) ...[
+                    const SizedBox(height: 10),
+                    Text(error!, style: const TextStyle(color: Colors.redAccent, fontSize: 12)),
+                  ],
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('إلغاء', style: TextStyle(color: Colors.white54)),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    final amount = double.tryParse(amountCtrl.text.trim().replaceAll(',', '.'));
+                    if (amount == null || amount <= 0) {
+                      setDialogState(() => error = 'أدخل مبلغًا صحيحًا');
+                      return;
+                    }
+                    if (amount > item.remainingDebt + 0.01) {
+                      setDialogState(() => error = 'المبلغ أكبر من المتبقي (${_money(item.remainingDebt)})');
+                      return;
+                    }
+                    Navigator.pop(
+                      ctx,
+                      MoonAbayaPayment(
+                        id: '${DateTime.now().microsecondsSinceEpoch}-p',
+                        amount: amount,
+                        date: date,
+                      ),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(backgroundColor: _kGold, foregroundColor: Colors.black),
+                  child: const Text('تسجيل'),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+
+    if (payment == null) return;
+    try {
+      await MoonAbayaStorage.addPayment(item.id, payment);
+      await _load();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('فشل تسجيل الدفعة: $e'),
+          backgroundColor: Colors.red.shade700,
+        ),
+      );
+    }
+  }
+
+  Future<void> _deletePayment(MoonAbayaPayment payment) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: _kSurface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('حذف الدفعة', style: TextStyle(color: Colors.white)),
+        content: Text(
+          'هل تريد حذف دفعة بقيمة ${_money(payment.amount)}؟',
+          style: const TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('إلغاء', style: TextStyle(color: Colors.white54)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('حذف', style: TextStyle(color: Colors.redAccent)),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+    try {
+      await MoonAbayaStorage.deletePayment(payment.id);
+      await _load();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('فشل حذف الدفعة: $e'),
+          backgroundColor: Colors.red.shade700,
+        ),
+      );
     }
   }
 
@@ -445,6 +656,67 @@ class _MoonAbayaScreenState extends State<MoonAbayaScreen> {
               ],
             ),
           ),
+          if (!item.isFullyPaid) ...[
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: () => _addPayment(item),
+                icon: const Icon(Icons.add_card_rounded, size: 16, color: _kGold),
+                label: const Text('تسجيل دفعة',
+                    style: TextStyle(color: _kGold, fontWeight: FontWeight.w700, fontSize: 12.5)),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ),
+            ),
+          ],
+          if (item.payments.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Theme(
+              data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+              child: ExpansionTile(
+                tilePadding: EdgeInsets.zero,
+                childrenPadding: EdgeInsets.zero,
+                collapsedIconColor: Colors.white38,
+                iconColor: Colors.white54,
+                shape: const RoundedRectangleBorder(side: BorderSide.none),
+                collapsedShape: const RoundedRectangleBorder(side: BorderSide.none),
+                title: Text('سجل الدفعات (${item.payments.length})',
+                    style: const TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.w600)),
+                children: item.payments.reversed.map((p) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Row(
+                      children: [
+                        Icon(Icons.check_circle_outline_rounded,
+                            size: 14, color: Colors.greenAccent.withValues(alpha: 0.7)),
+                        const SizedBox(width: 8),
+                        Text(
+                          '${p.date.year}/${p.date.month.toString().padLeft(2, '0')}/${p.date.day.toString().padLeft(2, '0')}',
+                          style: const TextStyle(color: Colors.white38, fontSize: 11),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(_money(p.amount),
+                              style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w600)),
+                        ),
+                        IconButton(
+                          onPressed: () => _deletePayment(p),
+                          icon: const Icon(Icons.close_rounded, size: 14, color: Colors.redAccent),
+                          visualDensity: VisualDensity.compact,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ],
           if (item.isCurrentLoss) ...[
             const SizedBox(height: 8),
             Container(
@@ -504,6 +776,12 @@ class _MoonAbayaScreenState extends State<MoonAbayaScreen> {
   }
 }
 
+class _MoonAbayaFormResult {
+  final MoonAbayaItem item;
+  final MoonAbayaPayment? initialPayment;
+  _MoonAbayaFormResult(this.item, this.initialPayment);
+}
+
 class _MoonAbayaForm extends StatefulWidget {
   final MoonAbayaItem? existing;
   const _MoonAbayaForm({this.existing});
@@ -522,8 +800,10 @@ class _MoonAbayaFormState extends State<_MoonAbayaForm> {
   late final TextEditingController _paid;
   late final TextEditingController _buyer;
   late DateTime _date;
-  late bool _fullyPaid;
+  bool _fullyPaid = true;
   String? _error;
+
+  bool get _isEdit => widget.existing != null;
 
   @override
   void initState() {
@@ -538,9 +818,7 @@ class _MoonAbayaFormState extends State<_MoonAbayaForm> {
     _qty = TextEditingController(text: e != null ? '${e.quantity}' : '1')
       ..addListener(_onAmountsChanged);
     _notes = TextEditingController(text: e?.notes ?? '');
-    _fullyPaid = e?.isFullyPaid ?? true;
-    _paid = TextEditingController(text: e != null ? _plain(e.amountPaid) : '')
-      ..addListener(_onAmountsChanged);
+    _paid = TextEditingController()..addListener(_onAmountsChanged);
     _buyer = TextEditingController(text: e?.buyerName ?? '');
     _date = e?.date ?? DateTime.now();
   }
@@ -562,6 +840,7 @@ class _MoonAbayaFormState extends State<_MoonAbayaForm> {
   }
 
   double get _currentAmountPaid {
+    if (_isEdit) return widget.existing!.amountPaid;
     if (_fullyPaid) return _currentTotalRevenue;
     return double.tryParse(_paid.text.trim().replaceAll(',', '.')) ?? 0;
   }
@@ -592,25 +871,40 @@ class _MoonAbayaFormState extends State<_MoonAbayaForm> {
     if (qty == null || qty <= 0) { setState(() => _error = 'الكمية غير صحيحة'); return; }
 
     final buyerName = _buyer.text.trim();
-    double amountPaid;
-    if (_fullyPaid) {
-      amountPaid = sale * qty;
-    } else {
+    MoonAbayaPayment? initialPayment;
+
+    if (!_isEdit) {
       final total = sale * qty;
-      final parsedPaid = double.tryParse(_paid.text.trim().replaceAll(',', '.'));
-      if (parsedPaid == null || parsedPaid < 0) {
-        setState(() => _error = 'المبلغ المدفوع غير صحيح');
-        return;
+      if (_fullyPaid) {
+        if (total > 0) {
+          initialPayment = MoonAbayaPayment(
+            id: '${DateTime.now().microsecondsSinceEpoch}-p',
+            amount: total,
+            date: _date,
+          );
+        }
+      } else {
+        final parsedPaid = double.tryParse(_paid.text.trim().replaceAll(',', '.'));
+        if (parsedPaid == null || parsedPaid < 0) {
+          setState(() => _error = 'المبلغ المدفوع غير صحيح');
+          return;
+        }
+        if (parsedPaid > total) {
+          setState(() => _error = 'المبلغ المدفوع أكبر من سعر البيع الإجمالي');
+          return;
+        }
+        if (buyerName.isEmpty) {
+          setState(() => _error = 'أدخل اسم المشتري لأن المبلغ غير مسدد بالكامل');
+          return;
+        }
+        if (parsedPaid > 0) {
+          initialPayment = MoonAbayaPayment(
+            id: '${DateTime.now().microsecondsSinceEpoch}-p',
+            amount: parsedPaid,
+            date: _date,
+          );
+        }
       }
-      if (parsedPaid > total) {
-        setState(() => _error = 'المبلغ المدفوع أكبر من سعر البيع الإجمالي');
-        return;
-      }
-      if (buyerName.isEmpty) {
-        setState(() => _error = 'أدخل اسم المشتري لأن المبلغ غير مسدد بالكامل');
-        return;
-      }
-      amountPaid = parsedPaid;
     }
 
     final item = MoonAbayaItem(
@@ -622,10 +916,9 @@ class _MoonAbayaFormState extends State<_MoonAbayaForm> {
       quantity: qty,
       notes: _notes.text.trim(),
       date: _date,
-      amountPaid: amountPaid,
       buyerName: buyerName,
     );
-    Navigator.pop(context, item);
+    Navigator.pop(context, _MoonAbayaFormResult(item, initialPayment));
   }
 
   Future<void> _pickDate() async {
@@ -646,7 +939,6 @@ class _MoonAbayaFormState extends State<_MoonAbayaForm> {
 
   @override
   Widget build(BuildContext context) {
-    final isEdit = widget.existing != null;
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       child: Container(
@@ -668,7 +960,7 @@ class _MoonAbayaFormState extends State<_MoonAbayaForm> {
                   decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(4)),
                 ),
               ),
-              Text(isEdit ? 'تعديل المنتج' : 'منتج جديد',
+              Text(_isEdit ? 'تعديل المنتج' : 'منتج جديد',
                   style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800)),
               const SizedBox(height: 20),
 
@@ -719,29 +1011,45 @@ class _MoonAbayaFormState extends State<_MoonAbayaForm> {
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-                decoration: BoxDecoration(
-                  color: _kSurfaceHi,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  value: _fullyPaid,
-                  onChanged: (v) => setState(() => _fullyPaid = v),
-                  activeThumbColor: _kGold,
-                  title: const Text('تم استلام كامل المبلغ',
-                      style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
-                ),
-              ),
-              if (!_fullyPaid) ...[
+              if (!_isEdit) ...[
                 const SizedBox(height: 12),
-                _field(_paid, 'المبلغ المدفوع (د.م.)', Icons.payments_outlined,
-                    keyboard: const TextInputType.numberWithOptions(decimal: true)),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: _kSurfaceHi,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    value: _fullyPaid,
+                    onChanged: (v) => setState(() => _fullyPaid = v),
+                    activeThumbColor: _kGold,
+                    title: const Text('تم استلام كامل المبلغ',
+                        style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
+                  ),
+                ),
+                if (!_fullyPaid) ...[
+                  const SizedBox(height: 12),
+                  _field(_paid, 'المبلغ المدفوع (د.م.)', Icons.payments_outlined,
+                      keyboard: const TextInputType.numberWithOptions(decimal: true)),
+                ],
+              ] else ...[
                 const SizedBox(height: 12),
-                _field(_buyer, 'اسم المشتري', Icons.person_outline_rounded),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.05),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Text(
+                    'لتسجيل دفعة جديدة على هذه العملية، استخدم زر "تسجيل دفعة" في البطاقة بعد الحفظ.',
+                    style: TextStyle(color: Colors.white54, fontSize: 12),
+                  ),
+                ),
               ],
+              const SizedBox(height: 12),
+              _field(_buyer, 'اسم المشتري (اختياري)', Icons.person_outline_rounded),
               if (_isLossWarning) ...[
                 const SizedBox(height: 14),
                 Container(
@@ -793,7 +1101,7 @@ class _MoonAbayaFormState extends State<_MoonAbayaForm> {
                     foregroundColor: Colors.black,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                  child: Text(isEdit ? 'حفظ التعديلات' : 'إضافة المنتج',
+                  child: Text(_isEdit ? 'حفظ التعديلات' : 'إضافة المنتج',
                       style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
                 ),
               ),

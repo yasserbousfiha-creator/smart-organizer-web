@@ -869,6 +869,22 @@ class _LandingPageState extends State<LandingPage>
               ),
             ),
           ),
+          const SizedBox(width: 6),
+          MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: GestureDetector(
+              onTap: () => _openMoonAbaya(context),
+              behavior: HitTestBehavior.opaque,
+              child: Padding(
+                padding: const EdgeInsets.all(6),
+                child: Icon(
+                  Icons.circle,
+                  size: 4,
+                  color: Colors.white.withValues(alpha: 0.15),
+                ),
+              ),
+            ),
+          ),
           const Spacer(),
           if (isMobile)
             IconButton(
@@ -1630,22 +1646,6 @@ class _LandingPageState extends State<LandingPage>
                   fontSize: 13,
                 ),
               ),
-              const SizedBox(width: 6),
-              MouseRegion(
-                cursor: SystemMouseCursors.click,
-                child: GestureDetector(
-                  onTap: () => _showMoonAbayaPasscodeDialog(context),
-                  behavior: HitTestBehavior.opaque,
-                  child: Padding(
-                    padding: const EdgeInsets.all(6),
-                    child: Icon(
-                      Icons.circle,
-                      size: 4,
-                      color: Colors.white.withValues(alpha: 0.15),
-                    ),
-                  ),
-                ),
-              ),
             ],
           ),
         ],
@@ -1653,110 +1653,214 @@ class _LandingPageState extends State<LandingPage>
     );
   }
 
-  Future<void> _showMoonAbayaPasscodeDialog(BuildContext context) async {
-    final codeController = TextEditingController();
-    const correctCode = 'nouri';
+  Future<bool> _isMoonAbayaAdmin() async {
+    final userId = Supabase.instance.client.auth.currentUser?.id;
+    if (userId == null) return false;
+    try {
+      final data = await Supabase.instance.client
+          .from('moon_abaya_admins')
+          .select('user_id')
+          .eq('user_id', userId)
+          .maybeSingle();
+      return data != null;
+    } catch (_) {
+      return false;
+    }
+  }
 
-    final value = await showDialog(
+  Future<void> _openMoonAbaya(BuildContext context) async {
+    if (!_supabaseReady) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(_portalInitError != null
+              ? 'خطأ في الاتصال: $_portalInitError'
+              : 'جاري الاتصال بالخادم، حاول مرة أخرى...'),
+          backgroundColor: _portalInitError != null
+              ? Colors.red.shade700
+              : Colors.orange.shade700,
+        ),
+      );
+      return;
+    }
+
+    if (Supabase.instance.client.auth.currentSession != null) {
+      final isAdmin = await _isMoonAbayaAdmin();
+      if (!context.mounted) return;
+      if (isAdmin) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const MoonAbayaScreen()),
+        );
+        return;
+      }
+      // الجلسة الحالية تخص حسابًا آخر (مثلاً حساب HR) — سجّل الخروج منه
+      // لأن حساب Moon Abaya مستقل تمامًا وله بيانات دخول خاصة به.
+      await Supabase.instance.client.auth.signOut();
+    }
+
+    if (!context.mounted) return;
+    await _showMoonAbayaLoginDialog(context);
+  }
+
+  Future<void> _showMoonAbayaLoginDialog(BuildContext context) async {
+    final userCtrl = TextEditingController();
+    final passCtrl = TextEditingController();
+
+    final success = await showDialog<bool>(
       context: context,
-      builder: (ctx) => Directionality(
-        textDirection: TextDirection.rtl,
-        child: AlertDialog(
-          backgroundColor: AppColors.surface,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
-            side: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
-          ),
-          title: const Text(
-            'وصول مقيّد',
-            style: TextStyle(fontFamily: 'Tajawal',
-              fontWeight: FontWeight.bold,
-              fontSize: 20,
-              color: Colors.white,
-            ),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: codeController,
-                obscureText: true,
-                autofocus: true,
-                style: const TextStyle(color: Colors.white),
-                onSubmitted: (_) => Navigator.pop(ctx, codeController.text),
-                decoration: InputDecoration(
-                  hintText: 'كلمة السر',
-                  hintStyle: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.3),
-                  ),
-                  filled: true,
-                  fillColor: Colors.white.withValues(alpha: 0.06),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(
-                      color: Colors.white.withValues(alpha: 0.1),
-                    ),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(
-                      color: Colors.white.withValues(alpha: 0.1),
-                    ),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: kBlue),
-                  ),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) {
+          String? error;
+          bool loading = false;
+
+          Future<void> submit() async {
+            if (userCtrl.text.trim().isEmpty) {
+              setDialogState(() => error = 'أدخل اسم المستخدم');
+              return;
+            }
+            setDialogState(() { loading = true; error = null; });
+            try {
+              final email = '${userCtrl.text.trim().toLowerCase()}@moonabaya.local';
+              await Supabase.instance.client.auth.signInWithPassword(
+                email: email,
+                password: passCtrl.text,
+              );
+              final isAdmin = await _isMoonAbayaAdmin();
+              if (!isAdmin) {
+                setDialogState(() {
+                  loading = false;
+                  error = 'هذا الحساب لا يملك صلاحية الوصول';
+                });
+                return;
+              }
+              if (ctx.mounted) Navigator.pop(ctx, true);
+            } on AuthException catch (e) {
+              setDialogState(() {
+                loading = false;
+                error = e.message.contains('Invalid login')
+                    ? 'اسم المستخدم أو كلمة المرور غير صحيحة'
+                    : e.message;
+              });
+            } catch (e) {
+              setDialogState(() { loading = false; error = 'خطأ: $e'; });
+            }
+          }
+
+          return Directionality(
+            textDirection: TextDirection.rtl,
+            child: AlertDialog(
+              backgroundColor: AppColors.surface,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+                side: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+              ),
+              title: const Text(
+                'وصول مقيّد',
+                style: TextStyle(fontFamily: 'Tajawal',
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
+                  color: Colors.white,
                 ),
               ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text(
-                'إلغاء',
-                style: TextStyle(color: Colors.white.withValues(alpha: 0.4)),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: userCtrl,
+                    autofocus: true,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      hintText: 'اسم المستخدم',
+                      hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
+                      filled: true,
+                      fillColor: Colors.white.withValues(alpha: 0.06),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: kBlue),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: passCtrl,
+                    obscureText: true,
+                    style: const TextStyle(color: Colors.white),
+                    onSubmitted: (_) => submit(),
+                    decoration: InputDecoration(
+                      hintText: 'كلمة المرور',
+                      hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
+                      filled: true,
+                      fillColor: Colors.white.withValues(alpha: 0.06),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: kBlue),
+                      ),
+                    ),
+                  ),
+                  if (error != null) ...[
+                    const SizedBox(height: 12),
+                    Text(error!, style: const TextStyle(color: Colors.redAccent, fontSize: 12.5)),
+                  ],
+                ],
               ),
-            ),
-            Container(
-              decoration: BoxDecoration(
-                gradient: kMainGradient,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.transparent,
-                  shadowColor: Colors.transparent,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
+              actions: [
+                TextButton(
+                  onPressed: loading ? null : () => Navigator.pop(ctx),
+                  child: Text(
+                    'إلغاء',
+                    style: TextStyle(color: Colors.white.withValues(alpha: 0.4)),
+                  ),
+                ),
+                Container(
+                  decoration: BoxDecoration(
+                    gradient: kMainGradient,
                     borderRadius: BorderRadius.circular(10),
                   ),
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      shadowColor: Colors.transparent,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    onPressed: loading ? null : submit,
+                    child: loading
+                        ? const SizedBox(
+                            width: 18, height: 18,
+                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                          )
+                        : const Text('دخول'),
+                  ),
                 ),
-                onPressed: () => Navigator.pop(ctx, codeController.text),
-                child: const Text('دخول'),
-              ),
+              ],
             ),
-          ],
-        ),
+          );
+        },
       ),
     );
-    if (!context.mounted) return;
-    if (value == correctCode) {
+
+    if (success == true && context.mounted) {
       Navigator.push(
         context,
         MaterialPageRoute(builder: (_) => const MoonAbayaScreen()),
-      );
-    } else if (value != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('رمز الدخول غير صحيح!'),
-          backgroundColor: Colors.red.shade700,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
       );
     }
   }

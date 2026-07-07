@@ -20,6 +20,37 @@ extension MoonAbayaCategoryX on MoonAbayaCategory {
   }
 }
 
+class MoonAbayaPayment {
+  final String id;
+  final double amount;
+  final DateTime date;
+  final String note;
+
+  MoonAbayaPayment({
+    required this.id,
+    required this.amount,
+    required this.date,
+    this.note = '',
+  });
+
+  Map<String, dynamic> toJson(String itemId) => {
+        'id': id,
+        'item_id': itemId,
+        'amount': amount,
+        'date': date.toIso8601String(),
+        'note': note,
+      };
+
+  factory MoonAbayaPayment.fromJson(Map<String, dynamic> json) {
+    return MoonAbayaPayment(
+      id: json['id'] as String,
+      amount: (json['amount'] as num?)?.toDouble() ?? 0,
+      date: DateTime.tryParse(json['date'] as String? ?? '') ?? DateTime.now(),
+      note: json['note'] as String? ?? '',
+    );
+  }
+}
+
 class MoonAbayaItem {
   final String id;
   final MoonAbayaCategory category;
@@ -30,8 +61,8 @@ class MoonAbayaItem {
   final String notes;
   final DateTime date;
   final bool sold;
-  final double amountPaid;
   final String buyerName;
+  final List<MoonAbayaPayment> payments;
 
   MoonAbayaItem({
     required this.id,
@@ -43,14 +74,16 @@ class MoonAbayaItem {
     this.notes = '',
     required this.date,
     this.sold = true,
-    double? amountPaid,
     this.buyerName = '',
-  }) : amountPaid = amountPaid ?? (salePrice * quantity);
+    this.payments = const [],
+  });
 
   double get unitProfit => salePrice - purchasePrice;
   double get totalCost => purchasePrice * quantity;
   double get totalRevenue => salePrice * quantity;
   double get totalProfit => unitProfit * quantity;
+
+  double get amountPaid => payments.fold(0.0, (s, p) => s + p.amount);
 
   double get remainingDebt {
     final r = totalRevenue - amountPaid;
@@ -71,8 +104,8 @@ class MoonAbayaItem {
     String? notes,
     DateTime? date,
     bool? sold,
-    double? amountPaid,
     String? buyerName,
+    List<MoonAbayaPayment>? payments,
   }) {
     return MoonAbayaItem(
       id: id,
@@ -84,8 +117,8 @@ class MoonAbayaItem {
       notes: notes ?? this.notes,
       date: date ?? this.date,
       sold: sold ?? this.sold,
-      amountPaid: amountPaid ?? this.amountPaid,
       buyerName: buyerName ?? this.buyerName,
+      payments: payments ?? this.payments,
     );
   }
 
@@ -93,29 +126,33 @@ class MoonAbayaItem {
         'id': id,
         'category': category.name,
         'model': model,
-        'purchasePrice': purchasePrice,
-        'salePrice': salePrice,
+        'purchase_price': purchasePrice,
+        'sale_price': salePrice,
         'quantity': quantity,
         'notes': notes,
         'date': date.toIso8601String(),
         'sold': sold,
-        'amountPaid': amountPaid,
-        'buyerName': buyerName,
+        'buyer_name': buyerName,
       };
 
   factory MoonAbayaItem.fromJson(Map<String, dynamic> json) {
+    final rawPayments = json['moon_abaya_payments'] as List?;
+    final payments = (rawPayments ?? const [])
+        .map((e) => MoonAbayaPayment.fromJson(e as Map<String, dynamic>))
+        .toList()
+      ..sort((a, b) => a.date.compareTo(b.date));
     return MoonAbayaItem(
       id: json['id'] as String,
       category: MoonAbayaCategoryX.fromName(json['category'] as String? ?? ''),
       model: json['model'] as String? ?? '',
-      purchasePrice: (json['purchasePrice'] as num?)?.toDouble() ?? 0,
-      salePrice: (json['salePrice'] as num?)?.toDouble() ?? 0,
+      purchasePrice: (json['purchase_price'] as num?)?.toDouble() ?? 0,
+      salePrice: (json['sale_price'] as num?)?.toDouble() ?? 0,
       quantity: (json['quantity'] as num?)?.toInt() ?? 1,
       notes: json['notes'] as String? ?? '',
       date: DateTime.tryParse(json['date'] as String? ?? '') ?? DateTime.now(),
       sold: json['sold'] as bool? ?? true,
-      amountPaid: (json['amountPaid'] as num?)?.toDouble(),
-      buyerName: json['buyerName'] as String? ?? '',
+      buyerName: json['buyer_name'] as String? ?? '',
+      payments: payments,
     );
   }
 }
