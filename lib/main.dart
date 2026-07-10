@@ -8,6 +8,7 @@ import 'portal/login_screen.dart';
 import 'portal/home_screen.dart';
 import 'theme/app_colors.dart';
 import 'moon_abaya/moon_abaya_screen.dart';
+import 'widgets/quran_radio_button.dart';
 
 String? _portalInitError;
 bool _supabaseReady = false;
@@ -846,7 +847,7 @@ class _LandingPageState extends State<LandingPage>
     final isMobile = MediaQuery.of(context).size.width < kMobileBreakpoint;
     return Container(
       padding: EdgeInsets.symmetric(
-        horizontal: isMobile ? 20 : 48,
+        horizontal: isMobile ? 16 : 48,
         vertical: 18,
       ),
       decoration: BoxDecoration(
@@ -856,48 +857,57 @@ class _LandingPageState extends State<LandingPage>
       ),
       child: Row(
         children: [
-          SmallLogoWidget(size: 38),
-          const SizedBox(width: 12),
-          ShaderMask(
-            shaderCallback: (b) => kMainGradient.createShader(b),
-            child: Text(
-              'Smart Organizer',
-              style: TextStyle(fontFamily: 'Tajawal',
-                fontWeight: FontWeight.w800,
-                fontSize: 20,
-                color: Colors.white,
-              ),
-            ),
-          ),
-          const SizedBox(width: 6),
-          MouseRegion(
-            cursor: SystemMouseCursors.click,
-            child: GestureDetector(
-              onTap: () => _openMoonAbaya(context),
-              behavior: HitTestBehavior.opaque,
-              child: Padding(
-                padding: const EdgeInsets.all(6),
-                child: Icon(
-                  Icons.circle,
-                  size: 4,
-                  color: Colors.white.withValues(alpha: 0.15),
+          SmallLogoWidget(size: isMobile ? 32 : 38),
+          const SizedBox(width: 10),
+          Flexible(
+            child: ShaderMask(
+              shaderCallback: (b) => kMainGradient.createShader(b),
+              child: Text(
+                'Smart Organizer',
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontFamily: 'Tajawal',
+                  fontWeight: FontWeight.w800,
+                  fontSize: isMobile ? 16 : 20,
+                  color: Colors.white,
                 ),
               ),
             ),
           ),
+          if (!isMobile) ...[
+            const SizedBox(width: 6),
+            MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: GestureDetector(
+                onTap: () => _openMoonAbaya(context),
+                behavior: HitTestBehavior.opaque,
+                child: Padding(
+                  padding: const EdgeInsets.all(6),
+                  child: Icon(
+                    Icons.circle,
+                    size: 4,
+                    color: Colors.white.withValues(alpha: 0.15),
+                  ),
+                ),
+              ),
+            ),
+          ],
           const Spacer(),
-          if (isMobile)
+          if (isMobile) ...[
+            const QuranRadioButton(compact: true),
+            const SizedBox(width: 8),
             IconButton(
               onPressed: () => _showMobileMenu(context),
               icon: const Icon(Icons.menu_rounded, color: Colors.white),
-            )
-          else ...[
+            ),
+          ] else ...[
             _navLink('التطبيق', () {}),
             const SizedBox(width: 4),
             _navLink('الدعم الفني', _scrollToSupport),
             const SizedBox(width: 16),
+            const QuranRadioButton(),
+            const SizedBox(width: 12),
+            _employeePortalButton(),
           ],
-          _employeePortalButton(),
         ],
       ),
     );
