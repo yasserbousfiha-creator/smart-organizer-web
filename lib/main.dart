@@ -11,6 +11,7 @@ import 'moon_abaya/moon_abaya_screen.dart';
 import 'widgets/quran_radio_button.dart';
 import 'widgets/lamp_pull_button.dart';
 import 'widgets/moon_crescent_button.dart';
+import 'widgets/demo_task_section.dart';
 
 String? _portalInitError;
 bool _supabaseReady = false;
@@ -778,6 +779,7 @@ class _LandingPageState extends State<LandingPage>
                   ),
                 ),
                 _RevealOnScroll(child: _buildFeaturesSection()),
+                const _RevealOnScroll(child: DemoTaskSection()),
                 _RevealOnScroll(child: _buildScreenshotsSection(context)),
                 KeyedSubtree(
                   key: _supportKey,
