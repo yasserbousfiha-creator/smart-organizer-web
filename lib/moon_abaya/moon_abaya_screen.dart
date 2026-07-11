@@ -381,12 +381,24 @@ class _MoonAbayaScreenState extends State<MoonAbayaScreen> {
           ),
         ],
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator(color: _kGold))
-          : SafeArea(
-              child: CustomScrollView(
-                controller: _scrollController,
-                slivers: [
+      body: Stack(
+        children: [
+          // ── صورة خلفية شفافة (واترمارك) ──
+          Positioned.fill(
+            child: Opacity(
+              opacity: 0.12,
+              child: Image.asset(
+                'assets/moon_abaya_bg.jpg',
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+          _loading
+              ? const Center(child: CircularProgressIndicator(color: _kGold))
+              : SafeArea(
+                  child: CustomScrollView(
+                    controller: _scrollController,
+                    slivers: [
                   SliverToBoxAdapter(child: _buildHeader(context, isMobile)),
                   SliverToBoxAdapter(child: _buildStats(isMobile)),
                   SliverToBoxAdapter(child: _buildFilters(isMobile)),
@@ -406,6 +418,8 @@ class _MoonAbayaScreenState extends State<MoonAbayaScreen> {
                 ],
               ),
             ),
+        ],
+      ),
     );
   }
 

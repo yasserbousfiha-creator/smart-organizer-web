@@ -855,7 +855,13 @@ class _LandingPageState extends State<LandingPage>
           bottom: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
         ),
       ),
+      // اتجاه ثابت من اليسار لليمين لهذا الصف تحديداً (بغض النظر عن
+      // لغة الصفحة): الشعار دايماً يسارا، والأزرار/الأيقونات يمينا —
+      // نفس الاتفاقية المعتادة حتى فالمواقع العربية RTL. هاد التحديد
+      // كيأثّر غير على ترتيب عناصر هاد الـRow، وما كيبدّلش اتجاه
+      // النصوص الداخلية (كتبقى محاذية حسب Directionality الأصلية للصفحة).
       child: Row(
+        textDirection: TextDirection.ltr,
         children: [
           SmallLogoWidget(size: isMobile ? 32 : 38),
           const SizedBox(width: 10),
@@ -873,24 +879,22 @@ class _LandingPageState extends State<LandingPage>
               ),
             ),
           ),
-          if (!isMobile) ...[
-            const SizedBox(width: 6),
-            MouseRegion(
-              cursor: SystemMouseCursors.click,
-              child: GestureDetector(
-                onTap: () => _openMoonAbaya(context),
-                behavior: HitTestBehavior.opaque,
-                child: Padding(
-                  padding: const EdgeInsets.all(6),
-                  child: Icon(
-                    Icons.circle,
-                    size: 4,
-                    color: Colors.white.withValues(alpha: 0.15),
-                  ),
+          const SizedBox(width: 6),
+          MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: GestureDetector(
+              onTap: () => _openMoonAbaya(context),
+              behavior: HitTestBehavior.opaque,
+              child: Padding(
+                padding: const EdgeInsets.all(6),
+                child: Icon(
+                  Icons.circle,
+                  size: 4,
+                  color: Colors.white.withValues(alpha: 0.15),
                 ),
               ),
             ),
-          ],
+          ),
           const Spacer(),
           if (isMobile) ...[
             const QuranRadioButton(compact: true),

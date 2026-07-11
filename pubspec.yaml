@@ -33,6 +33,7 @@ flutter:
   assets:
     - assets/logo.jpg
     - assets/moon_abaya_logo.png
+    - assets/moon_abaya_bg.jpg
     - assets/screenshots/
     - assets/fonts/
 
