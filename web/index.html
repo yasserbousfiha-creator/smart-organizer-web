@@ -43,8 +43,92 @@
     }
   </script>
 
+  <!-- التطبيق مبني بمحرك CanvasKit (يعتمد على WebGL) بلا أي بديل — ومتصفحات
+       داخل التطبيقات (Instagram/Facebook/TikTok...) كتقيّد أو كتمنع WebGL،
+       فكتبقى الصفحة شاشة فارغة. هاد الغطاء كيكتشف هاد الحالة وكيقترح فتح
+       الرابط فمتصفح حقيقي بدل ما يبقى المستخدم واقف قدام شاشة فارغة. -->
+  <style>
+    #iab-fallback {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 999999;
+      background: #061A22;
+      color: #fff;
+      font-family: 'Tajawal', 'Segoe UI', sans-serif;
+      direction: rtl;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 32px 24px;
+      box-sizing: border-box;
+    }
+    #iab-fallback img { width: 76px; height: 76px; border-radius: 20px; margin-bottom: 20px; }
+    #iab-fallback h1 { font-size: 20px; margin: 0 0 10px; }
+    #iab-fallback p { font-size: 14px; color: rgba(255,255,255,0.6); line-height: 1.8; margin: 0 0 26px; max-width: 340px; }
+    #iab-fallback .iab-btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 100%; max-width: 300px; padding: 14px 20px; margin-bottom: 12px;
+      border-radius: 12px; font-size: 15px; font-weight: 700;
+      background: linear-gradient(90deg, #06B6D4, #0EA5E9); color: #fff;
+      text-decoration: none; border: none; cursor: pointer;
+    }
+    #iab-fallback .iab-btn.secondary {
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.18);
+    }
+    #iab-fallback .iab-hint { font-size: 12px; color: rgba(255,255,255,0.35); margin-top: 18px; }
+  </style>
 </head>
 <body>
+  <div id="iab-fallback">
+    <img src="icons/Icon-192.png" alt="Smart Organizer">
+    <h1>افتح الرابط في متصفح حقيقي</h1>
+    <p>
+      متصفح هذا التطبيق (Instagram/Facebook وغيرهم) لا يدعم عرض الموقع بشكل صحيح.
+      اضغط الزر أدناه لفتحه في Chrome أو Safari.
+    </p>
+    <button class="iab-btn" onclick="iabOpenExternally()">فتح في المتصفح</button>
+    <button class="iab-btn secondary" onclick="iabCopyLink(this)">نسخ الرابط</button>
+    <div class="iab-hint">أو اضغط (⋯) أعلى الشاشة واختر "فتح في المتصفح"</div>
+  </div>
+
+  <script>
+    (function () {
+      var ua = navigator.userAgent || '';
+      var isInApp = /Instagram|FBAN|FBAV|FB_IAB|Line\/|MicroMessenger|TikTok|Snapchat/i.test(ua);
+      if (isInApp) {
+        document.getElementById('iab-fallback').style.display = 'flex';
+      }
+    })();
+
+    function iabOpenExternally() {
+      var url = window.location.href;
+      var ua = navigator.userAgent || '';
+      if (/Android/i.test(ua)) {
+        // كيجبر أندرويد يفتح الرابط بـChrome مباشرة برا التطبيق الحالي
+        var intentUrl = 'intent://' + url.replace(/^https?:\/\//, '') +
+          '#Intent;scheme=https;package=com.android.chrome;end;';
+        window.location.href = intentUrl;
+      } else {
+        // iOS ما كايناش وسيلة برمجية مضمونة للخروج — ننسخو الرابط كبديل
+        iabCopyLink(null);
+      }
+    }
+
+    function iabCopyLink(btn) {
+      var url = window.location.href;
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(url).catch(function () {});
+      }
+      if (btn) {
+        var original = btn.textContent;
+        btn.textContent = 'تم النسخ ✓';
+        setTimeout(function () { btn.textContent = original; }, 1800);
+      }
+    }
+  </script>
+
   <script src="bundle.js"></script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
