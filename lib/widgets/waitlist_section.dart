@@ -113,7 +113,7 @@ class _WaitlistSectionState extends State<WaitlistSection> {
         ),
         const SizedBox(height: 10),
         Text(
-          'الوصول حالياً خاص بالمدعوين فقط. اترك بريدك الإلكتروني وسنعلمك أول من يعلم عند فتح التسجيل للجميع.',
+          'الوصول حالياً خاص بالمدعوين فقط. اترك بريدك الإلكتروني وسنعلمك عند فتح التسجيل للجميع.',
           textAlign: TextAlign.center,
           style: TextStyle(fontSize: 14, color: Colors.white.withValues(alpha: 0.55), height: 1.7),
         ),
