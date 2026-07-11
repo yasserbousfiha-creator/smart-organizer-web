@@ -9,6 +9,7 @@ import 'portal/home_screen.dart';
 import 'theme/app_colors.dart';
 import 'moon_abaya/moon_abaya_screen.dart';
 import 'widgets/quran_radio_button.dart';
+import 'widgets/lamp_pull_button.dart';
 
 String? _portalInitError;
 bool _supabaseReady = false;
@@ -898,7 +899,9 @@ class _LandingPageState extends State<LandingPage>
           const Spacer(),
           if (isMobile) ...[
             const QuranRadioButton(compact: true),
-            const SizedBox(width: 6),
+            const SizedBox(width: 4),
+            LampPullButton(onPulled: () => _openPortal(context), shadeSize: 22),
+            const SizedBox(width: 4),
             MouseRegion(
               cursor: SystemMouseCursors.click,
               child: GestureDetector(
@@ -917,8 +920,8 @@ class _LandingPageState extends State<LandingPage>
             _navLink('الدعم الفني', _scrollToSupport),
             const SizedBox(width: 16),
             const QuranRadioButton(),
-            const SizedBox(width: 12),
-            _employeePortalButton(),
+            const SizedBox(width: 16),
+            LampPullButton(onPulled: () => _openPortal(context)),
           ],
         ],
       ),
@@ -976,17 +979,6 @@ class _LandingPageState extends State<LandingPage>
                   onTap: () {
                     Navigator.pop(sheetContext);
                     _scrollToSupport();
-                  },
-                ),
-                ListTile(
-                  leading: Icon(Icons.lock_person_rounded, color: kPurple),
-                  title: const Text(
-                    'بوابة الموظفين',
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
-                  ),
-                  onTap: () {
-                    Navigator.pop(sheetContext);
-                    _openPortal(context);
                   },
                 ),
               ],
@@ -1441,42 +1433,6 @@ class _LandingPageState extends State<LandingPage>
           child: session != null
               ? const PortalHomeScreen()
               : const PortalLoginScreen(),
-        ),
-      ),
-    );
-  }
-
-  Widget _employeePortalButton() {
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: () => _openPortal(context),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
-            color: Colors.white.withValues(alpha: 0.05),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.person_rounded,
-                size: 17,
-                color: Colors.white.withValues(alpha: 0.75),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'بوابة الموظفين',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white.withValues(alpha: 0.75),
-                ),
-              ),
-            ],
-          ),
         ),
       ),
     );
