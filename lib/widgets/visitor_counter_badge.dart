@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import '../state/visit_counter.dart';
 import '../theme/app_colors.dart';
 
-/// شارة صغيرة كتبان بعد ما توصل عدد الزوار الحقيقي (المخزّن فـSupabase)
-/// لعتبة معقولة — باش الموقع الجديد ما يبانش فيه "أكثر من 0 زائر".
+/// شارة صغيرة كتبان مباشرة بالعدد الحقيقي للزوار (المخزّن فـSupabase)،
+/// من 0 فصاعداً، بصياغة عربية سليمة حسب العدد.
 class VisitorCounterBadge extends StatefulWidget {
   const VisitorCounterBadge({super.key});
 
@@ -12,24 +12,32 @@ class VisitorCounterBadge extends StatefulWidget {
 }
 
 class _VisitorCounterBadgeState extends State<VisitorCounterBadge> {
-  int? _rounded;
+  int? _count;
 
   @override
   void initState() {
     super.initState();
     logVisitAndGetCount().then((count) {
       if (!mounted || count == null) return;
-      final rounded = (count ~/ 10) * 10;
-      if (rounded >= 10) setState(() => _rounded = rounded);
+      setState(() => _count = count);
     });
+  }
+
+  String _label(int count) {
+    if (count == 0) return 'كن أول من ينضمّ إلينا!';
+    if (count == 1) return 'زائر واحد انضمّ إلينا';
+    if (count == 2) return 'زائران انضمّا إلينا';
+    if (count <= 10) return '$count زوار انضمّوا إلينا';
+    final rounded = (count ~/ 10) * 10;
+    return 'أكثر من $rounded زائر انضمّوا إلينا';
   }
 
   @override
   Widget build(BuildContext context) {
     return AnimatedOpacity(
       duration: const Duration(milliseconds: 500),
-      opacity: _rounded != null ? 1 : 0,
-      child: _rounded == null
+      opacity: _count != null ? 1 : 0,
+      child: _count == null
           ? const SizedBox.shrink()
           : Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
@@ -44,7 +52,7 @@ class _VisitorCounterBadgeState extends State<VisitorCounterBadge> {
                   const Icon(Icons.groups_rounded, size: 14, color: AppColors.primaryLight),
                   const SizedBox(width: 7),
                   Text(
-                    'انضمّ إلينا أكثر من $_rounded زائر',
+                    _label(_count!),
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
