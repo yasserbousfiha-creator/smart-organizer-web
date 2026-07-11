@@ -867,17 +867,22 @@ class _LandingPageState extends State<LandingPage>
         children: [
           SmallLogoWidget(size: isMobile ? 30 : 38),
           SizedBox(width: isMobile ? 8 : 10),
+          // FittedBox كيصغّر النص باش يدخل فالمساحة المتوفرة بدل ما يقصّو
+          // بـellipsis — هكذا "Smart Organizer" كيبان كامل دايماً، حتى لو
+          // صغر شوية فالشاشات الضيقة بزاف.
           Flexible(
-            child: ShaderMask(
-              shaderCallback: (b) => kMainGradient.createShader(b),
-              child: Text(
-                'Smart Organizer',
-                overflow: TextOverflow.ellipsis,
-                softWrap: false,
-                style: TextStyle(fontFamily: 'Tajawal',
-                  fontWeight: FontWeight.w800,
-                  fontSize: isMobile ? 14 : 20,
-                  color: Colors.white,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: AlignmentDirectional.centerStart,
+              child: ShaderMask(
+                shaderCallback: (b) => kMainGradient.createShader(b),
+                child: Text(
+                  'Smart Organizer',
+                  style: TextStyle(fontFamily: 'Tajawal',
+                    fontWeight: FontWeight.w800,
+                    fontSize: isMobile ? 14 : 20,
+                    color: Colors.white,
+                  ),
                 ),
               ),
             ),
