@@ -1427,14 +1427,31 @@ class _LandingPageState extends State<LandingPage>
     final session = Supabase.instance.client.auth.currentSession;
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => Directionality(
+      _slideFromRightRoute(
+        Directionality(
           textDirection: TextDirection.rtl,
           child: session != null
               ? const PortalHomeScreen()
               : const PortalLoginScreen(),
         ),
       ),
+    );
+  }
+
+  /// نفس فكرة انتقال المصباح: الصفحة الجديدة تدخل من اليمين وتنسحب
+  /// يسارا لتستقر، بدل الانتقال الافتراضي المفاجئ.
+  Route<T> _slideFromRightRoute<T>(Widget page) {
+    return PageRouteBuilder<T>(
+      transitionDuration: const Duration(milliseconds: 450),
+      reverseTransitionDuration: const Duration(milliseconds: 350),
+      pageBuilder: (context, animation, secondaryAnimation) => page,
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        final curved = CurvedAnimation(parent: animation, curve: Curves.easeInOutCubic);
+        return SlideTransition(
+          position: Tween<Offset>(begin: const Offset(1, 0), end: Offset.zero).animate(curved),
+          child: child,
+        );
+      },
     );
   }
 

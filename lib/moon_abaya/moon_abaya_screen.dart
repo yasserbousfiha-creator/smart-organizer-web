@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../portal/portal_client.dart';
+import '../widgets/table_lamp.dart';
 import 'moon_abaya_models.dart';
 import 'moon_abaya_storage.dart';
 
@@ -32,7 +33,7 @@ class MoonAbayaScreen extends StatefulWidget {
   State<MoonAbayaScreen> createState() => _MoonAbayaScreenState();
 }
 
-class _MoonAbayaScreenState extends State<MoonAbayaScreen> {
+class _MoonAbayaScreenState extends State<MoonAbayaScreen> with TickerProviderStateMixin {
   List<MoonAbayaItem> _items = [];
   bool _loading = true;
   MoonAbayaCategory? _filter;
@@ -42,11 +43,18 @@ class _MoonAbayaScreenState extends State<MoonAbayaScreen> {
   bool _showScrollTop = false;
   late final RealtimeChannel _channel;
 
+  /// بوابة المصباح: الشاشة كتبان غير بعد سحب الحبل.
+  bool _revealed = false;
+  late final AnimationController _welcomeCtrl;
+  late final Animation<double> _slideCurve;
+
   @override
   void initState() {
     super.initState();
     _load();
     _scrollController.addListener(_onScroll);
+    _welcomeCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 650));
+    _slideCurve = CurvedAnimation(parent: _welcomeCtrl, curve: Curves.easeInOutCubic);
     _channel = portalClient
         .channel('moon-abaya-items')
         .onPostgresChanges(
@@ -68,8 +76,15 @@ class _MoonAbayaScreenState extends State<MoonAbayaScreen> {
   void dispose() {
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
+    _welcomeCtrl.dispose();
     portalClient.removeChannel(_channel);
     super.dispose();
+  }
+
+  void _reveal() {
+    if (_revealed) return;
+    setState(() => _revealed = true);
+    _welcomeCtrl.forward(from: 0);
   }
 
   void _onScroll() {
@@ -393,31 +408,84 @@ class _MoonAbayaScreenState extends State<MoonAbayaScreen> {
               ),
             ),
           ),
-          _loading
-              ? const Center(child: CircularProgressIndicator(color: _kGold))
-              : SafeArea(
-                  child: CustomScrollView(
-                    controller: _scrollController,
-                    slivers: [
-                  SliverToBoxAdapter(child: _buildHeader(context, isMobile)),
-                  SliverToBoxAdapter(child: _buildStats(isMobile)),
-                  SliverToBoxAdapter(child: _buildFilters(isMobile)),
-                  if (_visible.isEmpty)
-                    SliverToBoxAdapter(child: _buildEmpty())
-                  else
-                    SliverPadding(
-                      padding: EdgeInsets.fromLTRB(
-                        isMobile ? 16 : 32, 8, isMobile ? 16 : 32, 100,
-                      ),
-                      sliver: SliverList.separated(
-                        itemCount: _visible.length,
-                        separatorBuilder: (_, index) => const SizedBox(height: 12),
-                        itemBuilder: (_, i) => _buildCard(_visible[i]),
+          // ── بوابة المصباح: نفس فكرة شاشة تسجيل الدخول — المصباح
+          // ينسحب يمينا ويختفي، والمحتوى يدخل من اليمين وينسحب يسارا. ──
+          AnimatedBuilder(
+            animation: _welcomeCtrl,
+            builder: (context, child) {
+              final t = _slideCurve.value;
+              final w = MediaQuery.of(context).size.width;
+              return Stack(
+                children: [
+                  if (t < 1.0)
+                    Transform.translate(
+                      offset: Offset(t * w, 0),
+                      child: Opacity(
+                        opacity: (1 - t).clamp(0.0, 1.0),
+                        child: _buildLampGate(),
                       ),
                     ),
+                  if (_revealed)
+                    Transform.translate(
+                      offset: Offset((1 - t) * w, 0),
+                      child: _loading
+                          ? const Center(child: CircularProgressIndicator(color: _kGold))
+                          : SafeArea(
+                              child: CustomScrollView(
+                                controller: _scrollController,
+                                slivers: [
+                              SliverToBoxAdapter(child: _buildHeader(context, isMobile)),
+                              SliverToBoxAdapter(child: _buildStats(isMobile)),
+                              SliverToBoxAdapter(child: _buildFilters(isMobile)),
+                              if (_visible.isEmpty)
+                                SliverToBoxAdapter(child: _buildEmpty())
+                              else
+                                SliverPadding(
+                                  padding: EdgeInsets.fromLTRB(
+                                    isMobile ? 16 : 32, 8, isMobile ? 16 : 32, 100,
+                                  ),
+                                  sliver: SliverList.separated(
+                                    itemCount: _visible.length,
+                                    separatorBuilder: (_, index) => const SizedBox(height: 12),
+                                    itemBuilder: (_, i) => _buildCard(_visible[i]),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                    ),
                 ],
-              ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLampGate() {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TableLamp(
+            onPulled: _reveal,
+            size: 230,
+            shadeColorTop: const Color(0xFFFFF8E8),
+            shadeColorBottom: _kGoldLight,
+            accentColor: _kGold,
+          ),
+          const SizedBox(height: 26),
+          Image.asset('assets/moon_abaya_logo.png', height: 46),
+          const SizedBox(height: 18),
+          Text(
+            'اسحب الحبل للدخول',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: Colors.white.withValues(alpha: 0.4),
             ),
+          ),
         ],
       ),
     );
