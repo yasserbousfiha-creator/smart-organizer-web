@@ -910,8 +910,6 @@ class _LandingPageState extends State<LandingPage>
               ),
             ),
           ] else ...[
-            _navLink('التطبيق', () {}),
-            const SizedBox(width: 4),
             _navLink('الدعم الفني', _scrollToSupport),
             const SizedBox(width: 16),
             const QuranRadioButton(),
@@ -956,14 +954,6 @@ class _LandingPageState extends State<LandingPage>
                     color: Colors.white.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(4),
                   ),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.apps_rounded, color: Colors.white70),
-                  title: const Text(
-                    'التطبيق',
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
-                  ),
-                  onTap: () => Navigator.pop(sheetContext),
                 ),
                 ListTile(
                   leading: const Icon(Icons.support_agent_rounded, color: Colors.white70),
