@@ -847,7 +847,7 @@ class _LandingPageState extends State<LandingPage>
     final isMobile = MediaQuery.of(context).size.width < kMobileBreakpoint;
     return Container(
       padding: EdgeInsets.symmetric(
-        horizontal: isMobile ? 16 : 48,
+        horizontal: isMobile ? 12 : 48,
         vertical: 18,
       ),
       decoration: BoxDecoration(
@@ -863,30 +863,30 @@ class _LandingPageState extends State<LandingPage>
       child: Row(
         textDirection: TextDirection.ltr,
         children: [
-          SmallLogoWidget(size: isMobile ? 32 : 38),
-          const SizedBox(width: 10),
+          SmallLogoWidget(size: isMobile ? 30 : 38),
+          SizedBox(width: isMobile ? 8 : 10),
           Flexible(
             child: ShaderMask(
               shaderCallback: (b) => kMainGradient.createShader(b),
               child: Text(
                 'Smart Organizer',
                 overflow: TextOverflow.ellipsis,
+                softWrap: false,
                 style: TextStyle(fontFamily: 'Tajawal',
                   fontWeight: FontWeight.w800,
-                  fontSize: isMobile ? 16 : 20,
+                  fontSize: isMobile ? 14 : 20,
                   color: Colors.white,
                 ),
               ),
             ),
           ),
-          const SizedBox(width: 6),
           MouseRegion(
             cursor: SystemMouseCursors.click,
             child: GestureDetector(
               onTap: () => _openMoonAbaya(context),
               behavior: HitTestBehavior.opaque,
               child: Padding(
-                padding: const EdgeInsets.all(6),
+                padding: EdgeInsets.all(isMobile ? 3 : 6),
                 child: Icon(
                   Icons.circle,
                   size: 4,
@@ -898,10 +898,18 @@ class _LandingPageState extends State<LandingPage>
           const Spacer(),
           if (isMobile) ...[
             const QuranRadioButton(compact: true),
-            const SizedBox(width: 8),
-            IconButton(
-              onPressed: () => _showMobileMenu(context),
-              icon: const Icon(Icons.menu_rounded, color: Colors.white),
+            const SizedBox(width: 6),
+            MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: GestureDetector(
+                onTap: () => _showMobileMenu(context),
+                child: Container(
+                  width: 36,
+                  height: 36,
+                  alignment: Alignment.center,
+                  child: const Icon(Icons.menu_rounded, size: 22, color: Colors.white),
+                ),
+              ),
             ),
           ] else ...[
             _navLink('التطبيق', () {}),
