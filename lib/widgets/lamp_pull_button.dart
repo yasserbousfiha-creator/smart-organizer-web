@@ -39,7 +39,9 @@ class _LampPullButtonState extends State<LampPullButton> with SingleTickerProvid
 
   void _onDragEnd(DragEndDetails d) {
     if (_dragExtra >= _triggerThreshold) {
-      _springBack();
+      // البوابة غادي تتفتح — نرجّعو الحبل بلا حركة زنبركية (الودجة راه
+      // غادي تختفي بالتنقّل، فما كاينش داعي للانيميشن هنا).
+      setState(() => _dragExtra = 0);
       widget.onPulled();
       return;
     }
@@ -51,12 +53,19 @@ class _LampPullButtonState extends State<LampPullButton> with SingleTickerProvid
     _springCtrl.reset();
     void listener() => _springTick(start);
     _springCtrl.addListener(listener);
-    _springCtrl.forward().whenComplete(() => _springCtrl.removeListener(listener));
+    _springCtrl.forward().whenComplete(() {
+      if (!mounted) return;
+      _springCtrl.removeListener(listener);
+    });
   }
 
   void _springTick(double start) {
     if (!mounted) return;
-    setState(() => _dragExtra = start * (1 - Curves.elasticOut.transform(_springCtrl.value)));
+    // Curves.elasticOut كتفوت 1.0 مؤقتاً (ارتداد زنبركي) — كنقصو النتيجة
+    // بين 0 و_maxPull باش الحبل ما يبانش سالب ولا يتجاوز الحد الأقصى
+    // (كان كيسبب RenderFlex overflow وخطأ عند الإفلات).
+    final raw = start * (1 - Curves.elasticOut.transform(_springCtrl.value));
+    setState(() => _dragExtra = raw.clamp(0, _maxPull));
   }
 
   @override
@@ -75,7 +84,8 @@ class _LampPullButtonState extends State<LampPullButton> with SingleTickerProvid
           onVerticalDragEnd: _onDragEnd,
           child: SizedBox(
             width: widget.shadeSize + 10,
-            height: widget.shadeSize * 0.7 + _maxPull + 16,
+            // القبة + أقصى طول للحبل (راحة + سحب) + الكرة + هامش أمان
+            height: (widget.shadeSize * 0.62) + _restLength + _maxPull + 10 + 10,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
