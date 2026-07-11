@@ -900,7 +900,7 @@ class _LandingPageState extends State<LandingPage>
           if (isMobile) ...[
             const QuranRadioButton(compact: true),
             const SizedBox(width: 4),
-            LampPullButton(onPulled: () => _openPortal(context), shadeSize: 22),
+            LampPullButton(onPulled: () => _openPortal(context), compact: true),
             const SizedBox(width: 4),
             MouseRegion(
               cursor: SystemMouseCursors.click,
