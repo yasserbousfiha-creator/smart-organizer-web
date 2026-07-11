@@ -113,7 +113,7 @@ class _DemoTaskSectionState extends State<DemoTaskSection> {
           ),
           const SizedBox(height: 12),
           Text(
-            'اكتب أي مهمة تخطر ببالك وشوف كيفاش كنرتبوها ليك تلقائياً — بلا تسجيل دخول.',
+            'اكتب أي مهمة تخطر ببالك وشاهد كيف نرتّبها لك تلقائياً — بلا حاجة لتسجيل الدخول.',
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 15, color: Colors.white.withValues(alpha: 0.55), height: 1.6),
           ),
@@ -187,7 +187,7 @@ class _DemoTaskSectionState extends State<DemoTaskSection> {
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 24),
                     child: Text(
-                      'لا توجد مهام بعد — جرّب تضيف وحدة 👆',
+                      'لا توجد مهام بعد — جرّب إضافة واحدة 👆',
                       style: TextStyle(color: Colors.white.withValues(alpha: 0.35), fontSize: 13),
                     ),
                   )
