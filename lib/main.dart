@@ -783,7 +783,6 @@ class _LandingPageState extends State<LandingPage>
                   key: _supportKey,
                   child: _RevealOnScroll(child: _buildSupportSection()),
                 ),
-                _RevealOnScroll(child: _buildEmployeePortalSection(context)),
                 _RevealOnScroll(
                   triggerOffset: 40,
                   child: _buildFooter(),
@@ -1440,153 +1439,9 @@ class _LandingPageState extends State<LandingPage>
     );
   }
 
-  Widget _buildEmployeePortalSection(BuildContext context) {
-    final isMobile = MediaQuery.of(context).size.width < kMobileBreakpoint;
-
-    final badge = Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-          decoration: BoxDecoration(
-            color: kPurple.withValues(alpha: 0.18),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: kPurple.withValues(alpha: 0.35)),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.lock_person_rounded,
-                size: 13,
-                color: kPurple.withValues(alpha: 0.9),
-              ),
-              const SizedBox(width: 6),
-              Text(
-                'للموظفين فقط',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: kPurple.withValues(alpha: 0.9),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-
-    final textColumn = Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        badge,
-        const SizedBox(height: 18),
-        ShaderMask(
-          shaderCallback: (b) =>
-              LinearGradient(colors: [kPurple, kBlue]).createShader(b),
-          child: Text(
-            'بوابة الموظفين',
-            style: TextStyle(fontFamily: 'Tajawal',
-              fontSize: isMobile ? 26 : 30,
-              fontWeight: FontWeight.w900,
-              color: Colors.white,
-            ),
-          ),
-        ),
-        const SizedBox(height: 10),
-        Text(
-          'تحقق من إجازاتك، راتبك، سلفك، وبياناتك الشخصية\nمن أي مكان وفي أي وقت.',
-          style: TextStyle(
-            fontSize: 15,
-            color: Colors.white.withValues(alpha: 0.55),
-            height: 1.7,
-          ),
-        ),
-      ],
-    );
-
-    final loginButton = GestureDetector(
-      onTap: () => _openPortal(context),
-      child: MouseRegion(
-        cursor: SystemMouseCursors.click,
-        child: Container(
-          width: isMobile ? double.infinity : null,
-          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 18),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [kPurple, kBlue],
-              begin: Alignment.topRight,
-              end: Alignment.bottomLeft,
-            ),
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: kPurple.withValues(alpha: 0.45),
-                blurRadius: 24,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.login_rounded, color: Colors.white, size: 20),
-              const SizedBox(width: 10),
-              Text(
-                'تسجيل الدخول',
-                style: TextStyle(fontFamily: 'Tajawal',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-
-    return Container(
-      width: double.infinity,
-      margin: EdgeInsets.symmetric(
-        horizontal: isMobile ? 20 : 40,
-        vertical: 20,
-      ),
-      padding: EdgeInsets.symmetric(
-        vertical: isMobile ? 32 : 48,
-        horizontal: isMobile ? 24 : 40,
-      ),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(28),
-        gradient: LinearGradient(
-          colors: [kPurple.withValues(alpha: 0.12), kBlue.withValues(alpha: 0.12)],
-          begin: Alignment.topRight,
-          end: Alignment.bottomLeft,
-        ),
-        border: Border.all(color: kPurple.withValues(alpha: 0.25)),
-      ),
-      child: isMobile
-          ? Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                textColumn,
-                const SizedBox(height: 28),
-                loginButton,
-              ],
-            )
-          : Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(child: textColumn),
-                const SizedBox(width: 40),
-                loginButton,
-              ],
-            ),
-    );
-  }
-
   Widget _buildFooter() {
+    return Builder(builder: (context) {
+    final isMobile = MediaQuery.of(context).size.width < kMobileBreakpoint;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 44),
@@ -1616,21 +1471,21 @@ class _LandingPageState extends State<LandingPage>
             ],
           ),
           const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                'جميع الحقوق محفوظة By YASSER BOUSFIHA © 2026 — Smart Organizer',
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.28),
-                  fontSize: 13,
-                ),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: isMobile ? 24 : 0),
+            child: Text(
+              'جميع الحقوق محفوظة By YASSER BOUSFIHA © 2026 — Smart Organizer',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.28),
+                fontSize: isMobile ? 10.5 : 13,
               ),
-            ],
+            ),
           ),
         ],
       ),
     );
+    });
   }
 
   Future<bool> _isMoonAbayaAdmin() async {
