@@ -12,6 +12,8 @@ import 'widgets/quran_radio_button.dart';
 import 'widgets/lamp_pull_button.dart';
 import 'widgets/moon_crescent_button.dart';
 import 'widgets/demo_task_section.dart';
+import 'widgets/waitlist_section.dart';
+import 'widgets/visitor_counter_badge.dart';
 
 String? _portalInitError;
 bool _supabaseReady = false;
@@ -785,6 +787,7 @@ class _LandingPageState extends State<LandingPage>
                   key: _supportKey,
                   child: _RevealOnScroll(child: _buildSupportSection()),
                 ),
+                const _RevealOnScroll(child: WaitlistSection()),
                 _RevealOnScroll(
                   triggerOffset: 40,
                   child: _buildFooter(),
@@ -994,7 +997,14 @@ class _LandingPageState extends State<LandingPage>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _heroBadge(),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: [
+                    _heroBadge(),
+                    const VisitorCounterBadge(),
+                  ],
+                ),
                 const SizedBox(height: 30),
                 ShaderMask(
                   shaderCallback: (b) => kMainGradient.createShader(b),
