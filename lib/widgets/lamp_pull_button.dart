@@ -1,82 +1,72 @@
 import 'package:flutter/material.dart';
-import '../theme/app_colors.dart';
 
-/// زر "بوابة الموظفين" — بنفس ستايل زر إذاعة القرآن الكريم بالضبط (بيضة
-/// مضغوطة بالجوال، بطاقة بأيقونة+نص بسطح المكتب)، بأيقونة مصباح صغيرة
-/// بدل النص العادي. الضغط عليه كيفتح نافذة تسجيل الدخول.
+/// زر "بوابة الموظفين" — لمبة صغيرة مجرّدة (بلا صندوق ولا نص)، بحبل
+/// قابل للسحب فعلاً. اسحب الحبل للأسفل (أو اضغط عليه) باش تفتح نافذة
+/// تسجيل الدخول. الحجم كيتأقلم لوحده مع طول الحبل الحالي، فما كاينش
+/// خطر overflow.
 class LampPullButton extends StatefulWidget {
   final VoidCallback onPulled;
-  final bool compact;
-  const LampPullButton({super.key, required this.onPulled, this.compact = false});
+  const LampPullButton({super.key, required this.onPulled});
 
   @override
   State<LampPullButton> createState() => _LampPullButtonState();
 }
 
-class _LampPullButtonState extends State<LampPullButton> {
+class _LampPullButtonState extends State<LampPullButton> with SingleTickerProviderStateMixin {
+  static const double _restLength = 9;
+  static const double _maxPull = 18;
+  static const double _triggerThreshold = 12;
+
+  late final AnimationController _springCtrl;
+  double _dragExtra = 0;
   bool _hovered = false;
 
   @override
-  Widget build(BuildContext context) {
-    final icon = SizedBox(
-      width: widget.compact ? 19 : 18,
-      height: widget.compact ? 19 : 18,
-      child: CustomPaint(painter: _LampGlyphPainter(lit: _hovered)),
-    );
+  void initState() {
+    super.initState();
+    _springCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 420));
+  }
 
-    Widget content;
-    if (widget.compact) {
-      content = Container(
-        width: 38,
-        height: 38,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: _hovered
-              ? AppColors.primary.withValues(alpha: 0.22)
-              : Colors.white.withValues(alpha: 0.06),
-          border: Border.all(
-            color: _hovered
-                ? AppColors.primaryLight.withValues(alpha: 0.6)
-                : Colors.white.withValues(alpha: 0.16),
-          ),
-        ),
-        alignment: Alignment.center,
-        child: icon,
-      );
-    } else {
-      content = Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          color: _hovered
-              ? AppColors.primary.withValues(alpha: 0.16)
-              : Colors.white.withValues(alpha: 0.05),
-          border: Border.all(
-            color: _hovered
-                ? AppColors.primaryLight.withValues(alpha: 0.55)
-                : Colors.white.withValues(alpha: 0.18),
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            icon,
-            const SizedBox(width: 8),
-            Text(
-              'بوابة الموظفين',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: _hovered ? AppColors.primaryLight : Colors.white.withValues(alpha: 0.8),
-              ),
-            ),
-          ],
-        ),
-      );
+  @override
+  void dispose() {
+    _springCtrl.dispose();
+    super.dispose();
+  }
+
+  void _onDragUpdate(DragUpdateDetails d) {
+    setState(() => _dragExtra = (_dragExtra + d.delta.dy).clamp(0, _maxPull));
+  }
+
+  void _onDragEnd(DragEndDetails d) {
+    if (_dragExtra >= _triggerThreshold) {
+      setState(() => _dragExtra = 0);
+      widget.onPulled();
+      return;
     }
+    _springBack();
+  }
 
+  void _springBack() {
+    final start = _dragExtra;
+    _springCtrl.reset();
+    void listener() {
+      if (!mounted) return;
+      final raw = start * (1 - Curves.elasticOut.transform(_springCtrl.value));
+      setState(() => _dragExtra = raw.clamp(0, _maxPull));
+    }
+    _springCtrl.addListener(listener);
+    _springCtrl.forward().whenComplete(() {
+      if (!mounted) return;
+      _springCtrl.removeListener(listener);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cordLength = _restLength + _dragExtra;
+    final lit = _hovered || _dragExtra > 0;
     return Tooltip(
-      message: 'بوابة الموظفين',
+      message: 'بوابة الموظفين — اسحب لتسجيل الدخول',
       child: MouseRegion(
         cursor: SystemMouseCursors.click,
         onEnter: (_) => setState(() => _hovered = true),
@@ -84,56 +74,89 @@ class _LampPullButtonState extends State<LampPullButton> {
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: widget.onPulled,
-          child: content,
+          onVerticalDragUpdate: _onDragUpdate,
+          onVerticalDragEnd: _onDragEnd,
+          // بلا صندوق ولا خلفية ولا نص — لمبة مجرّدة فقط. Column بلا
+          // SizedBox خارجي يفرض ارتفاع خاطئ، فتحجم الودجة كيتبع حجم
+          // محتواها الفعلي دايماً (بلا خطر overflow).
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  width: 24,
+                  height: 15,
+                  child: CustomPaint(painter: _LampShadePainter(lit: lit)),
+                ),
+                Container(
+                  width: 1.4,
+                  height: cordLength,
+                  color: Colors.white.withValues(alpha: 0.4),
+                ),
+                Container(
+                  width: 9,
+                  height: 9,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: const LinearGradient(colors: [Color(0xFFFDE68A), Color(0xFFF59E0B)]),
+                    boxShadow: [
+                      BoxShadow(color: const Color(0xFFF59E0B).withValues(alpha: 0.55), blurRadius: 8),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
   }
 }
 
-/// أيقونة مصباح صغيرة (قبة + عمود قصير + كرة السحب) مرسومة بالكامل داخل
-/// حدودها الخاصة — بلا أي عنصر معلّق برا الصندوق، فما كاينش خطر overflow.
-class _LampGlyphPainter extends CustomPainter {
+class _LampShadePainter extends CustomPainter {
   final bool lit;
-  const _LampGlyphPainter({required this.lit});
+  const _LampShadePainter({required this.lit});
 
   @override
   void paint(Canvas canvas, Size size) {
     final w = size.width, h = size.height;
-    final domeColor = lit ? const Color(0xFFFFF7E0) : Colors.white.withValues(alpha: 0.85);
-
-    // القبة
-    final shadePath = Path()
-      ..moveTo(w * 0.5, h * 0.02)
-      ..lineTo(w * 0.14, h * 0.42)
-      ..quadraticBezierTo(w * 0.5, h * 0.6, w * 0.86, h * 0.42)
-      ..close();
-    canvas.drawPath(shadePath, Paint()..color = domeColor);
 
     if (lit) {
       canvas.drawCircle(
-        Offset(w / 2, h * 0.3),
-        w * 0.55,
+        Offset(w / 2, h * 0.9),
+        w * 0.9,
         Paint()
           ..shader = RadialGradient(
-            colors: [AppColors.primaryLight.withValues(alpha: 0.45), Colors.transparent],
-          ).createShader(Rect.fromCircle(center: Offset(w / 2, h * 0.3), radius: w * 0.55)),
+            colors: [Colors.white.withValues(alpha: 0.45), Colors.transparent],
+          ).createShader(Rect.fromCircle(center: Offset(w / 2, h * 0.9), radius: w * 0.9)),
       );
     }
 
-    // العمود + كرة السحب
-    final cordPaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.5)
-      ..strokeWidth = w * 0.06;
-    canvas.drawLine(Offset(w / 2, h * 0.42), Offset(w / 2, h * 0.82), cordPaint);
+    // قبة ناعمة (نصف بيضاوي بحواف مدورة)
+    final shadePath = Path()
+      ..moveTo(w * 0.5, 0)
+      ..cubicTo(w * 0.5, h * 0.1, w * 0.05, h * 0.3, w * 0.02, h * 0.75)
+      ..quadraticBezierTo(w * 0.5, h * 1.05, w * 0.98, h * 0.75)
+      ..cubicTo(w * 0.95, h * 0.3, w * 0.5, h * 0.1, w * 0.5, 0)
+      ..close();
+    canvas.drawPath(
+      shadePath,
+      Paint()
+        ..shader = const LinearGradient(
+          colors: [Color(0xFFFFFDF5), Color(0xFFFDE9C8)],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ).createShader(Rect.fromLTWH(0, 0, w, h)),
+    );
 
     canvas.drawCircle(
-      Offset(w / 2, h * 0.88),
-      w * 0.14,
-      Paint()..color = const Color(0xFFF59E0B),
+      Offset(w / 2, h * 0.62),
+      w * 0.09,
+      Paint()..color = lit ? const Color(0xFFFFF7E0) : const Color(0xFFE7DFC8),
     );
   }
 
   @override
-  bool shouldRepaint(covariant _LampGlyphPainter oldDelegate) => oldDelegate.lit != lit;
+  bool shouldRepaint(covariant _LampShadePainter oldDelegate) => oldDelegate.lit != lit;
 }

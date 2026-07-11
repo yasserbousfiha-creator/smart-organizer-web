@@ -10,6 +10,7 @@ import 'theme/app_colors.dart';
 import 'moon_abaya/moon_abaya_screen.dart';
 import 'widgets/quran_radio_button.dart';
 import 'widgets/lamp_pull_button.dart';
+import 'widgets/table_lamp.dart';
 
 String? _portalInitError;
 bool _supabaseReady = false;
@@ -900,7 +901,7 @@ class _LandingPageState extends State<LandingPage>
           if (isMobile) ...[
             const QuranRadioButton(compact: true),
             const SizedBox(width: 4),
-            LampPullButton(onPulled: () => _openPortal(context), compact: true),
+            LampPullButton(onPulled: () => _openPortal(context)),
             const SizedBox(width: 4),
             MouseRegion(
               cursor: SystemMouseCursors.click,
@@ -1700,14 +1701,17 @@ class _LandingPageState extends State<LandingPage>
   Future<void> _showMoonAbayaLoginDialog(BuildContext context) async {
     final userCtrl = TextEditingController();
     final passCtrl = TextEditingController();
+    // لازم هاد المتغيرات تكون هنا (خارج builder ديال StatefulBuilder)
+    // وماشي بداخلو — لأن StatefulBuilder كينادي widget.builder من جديد
+    // بكل rebuild، وأي متغير معرّف بداخلو كيترجع لقيمتو الأصلية فكل مرة.
+    String? error;
+    bool loading = false;
+    bool revealed = false;
 
     final success = await showDialog<bool>(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) {
-          String? error;
-          bool loading = false;
-
           Future<void> submit() async {
             if (userCtrl.text.trim().isEmpty) {
               setDialogState(() => error = 'أدخل اسم المستخدم');
@@ -1741,23 +1745,54 @@ class _LandingPageState extends State<LandingPage>
             }
           }
 
-          return Directionality(
-            textDirection: TextDirection.rtl,
-            child: AlertDialog(
-              backgroundColor: AppColors.surface,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(24),
-                side: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+          Widget buildLampGate() {
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Column(
+                key: const ValueKey('lamp'),
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // مصباح بألوان ضوء القمر — مختلف عن لمبة بوابة الموظفين
+                  // الذهبية فالـnavbar، يناسب هوية "Moon Abaya".
+                  TableLamp(
+                    onPulled: () => setDialogState(() => revealed = true),
+                    size: 190,
+                    shadeColorTop: const Color(0xFFF6F5FF),
+                    shadeColorBottom: const Color(0xFFC9C3F0),
+                    accentColor: const Color(0xFF8B7FD6),
+                  ),
+                  const SizedBox(height: 20),
+                  Image.asset('assets/moon_abaya_logo.png', height: 40),
+                  const SizedBox(height: 14),
+                  Text(
+                    'اسحب الحبل للدخول',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white.withValues(alpha: 0.4),
+                    ),
+                  ),
+                ],
               ),
-              title: const Text(
-                'وصول مقيّد',
-                style: TextStyle(fontFamily: 'Tajawal',
-                  fontWeight: FontWeight.bold,
-                  fontSize: 20,
-                  color: Colors.white,
+            );
+          }
+
+          Widget buildLoginForm() {
+            return Column(
+              key: const ValueKey('form'),
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'وصول مقيّد',
+                  style: TextStyle(fontFamily: 'Tajawal',
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20,
+                    color: Colors.white,
+                  ),
                 ),
-              ),
-              content: Column(
+                const SizedBox(height: 18),
+                Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   TextField(
@@ -1813,39 +1848,70 @@ class _LandingPageState extends State<LandingPage>
                     Text(error!, style: const TextStyle(color: Colors.redAccent, fontSize: 12.5)),
                   ],
                 ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: loading ? null : () => Navigator.pop(ctx),
-                  child: Text(
-                    'إلغاء',
-                    style: TextStyle(color: Colors.white.withValues(alpha: 0.4)),
-                  ),
                 ),
-                Container(
-                  decoration: BoxDecoration(
-                    gradient: kMainGradient,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.transparent,
-                      shadowColor: Colors.transparent,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                const SizedBox(height: 18),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: loading ? null : () => Navigator.pop(ctx),
+                      child: Text(
+                        'إلغاء',
+                        style: TextStyle(color: Colors.white.withValues(alpha: 0.4)),
                       ),
                     ),
-                    onPressed: loading ? null : submit,
-                    child: loading
-                        ? const SizedBox(
-                            width: 18, height: 18,
-                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                          )
-                        : const Text('دخول'),
-                  ),
+                    const SizedBox(width: 8),
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: kMainGradient,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.transparent,
+                          shadowColor: Colors.transparent,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        onPressed: loading ? null : submit,
+                        child: loading
+                            ? const SizedBox(
+                                width: 18, height: 18,
+                                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                              )
+                            : const Text('دخول'),
+                      ),
+                    ),
+                  ],
                 ),
               ],
+            );
+          }
+
+          return Directionality(
+            textDirection: TextDirection.rtl,
+            child: Dialog(
+              backgroundColor: AppColors.surface,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+                side: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(28),
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 450),
+                  transitionBuilder: (child, anim) => FadeTransition(
+                    opacity: anim,
+                    child: ScaleTransition(
+                      scale: Tween<double>(begin: 0.85, end: 1.0).animate(anim),
+                      child: child,
+                    ),
+                  ),
+                  child: revealed ? buildLoginForm() : buildLampGate(),
+                ),
+              ),
             ),
           );
         },
