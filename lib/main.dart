@@ -882,20 +882,14 @@ class _LandingPageState extends State<LandingPage>
               ),
             ),
           ),
-          MouseRegion(
-            cursor: SystemMouseCursors.click,
-            child: GestureDetector(
-              onTap: () => _openMoonAbaya(context),
-              behavior: HitTestBehavior.opaque,
-              child: Padding(
-                padding: EdgeInsets.all(isMobile ? 3 : 6),
-                child: Icon(
-                  Icons.circle,
-                  size: 4,
-                  color: Colors.white.withValues(alpha: 0.15),
-                ),
-              ),
-            ),
+          // لمبة Moon Abaya المخفية — بألوان ضوء القمر (بنفسجي فاتح)،
+          // مختلفة عن لمبة بوابة الموظفين الكهرمانية جنب الراديو.
+          LampPullButton(
+            onPulled: () => _openMoonAbaya(context),
+            tooltip: 'Moon Abaya',
+            shadeTop: const Color(0xFFF6F5FF),
+            shadeBottom: const Color(0xFFC9C3F0),
+            accentColor: const Color(0xFF8B7FD6),
           ),
           const Spacer(),
           if (isMobile) ...[

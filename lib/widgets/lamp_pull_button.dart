@@ -1,12 +1,24 @@
 import 'package:flutter/material.dart';
 
-/// زر "بوابة الموظفين" — لمبة صغيرة مجرّدة (بلا صندوق ولا نص)، بحبل
-/// قابل للسحب فعلاً. اسحب الحبل للأسفل (أو اضغط عليه) باش تفتح نافذة
-/// تسجيل الدخول. الحجم كيتأقلم لوحده مع طول الحبل الحالي، فما كاينش
-/// خطر overflow.
+/// لمبة صغيرة مجرّدة (بلا صندوق ولا نص) بحبل قابل للسحب فعلاً — تُستعمل
+/// لكل من "بوابة الموظفين" (كهرمانية) و"بوابة Moon Abaya" (بألوان
+/// ضوء القمر) بألوان مختلفة باش تتميّز كل وحدة عن الأخرى. اسحب الحبل
+/// للأسفل (أو اضغط عليه) باش تفتح النافذة المرتبطة بيها. الحجم كيتأقلم
+/// لوحده مع طول الحبل الحالي، فما كاينش خطر overflow.
 class LampPullButton extends StatefulWidget {
   final VoidCallback onPulled;
-  const LampPullButton({super.key, required this.onPulled});
+  final String tooltip;
+  final Color shadeTop;
+  final Color shadeBottom;
+  final Color accentColor;
+  const LampPullButton({
+    super.key,
+    required this.onPulled,
+    this.tooltip = 'بوابة الموظفين — اسحب لتسجيل الدخول',
+    this.shadeTop = const Color(0xFFFFFDF5),
+    this.shadeBottom = const Color(0xFFFDE9C8),
+    this.accentColor = const Color(0xFFF59E0B),
+  });
 
   @override
   State<LampPullButton> createState() => _LampPullButtonState();
@@ -66,7 +78,7 @@ class _LampPullButtonState extends State<LampPullButton> with SingleTickerProvid
     final cordLength = _restLength + _dragExtra;
     final lit = _hovered || _dragExtra > 0;
     return Tooltip(
-      message: 'بوابة الموظفين — اسحب لتسجيل الدخول',
+      message: widget.tooltip,
       child: MouseRegion(
         cursor: SystemMouseCursors.click,
         onEnter: (_) => setState(() => _hovered = true),
@@ -87,7 +99,14 @@ class _LampPullButtonState extends State<LampPullButton> with SingleTickerProvid
                 SizedBox(
                   width: 24,
                   height: 15,
-                  child: CustomPaint(painter: _LampShadePainter(lit: lit)),
+                  child: CustomPaint(
+                    painter: _LampShadePainter(
+                      lit: lit,
+                      shadeTop: widget.shadeTop,
+                      shadeBottom: widget.shadeBottom,
+                      accentColor: widget.accentColor,
+                    ),
+                  ),
                 ),
                 Container(
                   width: 1.4,
@@ -99,9 +118,14 @@ class _LampPullButtonState extends State<LampPullButton> with SingleTickerProvid
                   height: 9,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    gradient: const LinearGradient(colors: [Color(0xFFFDE68A), Color(0xFFF59E0B)]),
+                    gradient: LinearGradient(
+                      colors: [
+                        Color.lerp(widget.accentColor, Colors.white, 0.45)!,
+                        widget.accentColor,
+                      ],
+                    ),
                     boxShadow: [
-                      BoxShadow(color: const Color(0xFFF59E0B).withValues(alpha: 0.55), blurRadius: 8),
+                      BoxShadow(color: widget.accentColor.withValues(alpha: 0.55), blurRadius: 8),
                     ],
                   ),
                 ),
@@ -116,7 +140,15 @@ class _LampPullButtonState extends State<LampPullButton> with SingleTickerProvid
 
 class _LampShadePainter extends CustomPainter {
   final bool lit;
-  const _LampShadePainter({required this.lit});
+  final Color shadeTop;
+  final Color shadeBottom;
+  final Color accentColor;
+  const _LampShadePainter({
+    required this.lit,
+    required this.shadeTop,
+    required this.shadeBottom,
+    required this.accentColor,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -128,7 +160,7 @@ class _LampShadePainter extends CustomPainter {
         w * 0.9,
         Paint()
           ..shader = RadialGradient(
-            colors: [Colors.white.withValues(alpha: 0.45), Colors.transparent],
+            colors: [accentColor.withValues(alpha: 0.4), Colors.transparent],
           ).createShader(Rect.fromCircle(center: Offset(w / 2, h * 0.9), radius: w * 0.9)),
       );
     }
@@ -143,8 +175,8 @@ class _LampShadePainter extends CustomPainter {
     canvas.drawPath(
       shadePath,
       Paint()
-        ..shader = const LinearGradient(
-          colors: [Color(0xFFFFFDF5), Color(0xFFFDE9C8)],
+        ..shader = LinearGradient(
+          colors: [shadeTop, shadeBottom],
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
         ).createShader(Rect.fromLTWH(0, 0, w, h)),
@@ -153,10 +185,14 @@ class _LampShadePainter extends CustomPainter {
     canvas.drawCircle(
       Offset(w / 2, h * 0.62),
       w * 0.09,
-      Paint()..color = lit ? const Color(0xFFFFF7E0) : const Color(0xFFE7DFC8),
+      Paint()..color = lit ? Color.lerp(shadeTop, accentColor, 0.15)! : shadeBottom.withValues(alpha: 0.7),
     );
   }
 
   @override
-  bool shouldRepaint(covariant _LampShadePainter oldDelegate) => oldDelegate.lit != lit;
+  bool shouldRepaint(covariant _LampShadePainter oldDelegate) =>
+      oldDelegate.lit != lit ||
+      oldDelegate.shadeTop != shadeTop ||
+      oldDelegate.shadeBottom != shadeBottom ||
+      oldDelegate.accentColor != accentColor;
 }
