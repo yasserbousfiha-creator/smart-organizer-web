@@ -10,7 +10,7 @@ import 'theme/app_colors.dart';
 import 'moon_abaya/moon_abaya_screen.dart';
 import 'widgets/quran_radio_button.dart';
 import 'widgets/lamp_pull_button.dart';
-import 'widgets/table_lamp.dart';
+import 'widgets/moon_crescent_button.dart';
 
 String? _portalInitError;
 bool _supabaseReady = false;
@@ -882,15 +882,10 @@ class _LandingPageState extends State<LandingPage>
               ),
             ),
           ),
-          // لمبة Moon Abaya المخفية — بألوان ضوء القمر (بنفسجي فاتح)،
-          // مختلفة عن لمبة بوابة الموظفين الكهرمانية جنب الراديو.
-          LampPullButton(
-            onPulled: () => _openMoonAbaya(context),
-            tooltip: 'Moon Abaya',
-            shadeTop: const Color(0xFFF6F5FF),
-            shadeBottom: const Color(0xFFC9C3F0),
-            accentColor: const Color(0xFF8B7FD6),
-          ),
+          // هلال Moon Abaya المخفي — نفس روح الشعار، كيضوي ذهبياً عند
+          // مرور الماوس. مضغوط قصداً (بلا حبل معلّق) باش ما ياكلش من
+          // مساحة عنوان "Smart Organizer" جنبو.
+          MoonCrescentButton(onTap: () => _openMoonAbaya(context)),
           const Spacer(),
           if (isMobile) ...[
             const QuranRadioButton(compact: true),
@@ -1700,7 +1695,6 @@ class _LandingPageState extends State<LandingPage>
     // بكل rebuild، وأي متغير معرّف بداخلو كيترجع لقيمتو الأصلية فكل مرة.
     String? error;
     bool loading = false;
-    bool revealed = false;
 
     final success = await showDialog<bool>(
       context: context,
@@ -1739,44 +1733,14 @@ class _LandingPageState extends State<LandingPage>
             }
           }
 
-          Widget buildLampGate() {
-            return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              child: Column(
-                key: const ValueKey('lamp'),
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // مصباح بألوان ضوء القمر — مختلف عن لمبة بوابة الموظفين
-                  // الذهبية فالـnavbar، يناسب هوية "Moon Abaya".
-                  TableLamp(
-                    onPulled: () => setDialogState(() => revealed = true),
-                    size: 190,
-                    shadeColorTop: const Color(0xFFF6F5FF),
-                    shadeColorBottom: const Color(0xFFC9C3F0),
-                    accentColor: const Color(0xFF8B7FD6),
-                  ),
-                  const SizedBox(height: 20),
-                  Image.asset('assets/moon_abaya_logo.png', height: 40),
-                  const SizedBox(height: 14),
-                  Text(
-                    'اسحب الحبل للدخول',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white.withValues(alpha: 0.4),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }
-
           Widget buildLoginForm() {
             return Column(
               key: const ValueKey('form'),
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Center(child: Image.asset('assets/moon_abaya_logo.png', height: 34)),
+                const SizedBox(height: 16),
                 const Text(
                   'وصول مقيّد',
                   style: TextStyle(fontFamily: 'Tajawal',
@@ -1892,18 +1856,11 @@ class _LandingPageState extends State<LandingPage>
                 borderRadius: BorderRadius.circular(24),
                 side: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
               ),
-              child: Padding(
-                padding: const EdgeInsets.all(28),
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 450),
-                  transitionBuilder: (child, anim) => FadeTransition(
-                    opacity: anim,
-                    child: ScaleTransition(
-                      scale: Tween<double>(begin: 0.85, end: 1.0).animate(anim),
-                      child: child,
-                    ),
-                  ),
-                  child: revealed ? buildLoginForm() : buildLampGate(),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 380),
+                child: Padding(
+                  padding: const EdgeInsets.all(28),
+                  child: buildLoginForm(),
                 ),
               ),
             ),
