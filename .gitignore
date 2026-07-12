@@ -43,3 +43,6 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Personal photo — kept local only, never pushed to the public repo
+assets/system/soufiane.jpg

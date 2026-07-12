@@ -36,6 +36,7 @@ flutter:
     - assets/moon_abaya_bg.jpg
     - assets/screenshots/
     - assets/prayers/
+    - assets/system/
     - assets/fonts/
 
   fonts:

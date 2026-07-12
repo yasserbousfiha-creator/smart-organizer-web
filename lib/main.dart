@@ -15,6 +15,7 @@ import 'widgets/demo_task_section.dart';
 import 'widgets/waitlist_section.dart';
 import 'widgets/visitor_counter_badge.dart';
 import 'prayers/hidden_moon_icon.dart';
+import 'system_tracker/hidden_flame_icon.dart';
 
 String? _portalInitError;
 bool _supabaseReady = false;
@@ -789,6 +790,7 @@ class _LandingPageState extends State<LandingPage>
                   key: _supportKey,
                   child: _RevealOnScroll(child: _buildSupportSection()),
                 ),
+                const Center(child: HiddenFlameIcon()),
                 const _RevealOnScroll(child: WaitlistSection()),
                 _RevealOnScroll(
                   triggerOffset: 40,

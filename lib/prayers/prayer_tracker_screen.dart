@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -22,7 +24,9 @@ class _PrayerTrackerScreenState extends State<PrayerTrackerScreen> {
   bool _sendingMessage = false;
   String? _error;
   RealtimeChannel? _channel;
+  RealtimeChannel? _messagesChannel;
   final _messageController = TextEditingController();
+  List<PrayerMessage> _messages = [];
 
   static const _labels = {
     'fajr': 'الفجر',
@@ -55,8 +59,9 @@ class _PrayerTrackerScreenState extends State<PrayerTrackerScreen> {
         _day = day;
         _loading = false;
       });
-      _messageController.text = day.message;
       _channel = PrayerStorage.subscribeToday(_onRemoteChange);
+      _messagesChannel = PrayerStorage.subscribeMessages(_loadMessages);
+      unawaited(_loadMessages());
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -71,13 +76,14 @@ class _PrayerTrackerScreenState extends State<PrayerTrackerScreen> {
     final prev = _day;
     final newlyDone = prev != null &&
         kPrayerNames.any((p) => prev.status[p] != true && day.status[p] == true);
-    // نبدل النص فالصندوق غير إيلا ماكانش الكاتب حاليا كيبدل فيه هو نفسه،
-    // باش ماتنمحاش رسالة كيكتبها دابا بتحديث جاي من جهاز آخر.
-    if (prev != null && _messageController.text == prev.message) {
-      _messageController.text = day.message;
-    }
     setState(() => _day = day);
     if (newlyDone) _celebrate(day.allDone);
+  }
+
+  Future<void> _loadMessages() async {
+    final messages = await PrayerStorage.fetchMessages();
+    if (!mounted) return;
+    setState(() => _messages = messages);
   }
 
   void _celebrate(bool allDone) {
@@ -107,20 +113,29 @@ class _PrayerTrackerScreenState extends State<PrayerTrackerScreen> {
     final text = _messageController.text.trim();
     if (text.isEmpty || _sendingMessage) return;
     setState(() => _sendingMessage = true);
-    final updated = await PrayerStorage.setMessage(text);
-    if (!mounted) return;
-    setState(() {
-      _day = updated;
-      _sendingMessage = false;
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('تم إرسال الرسالة لباباك 💌')),
-    );
+    try {
+      await PrayerStorage.sendMessage(text);
+      if (!mounted) return;
+      _messageController.clear();
+      await _loadMessages();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تم إرسال الرسالة لباباك 💌')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('تعذر إرسال الرسالة: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _sendingMessage = false);
+    }
   }
 
   @override
   void dispose() {
     _channel?.unsubscribe();
+    _messagesChannel?.unsubscribe();
     _messageController.dispose();
     super.dispose();
   }
@@ -217,9 +232,30 @@ class _PrayerTrackerScreenState extends State<PrayerTrackerScreen> {
                       ),
                     ),
                   ),
+                  if (_messages.isNotEmpty) ...[
+                    const SizedBox(height: 20),
+                    const Text(
+                      'الرسائل اليوم',
+                      style: TextStyle(color: Colors.white54, fontSize: 13, fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 8),
+                    ..._messages.reversed.map(_buildMessageTile),
+                  ],
                 ],
               ),
       ),
+    );
+  }
+
+  Widget _buildMessageTile(PrayerMessage m) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceHi,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(m.text, style: const TextStyle(color: Colors.white)),
     );
   }
 

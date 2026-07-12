@@ -7,11 +7,10 @@ import '../portal/portal_client.dart';
 const List<String> kPrayerNames = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
 
 class PrayerDay {
-  PrayerDay({required this.date, required this.status, this.message = ''});
+  PrayerDay({required this.date, required this.status});
 
   final DateTime date;
   final Map<String, bool> status;
-  final String message;
 
   bool get allDone => kPrayerNames.every((p) => status[p] == true);
 
@@ -19,12 +18,27 @@ class PrayerDay {
     return PrayerDay(
       date: DateTime.parse(row['prayer_date'] as String),
       status: {for (final p in kPrayerNames) p: row[p] == true},
-      message: (row['message'] as String?) ?? '',
     );
   }
 
   factory PrayerDay.empty(DateTime date) {
     return PrayerDay(date: date, status: {for (final p in kPrayerNames) p: false});
+  }
+}
+
+class PrayerMessage {
+  PrayerMessage({required this.id, required this.text, required this.createdAt});
+
+  final String id;
+  final String text;
+  final DateTime createdAt;
+
+  factory PrayerMessage.fromRow(Map<String, dynamic> row) {
+    return PrayerMessage(
+      id: row['id'] as String,
+      text: row['message'] as String,
+      createdAt: DateTime.parse(row['created_at'] as String),
+    );
   }
 }
 
@@ -71,17 +85,6 @@ class PrayerStorage {
     return PrayerDay.fromRow(updated);
   }
 
-  static Future<PrayerDay> setMessage(String message) async {
-    final today = _todayKey();
-    final updated = await portalClient
-        .from(table)
-        .update({'message': message, 'updated_at': DateTime.now().toIso8601String()})
-        .eq('prayer_date', today)
-        .select()
-        .single();
-    return PrayerDay.fromRow(updated);
-  }
-
   /// اشتراك مباشر (Realtime) فتغييرات صف اليوم — باش الصفحة تتحدث وحدها
   /// من غير ما تحتاج refresh، حتى لو الصلاة تعلمت من جهاز آخر.
   static RealtimeChannel subscribeToday(void Function(PrayerDay day) onChange) {
@@ -103,6 +106,45 @@ class PrayerStorage {
               onChange(PrayerDay.fromRow(row));
             }
           },
+        )
+        .subscribe();
+  }
+
+  static const messagesTable = 'prayer_messages';
+
+  /// آخر حد لدورة الرسائل: 5:00 صباحا بالتوقيت المحلي ديال الجهاز. إيلا
+  /// كان الوقت الحالي قبل 5 صباحا، كتحسب 5 صباحا ديال البارح.
+  static DateTime _messagesCycleStart() {
+    final now = DateTime.now();
+    final todayAt5 = DateTime(now.year, now.month, now.day, 5);
+    return now.isBefore(todayAt5) ? todayAt5.subtract(const Duration(days: 1)) : todayAt5;
+  }
+
+  /// كيمسح الرسائل القديمة (قبل 5 صباحا ديال الدورة الحالية)، ومن بعد
+  /// كيرجع الرسائل المتبقية.
+  static Future<List<PrayerMessage>> fetchMessages() async {
+    final cycleStart = _messagesCycleStart();
+    await portalClient
+        .from(messagesTable)
+        .delete()
+        .lt('created_at', cycleStart.toIso8601String());
+
+    final rows = await portalClient.from(messagesTable).select().order('created_at', ascending: true);
+    return rows.map((r) => PrayerMessage.fromRow(r)).toList();
+  }
+
+  static Future<void> sendMessage(String text) async {
+    await portalClient.from(messagesTable).insert({'message': text});
+  }
+
+  static RealtimeChannel subscribeMessages(void Function() onChange) {
+    return portalClient
+        .channel('prayer-messages')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: messagesTable,
+          callback: (_) => onChange(),
         )
         .subscribe();
   }
