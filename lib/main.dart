@@ -14,6 +14,7 @@ import 'widgets/moon_crescent_button.dart';
 import 'widgets/demo_task_section.dart';
 import 'widgets/waitlist_section.dart';
 import 'widgets/visitor_counter_badge.dart';
+import 'prayers/hidden_moon_icon.dart';
 
 String? _portalInitError;
 bool _supabaseReady = false;
@@ -783,6 +784,7 @@ class _LandingPageState extends State<LandingPage>
                 _RevealOnScroll(child: _buildFeaturesSection()),
                 const _RevealOnScroll(child: DemoTaskSection()),
                 _RevealOnScroll(child: _buildScreenshotsSection(context)),
+                const Center(child: HiddenMoonIcon()),
                 KeyedSubtree(
                   key: _supportKey,
                   child: _RevealOnScroll(child: _buildSupportSection()),
