@@ -18,11 +18,9 @@ class ClinicScheduleScreen extends StatefulWidget {
 }
 
 class _ClinicScheduleScreenState extends State<ClinicScheduleScreen> {
-  // كل صف: {clinic_number, days} — days = string مثل "7,1,2"
   List<Map<String, dynamic>> _rows = [];
   bool _loading = true;
 
-  // تحويل Flutter weekday إلى اسم عربي (7=الأحد، 1=الاثنين ... 6=السبت)
   static const _dayNames = {
     7: 'الأحد',
     1: 'الاثنين',
@@ -33,7 +31,6 @@ class _ClinicScheduleScreenState extends State<ClinicScheduleScreen> {
     6: 'السبت',
   };
 
-  // ترتيب الأسبوع: السبت(6) → الجمعة(5) — الجمعة إجازة
   static const _weekOrder = [6, 7, 1, 2, 3, 4, 5];
 
   static const _indigo = Color(0xFF06B6D4);
@@ -63,7 +60,6 @@ class _ClinicScheduleScreenState extends State<ClinicScheduleScreen> {
     }
   }
 
-  // بناء خريطة: flutterWeekday → {clinic, shift}
   Map<int, Map<String, dynamic>> _buildDayMap() {
     final map = <int, Map<String, dynamic>>{};
     for (final row in _rows) {
@@ -78,7 +74,6 @@ class _ClinicScheduleScreenState extends State<ClinicScheduleScreen> {
     return map;
   }
 
-  // ملخص العيادات: clinicNumber → أسماء الأيام
   Map<int, List<String>> _buildSummary(Map<int, Map<String, dynamic>> dayMap) {
     final summary = <int, List<String>>{};
     for (final entry in dayMap.entries) {
@@ -100,7 +95,6 @@ class _ClinicScheduleScreenState extends State<ClinicScheduleScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── الرأس ──
           Row(
             children: [
               Container(
@@ -135,7 +129,6 @@ class _ClinicScheduleScreenState extends State<ClinicScheduleScreen> {
           ),
           const SizedBox(height: 20),
 
-          // ── المحتوى ──
           Expanded(
             child: _loading
                 ? const Center(child: CircularProgressIndicator(color: _indigo))
@@ -145,7 +138,6 @@ class _ClinicScheduleScreenState extends State<ClinicScheduleScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // ── ملخص العيادات ──
                             if (summary.isNotEmpty) ...[
                               const Text('ملخص',
                                   style: TextStyle(fontSize: 13,
@@ -163,7 +155,6 @@ class _ClinicScheduleScreenState extends State<ClinicScheduleScreen> {
                               const SizedBox(height: 24),
                             ],
 
-                            // ── الجدول الأسبوعي ──
                             const Text('الجدول الأسبوعي',
                                 style: TextStyle(fontSize: 13,
                                     fontWeight: FontWeight.w600,
@@ -194,7 +185,6 @@ class _ClinicScheduleScreenState extends State<ClinicScheduleScreen> {
   }
 }
 
-// ── حالة فارغة ────────────────────────────────────────────────
 class _EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Center(
@@ -215,7 +205,6 @@ class _EmptyState extends StatelessWidget {
   );
 }
 
-// ── بطاقة ملخص عيادة ──────────────────────────────────────────
 class _ClinicSummaryCard extends StatelessWidget {
   final int clinic;
   final List<String> dayNames;
@@ -252,7 +241,6 @@ class _ClinicSummaryCard extends StatelessWidget {
   );
 }
 
-// ── صف يوم واحد ───────────────────────────────────────────────
 class _DayRow extends StatelessWidget {
   final String dayName;
   final bool isToday;
@@ -279,7 +267,6 @@ class _DayRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < 700;
 
-    // دائرة اليوم
     final circleAvatar = Container(
       width: 42, height: 42,
       decoration: BoxDecoration(
@@ -305,7 +292,6 @@ class _DayRow extends StatelessWidget {
       ),
     );
 
-    // اسم اليوم + شارة "اليوم"
     final dayNameSection = Expanded(
       child: Row(
         children: [
@@ -334,7 +320,6 @@ class _DayRow extends StatelessWidget {
       ),
     );
 
-    // العيادة والدوام أو إجازة
     final Widget trailingSection = isOff
         ? Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -379,8 +364,6 @@ class _DayRow extends StatelessWidget {
           width: isToday ? 1.5 : 1,
         ),
       ),
-      // على الموبايل: صف الاسم أعلى، وصف العيادة/الدوام أسفله لتفادي
-      // ضيق المساحة الأفقي. على الديسكتوب: نفس الصف الأصلي بلا تغيير.
       child: isMobile
           ? Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -408,7 +391,6 @@ class _DayRow extends StatelessWidget {
   }
 }
 
-// ── شارة صغيرة ────────────────────────────────────────────────
 class _Badge extends StatelessWidget {
   final IconData? icon;
   final String? emoji;

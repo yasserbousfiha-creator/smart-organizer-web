@@ -1,4 +1,4 @@
-﻿import 'dart:math' as math;
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:carousel_slider/carousel_slider.dart';
@@ -42,8 +42,6 @@ const Color kCyan = AppColors.primaryLight;
 const LinearGradient kMainGradient = AppColors.mainGradient;
 
 // ── Reveal-on-scroll wrapper ────────────────────────────────────
-/// يُظهر [child] بحركة ظهور تدريجي (تلاشي + انزلاق للأعلى) في أول مرة
-/// يدخل فيها ضمن نطاق الرؤية أثناء التمرير، ثم يبقى ظاهرًا.
 class _RevealOnScroll extends StatefulWidget {
   final Widget child;
   final double triggerOffset;
@@ -865,19 +863,11 @@ class _LandingPageState extends State<LandingPage>
           bottom: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
         ),
       ),
-      // اتجاه ثابت من اليسار لليمين لهذا الصف تحديداً (بغض النظر عن
-      // لغة الصفحة): الشعار دايماً يسارا، والأزرار/الأيقونات يمينا —
-      // نفس الاتفاقية المعتادة حتى فالمواقع العربية RTL. هاد التحديد
-      // كيأثّر غير على ترتيب عناصر هاد الـRow، وما كيبدّلش اتجاه
-      // النصوص الداخلية (كتبقى محاذية حسب Directionality الأصلية للصفحة).
       child: Row(
         textDirection: TextDirection.ltr,
         children: [
           SmallLogoWidget(size: isMobile ? 30 : 38),
           SizedBox(width: isMobile ? 8 : 10),
-          // FittedBox كيصغّر النص باش يدخل فالمساحة المتوفرة بدل ما يقصّو
-          // بـellipsis — هكذا "Smart Organizer" كيبان كامل دايماً، حتى لو
-          // صغر شوية فالشاشات الضيقة بزاف.
           Flexible(
             child: FittedBox(
               fit: BoxFit.scaleDown,
@@ -895,9 +885,6 @@ class _LandingPageState extends State<LandingPage>
               ),
             ),
           ),
-          // هلال Moon Abaya المخفي — نفس روح الشعار، كيضوي ذهبياً عند
-          // مرور الماوس. مضغوط قصداً (بلا حبل معلّق) باش ما ياكلش من
-          // مساحة عنوان "Smart Organizer" جنبو.
           MoonCrescentButton(onTap: () => _openMoonAbaya(context)),
           const Spacer(),
           if (isMobile) ...[
@@ -1410,7 +1397,22 @@ class _LandingPageState extends State<LandingPage>
     );
   }
 
-  void _openPortal(BuildContext context) {
+  Future<bool> _isPortalEmployee() async {
+    final userId = Supabase.instance.client.auth.currentUser?.id;
+    if (userId == null) return false;
+    try {
+      final data = await Supabase.instance.client
+          .from('employee_profiles')
+          .select('id')
+          .eq('user_id', userId)
+          .maybeSingle();
+      return data != null;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<void> _openPortal(BuildContext context) async {
     if (!_supabaseReady) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -1424,7 +1426,12 @@ class _LandingPageState extends State<LandingPage>
       );
       return;
     }
-    final session = Supabase.instance.client.auth.currentSession;
+    var session = Supabase.instance.client.auth.currentSession;
+    if (session != null && !await _isPortalEmployee()) {
+      await Supabase.instance.client.auth.signOut();
+      session = null;
+    }
+    if (!context.mounted) return;
     Navigator.push(
       context,
       _slideFromRightRoute(
@@ -1438,8 +1445,6 @@ class _LandingPageState extends State<LandingPage>
     );
   }
 
-  /// نفس فكرة انتقال المصباح: الصفحة الجديدة تدخل من اليمين وتنسحب
-  /// يسارا لتستقر، بدل الانتقال الافتراضي المفاجئ.
   Route<T> _slideFromRightRoute<T>(Widget page) {
     return PageRouteBuilder<T>(
       transitionDuration: const Duration(milliseconds: 450),
@@ -1544,8 +1549,6 @@ class _LandingPageState extends State<LandingPage>
         );
         return;
       }
-      // الجلسة الحالية تخص حسابًا آخر (مثلاً حساب HR) — سجّل الخروج منه
-      // لأن حساب Moon Abaya مستقل تمامًا وله بيانات دخول خاصة به.
       await Supabase.instance.client.auth.signOut();
     }
 
@@ -1556,9 +1559,6 @@ class _LandingPageState extends State<LandingPage>
   Future<void> _showMoonAbayaLoginDialog(BuildContext context) async {
     final userCtrl = TextEditingController();
     final passCtrl = TextEditingController();
-    // لازم هاد المتغيرات تكون هنا (خارج builder ديال StatefulBuilder)
-    // وماشي بداخلو — لأن StatefulBuilder كينادي widget.builder من جديد
-    // بكل rebuild، وأي متغير معرّف بداخلو كيترجع لقيمتو الأصلية فكل مرة.
     String? error;
     bool loading = false;
 
@@ -1580,6 +1580,7 @@ class _LandingPageState extends State<LandingPage>
               );
               final isAdmin = await _isMoonAbayaAdmin();
               if (!isAdmin) {
+                await Supabase.instance.client.auth.signOut();
                 setDialogState(() {
                   loading = false;
                   error = 'هذا الحساب لا يملك صلاحية الوصول';

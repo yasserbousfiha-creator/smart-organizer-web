@@ -78,7 +78,7 @@ class _PortalMessagesScreenState extends State<PortalMessagesScreen> {
       await _load();
     } catch (e) {
       if (mounted) {
-        _ctrl.text = text; // أعد النص لحقل الإرسال عند الفشل
+        _ctrl.text = text;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('فشل إرسال الرسالة — يرجى التواصل مع المسؤول لإعداد النظام'),
@@ -100,7 +100,6 @@ class _PortalMessagesScreenState extends State<PortalMessagesScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── الرأس ──
           Text('المراسلات',
               style: TextStyle(
                   fontSize: isMobile ? 17 : 20,
@@ -113,7 +112,6 @@ class _PortalMessagesScreenState extends State<PortalMessagesScreen> {
                   color: const Color(0x99FFFFFF))),
           const SizedBox(height: 16),
 
-          // ── قائمة الرسائل ──
           Expanded(
             child: _loading
                 ? const Center(
@@ -239,7 +237,6 @@ class _PortalMessagesScreenState extends State<PortalMessagesScreen> {
                       ),
           ),
 
-          // ── حقل الإرسال ──
           const SizedBox(height: 12),
           Row(
             children: [

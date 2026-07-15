@@ -41,7 +41,6 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
   Future<void> _load() async {
     setState(() => _loading = true);
     try {
-      // جلب الرسائل والموظفين بشكل منفصل لتجنب مشاكل JOIN مع RLS
       final results = await Future.wait([
         portalClient
             .from('portal_messages')
@@ -58,7 +57,6 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
         for (final e in emps) e['id'].toString(): e,
       };
 
-      // تجميع حسب employee_id — نأخذ آخر رسالة لكل موظف
       final Map<String, Map<String, dynamic>> convMap = {};
       for (final msg in messages) {
         final empId = msg['employee_id'] as String?;
@@ -74,7 +72,6 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
             'unread': 0,
           };
         }
-        // حساب الرسائل غير المقروءة من الموظف
         if (msg['sender'] == 'employee' && msg['is_read'] == false) {
           final cur = convMap[empId]!;
           convMap[empId] = {...cur, 'unread': (cur['unread'] as int) + 1};
@@ -85,7 +82,6 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
         setState(() {
           _conversations = convMap.values.toList()
             ..sort((a, b) {
-              // المحادثات غير المقروءة أولاً
               final ua = a['unread'] as int;
               final ub = b['unread'] as int;
               if (ua != ub) return ub.compareTo(ua);
@@ -197,7 +193,7 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
                                   ),
                                 ),
                               );
-                              _load(); // تحديث عند العودة
+                              _load();
                             },
                             child: Container(
                               padding: EdgeInsets.all(isMobile ? 10 : 14),
@@ -212,7 +208,6 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
                               ),
                               child: Row(
                                 children: [
-                                  // أفاتار الموظف
                                   Container(
                                     width: isMobile ? 38 : 44,
                                     height: isMobile ? 38 : 44,
@@ -316,7 +311,6 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
   }
 }
 
-// ── شاشة المحادثة مع موظف معين ────────────────────────────────
 class AdminChatScreen extends StatefulWidget {
   final String employeeId;
   final String employeeName;
@@ -366,7 +360,6 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
 
   Future<void> _load() async {
     try {
-      // جلب الرسائل
       final data = await portalClient
           .from('portal_messages')
           .select()

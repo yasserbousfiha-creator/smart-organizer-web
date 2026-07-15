@@ -12,9 +12,6 @@ const Map<String, String> kPrayerSubLabels = {
   'isha': 'Isha',
 };
 
-/// وصف المهام الافتراضية اللي كتتخلق من جديد كل يوم — كل وحدة عندها
-/// `kind` كيحدد طريقة العرض والتفاعل: counter (عداد بزيادة `step`)،
-/// prayers (5 مفاتيح فرعية)، أو simple (زر تشغيل/إطفاء عادي).
 const List<Map<String, Object?>> kDefaultTaskDefs = [
   {'title': '100 Sit-ups', 'kind': 'counter', 'target': 100.0, 'unit': 'reps', 'step': 10.0},
   {'title': '100 Push-ups', 'kind': 'counter', 'target': 100.0, 'unit': 'reps', 'step': 10.0},
@@ -88,9 +85,6 @@ class SystemTaskStorage {
     final today = _todayKey();
     var tasks = await _fetchTasksFor(today);
 
-    // إيلا اليوم فيه غير مهام خاصة (أو والو خالص)، بلا حتى وحدة من
-    // الستة الافتراضيين — خاصهم يتخلقو، بلا ما نمسو المهام الخاصة
-    // الموجودة.
     if (!tasks.any((t) => !t.isCustom)) {
       final rows = [
         for (var i = 0; i < kDefaultTaskDefs.length; i++)
@@ -152,8 +146,6 @@ class SystemTaskStorage {
     return SystemTask.fromRow(updated);
   }
 
-  /// كيبدل التقدم ديال مهمة "عداد" (سيت أب، جري، ما، إلخ)، وكيحسب `done`
-  /// أوتوماتيكيا ملي التقدم يوصل للهدف.
   static Future<SystemTask> setProgress(String id, double newProgress, double target) async {
     final clamped = newProgress.clamp(0, target).toDouble();
     final updated = await portalClient
@@ -165,8 +157,6 @@ class SystemTaskStorage {
     return SystemTask.fromRow(updated);
   }
 
-  /// كيبدل حالة صلاة وحدة داخل مهمة "5 Prayers"، وكيحسب عدد الصلوات
-  /// المكملة كـ`progress`، و`done` ملي الخمسة يكملو.
   static Future<SystemTask> setSubPrayer(
     String id,
     Map<String, bool> currentSubStatus,

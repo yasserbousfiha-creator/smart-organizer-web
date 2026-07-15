@@ -92,7 +92,6 @@ class MoonAbayaItem {
 
   bool get isFullyPaid => remainingDebt <= 0.01;
 
-  /// المبلغ المستلم فعلياً أقل من تكلفة الشراء، أي أن العملية في خسارة حالياً.
   bool get isCurrentLoss => amountPaid < totalCost;
 
   MoonAbayaItem copyWith({

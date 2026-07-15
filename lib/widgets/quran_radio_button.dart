@@ -2,14 +2,8 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 
-/// البث الرسمي لإذاعة القرآن الكريم السعودية (منصة "الأولى" التابعة لهيئة
-/// الإذاعة والتلفزيون السعودية — نفس الرابط المعتمد في تطبيق سطح المكتب).
 const String kQuranRadioStreamUrl = 'https://stream.radiojar.com/0tpy1h0kxtzuv';
 
-/// زر إذاعة القرآن الكريم المباشرة — بشكلين: مضغوط (أيقونة فقط، للجوال)
-/// أو موسّع (أيقونة + نص، لسطح المكتب). يشتغل بشكل مستقل بلا حاجة لحالة
-/// عامة، لأن صفحة الهبوط تبقى محفوظة في شجرة الودجات عند فتح بوابة
-/// الموظفين (Navigator.push لا يهدمها).
 class QuranRadioButton extends StatefulWidget {
   final bool compact;
   const QuranRadioButton({super.key, this.compact = false});
@@ -151,7 +145,6 @@ class _QuranRadioButtonState extends State<QuranRadioButton> {
   }
 }
 
-/// نقطة نابضة صغيرة تدل على أن البث شغّال الآن.
 class _LiveDot extends StatefulWidget {
   @override
   State<_LiveDot> createState() => _LiveDotState();

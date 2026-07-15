@@ -2,8 +2,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../portal/portal_client.dart';
 
-/// أسماء الصلوات الخمس بترتيبها اليومي، وهي نفسها أسماء الأعمدة فجدول
-/// `prayers` فـ Supabase.
 const List<String> kPrayerNames = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
 
 class PrayerDay {
@@ -53,7 +51,6 @@ class PrayerStorage {
     return '$y-$m-$d';
   }
 
-  /// كيجيب صف اليوم، وكيخلق وحد فارغ إيلا ماكانش موجود بعد.
   static Future<PrayerDay> fetchToday() async {
     final today = _todayKey();
     final existing = await portalClient
@@ -85,8 +82,6 @@ class PrayerStorage {
     return PrayerDay.fromRow(updated);
   }
 
-  /// اشتراك مباشر (Realtime) فتغييرات صف اليوم — باش الصفحة تتحدث وحدها
-  /// من غير ما تحتاج refresh، حتى لو الصلاة تعلمت من جهاز آخر.
   static RealtimeChannel subscribeToday(void Function(PrayerDay day) onChange) {
     final today = _todayKey();
     return portalClient
@@ -112,16 +107,12 @@ class PrayerStorage {
 
   static const messagesTable = 'prayer_messages';
 
-  /// آخر حد لدورة الرسائل: 5:00 صباحا بالتوقيت المحلي ديال الجهاز. إيلا
-  /// كان الوقت الحالي قبل 5 صباحا، كتحسب 5 صباحا ديال البارح.
   static DateTime _messagesCycleStart() {
     final now = DateTime.now();
     final todayAt5 = DateTime(now.year, now.month, now.day, 5);
     return now.isBefore(todayAt5) ? todayAt5.subtract(const Duration(days: 1)) : todayAt5;
   }
 
-  /// كيمسح الرسائل القديمة (قبل 5 صباحا ديال الدورة الحالية)، ومن بعد
-  /// كيرجع الرسائل المتبقية.
   static Future<List<PrayerMessage>> fetchMessages() async {
     final cycleStart = _messagesCycleStart();
     await portalClient

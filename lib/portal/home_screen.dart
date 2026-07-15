@@ -100,12 +100,10 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> {
         html.window.localStorage.remove('portal_closed_at');
         if (closedAt != null &&
             DateTime.now().difference(closedAt).inMinutes >= 5) {
-          // انتهت الجلسة — تسجيل الخروج فوراً
           WidgetsBinding.instance.addPostFrameCallback((_) => _logout());
           return;
         }
       }
-      // حفظ وقت الإغلاق عند مغادرة الصفحة
       html.window.addEventListener('beforeunload', (_) {
         html.window.localStorage['portal_closed_at'] =
             DateTime.now().toIso8601String();
@@ -137,7 +135,6 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> {
       await portalClient.auth.signOut()
           .timeout(const Duration(seconds: 3));
     } catch (_) {
-      // الخروج حتى لو تجمّد الاتصال أو فشل
     }
     if (mounted) {
       Navigator.pushReplacement(
@@ -165,7 +162,6 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> {
     final name = _profile?['name'] as String? ?? 'موظف';
     final dept = _profile?['department'] as String? ?? '';
 
-    // الموظفون الطبيون (طبيب / تمريض / من لديهم رقم عيادة)
     final isMedical = (_profile?['clinic_number'] != null) ||
         dept.contains('طبيب') ||
         dept.contains('ممرض') ||

@@ -105,7 +105,6 @@ class _PortalLeavesScreenState extends State<PortalLeavesScreen> {
 
     final days = _end!.difference(_start!).inDays + 1;
 
-    // فحص تعارض مع طلبات موجودة (غير مرفوضة)
     final overlapping = _requests.where((r) {
       if (r['status'] == 'مرفوضة') return false;
       final existStart = DateTime.tryParse(r['start_date'] as String? ?? '');
@@ -121,7 +120,6 @@ class _PortalLeavesScreenState extends State<PortalLeavesScreen> {
       return;
     }
 
-    // تحذير عند تجاوز الرصيد السنوي
     if (_type == 'سنوية') {
       final quota = _balance?['annual_quota'] as int? ?? 21;
       final used = _balance?['used_days'] as int? ?? 0;
@@ -254,7 +252,6 @@ class _PortalLeavesScreenState extends State<PortalLeavesScreen> {
             ),
           const SizedBox(height: 16),
 
-          // ── بطاقات الرصيد ────────────────────────────
           if (isMobile)
             Column(
               children: [
@@ -277,7 +274,6 @@ class _PortalLeavesScreenState extends State<PortalLeavesScreen> {
             ),
           const SizedBox(height: 16),
 
-          // ── نموذج الطلب (قابل للطي) ──────────────────
           if (_showForm) ...[
             _LeaveForm(
               type: _type, start: _start, end: _end,
@@ -290,13 +286,11 @@ class _PortalLeavesScreenState extends State<PortalLeavesScreen> {
             const SizedBox(height: 16),
           ],
 
-          // ── عنوان السجل ──────────────────────────────
           const Text('سجل الطلبات',
               style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600,
                   color: Color(0xCCFFFFFF))),
           const SizedBox(height: 10),
 
-          // ── القائمة ───────────────────────────────────
           Expanded(
             child: _loading
                 ? const Center(child: CircularProgressIndicator(color: _indigo))
@@ -421,7 +415,6 @@ class _BalCard extends StatelessWidget {
   }
 }
 
-// ── نموذج الطلب ───────────────────────────────────────────
 class _LeaveForm extends StatelessWidget {
   final String type;
   final DateTime? start;
@@ -466,7 +459,6 @@ class _LeaveForm extends StatelessWidget {
               const Text('طلب إجازة جديدة',
                   style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white)),
               const SizedBox(height: 10),
-              // نوع الإجازة + التواريخ
               Builder(builder: (context) {
                 final typeField = Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -536,7 +528,6 @@ class _LeaveForm extends StatelessWidget {
                 );
               }),
               const SizedBox(height: 8),
-              // السبب + زر الإرسال
               Builder(builder: (context) {
                 final reasonField = Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

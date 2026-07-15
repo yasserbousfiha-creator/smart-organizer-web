@@ -7,9 +7,6 @@ import '../theme/app_colors.dart';
 import 'prayer_celebration.dart';
 import 'prayer_storage.dart';
 
-/// شاشة سحابية (متزامنة مع Supabase) لمتابعة صلوات عبدالرحمن اليومية —
-/// أي تعديل كيتسجل فالسحابة مباشرة، وكيبان فأي جهاز آخر فاتح نفس
-/// الشاشة بفضل الاشتراك المباشر (Realtime).
 class PrayerTrackerScreen extends StatefulWidget {
   const PrayerTrackerScreen({super.key});
 

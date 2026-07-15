@@ -6,9 +6,6 @@ import 'prayer_tracker_screen.dart';
 
 const String _kPrayerSecretCode = '2033';
 
-/// أيقونة قمر صغيرة جدا ومخفية (شبه شفافة) — علامة خاصة بلاصتها فوسط
-/// الموقع. ماعندهاش علاقة بهلال Moon Abaya اللي جنب الشعار. ملي
-/// تتضغط، كتطلب رمز سري قبل ما تفتح صفحة متابعة صلاة عبدالرحمن.
 class HiddenMoonIcon extends StatefulWidget {
   const HiddenMoonIcon({super.key});
 

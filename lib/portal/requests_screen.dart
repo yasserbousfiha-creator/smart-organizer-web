@@ -45,7 +45,6 @@ class _PortalRequestsScreenState extends State<PortalRequestsScreen> {
     }
   }
 
-  // كم يوماً تبقّى حتى يُرفع الحظر على نوع معيّن (0 = مسموح)
   int _cooldownDaysLeft(String type) {
     final now = DateTime.now();
     for (final r in _requests) {
@@ -189,7 +188,6 @@ class _PortalRequestsScreenState extends State<PortalRequestsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── الرأس ──
           const Text('الطلبات',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: Colors.white)),
           const SizedBox(height: 4),
@@ -197,7 +195,6 @@ class _PortalRequestsScreenState extends State<PortalRequestsScreen> {
               style: TextStyle(fontSize: 12, color: Color(0x99FFFFFF))),
           const SizedBox(height: 20),
 
-          // ── أزرار الطلبات ──
           Wrap(
             spacing: 10,
             runSpacing: 10,
@@ -243,7 +240,6 @@ class _PortalRequestsScreenState extends State<PortalRequestsScreen> {
 
           const SizedBox(height: 24),
 
-          // ── فاصل ──
           Container(
             height: 1,
             decoration: const BoxDecoration(
@@ -254,7 +250,6 @@ class _PortalRequestsScreenState extends State<PortalRequestsScreen> {
           ),
           const SizedBox(height: 16),
 
-          // ── عنوان الطلبات السابقة ──
           Row(
             children: [
               Container(
@@ -272,7 +267,6 @@ class _PortalRequestsScreenState extends State<PortalRequestsScreen> {
           ),
           const SizedBox(height: 12),
 
-          // ── قائمة الطلبات ──
           Expanded(
             child: _loading
                 ? const Center(child: CircularProgressIndicator(color: _indigo))

@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import '../portal/portal_client.dart';
 import '../theme/app_colors.dart';
 
-/// قسم صغير يخلي الزوار غير المدعوين يسجّلو بريدهم الإلكتروني باش
-/// يتوصلو بإشعار عند فتح التسجيل للجميع.
 class WaitlistSection extends StatefulWidget {
   const WaitlistSection({super.key});
 

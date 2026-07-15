@@ -87,7 +87,6 @@ class _PortalPayslipScreenState extends State<PortalPayslipScreen> {
           ),
           const SizedBox(height: 16),
 
-          // ── المحتوى ───────────────────────────────
           if (_loading)
             const Expanded(child: Center(child: CircularProgressIndicator(color: _indigo)))
           else if (_records.isEmpty)
@@ -104,7 +103,6 @@ class _PortalPayslipScreenState extends State<PortalPayslipScreen> {
               ),
             ))
           else if (isMobile)
-            // ── Mobile: قائمة ثم تفاصيل ───────────────
             Expanded(
               child: _showDetail && _selectedIdx != null
                   ? SingleChildScrollView(
@@ -179,12 +177,10 @@ class _PortalPayslipScreenState extends State<PortalPayslipScreen> {
                     ),
             )
           else
-            // ── Desktop: جنباً لجنب ────────────────────
             Expanded(
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // قائمة الأشهر
                   SizedBox(
                     width: 170,
                     child: ListView.separated(
@@ -233,7 +229,6 @@ class _PortalPayslipScreenState extends State<PortalPayslipScreen> {
                     ),
                   ),
                   const SizedBox(width: 16),
-                  // تفاصيل
                   Expanded(
                     child: _selectedIdx != null
                         ? SingleChildScrollView(
@@ -285,7 +280,6 @@ class _PayslipDetail extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // عنوان
           Row(
             children: [
               Container(
@@ -304,7 +298,6 @@ class _PayslipDetail extends StatelessWidget {
           ),
           const SizedBox(height: 20),
 
-          // الإيرادات
           _sectionHead('الإيرادات', _green),
           const SizedBox(height: 10),
           _Row(label: 'الراتب الأساسي', value: basic, color: _green),
@@ -313,7 +306,6 @@ class _PayslipDetail extends StatelessWidget {
 
           const SizedBox(height: 16),
 
-          // الاستقطاعات
           _sectionHead('الاستقطاعات', _red),
           const SizedBox(height: 10),
           _Row(label: 'الاستقطاعات', value: deductions, color: _red, neg: true),
@@ -322,7 +314,6 @@ class _PayslipDetail extends StatelessWidget {
 
           const SizedBox(height: 20),
 
-          // صافي الراتب
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(18),

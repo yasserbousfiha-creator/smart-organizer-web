@@ -184,13 +184,13 @@ class _MoonAbayaScreenState extends State<MoonAbayaScreen> {
 
   Future<void> _addPayment(MoonAbayaItem item) async {
     final amountCtrl = TextEditingController();
+    DateTime date = DateTime.now();
+    String? error;
 
     final payment = await showDialog<MoonAbayaPayment>(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) {
-          DateTime date = DateTime.now();
-          String? error;
 
           return Directionality(
             textDirection: TextDirection.rtl,
@@ -383,7 +383,6 @@ class _MoonAbayaScreenState extends State<MoonAbayaScreen> {
       ),
       body: Stack(
         children: [
-          // ── صورة خلفية شفافة (واترمارك) ──
           Positioned.fill(
             child: Opacity(
               opacity: 0.12,

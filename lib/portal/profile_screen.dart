@@ -91,13 +91,11 @@ class PortalProfileScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // ── بطاقة الراتب ──
                   if (p['salary'] != null) ...[
                     _SalaryCard(salary: (p['salary'] as num).toDouble()),
                     const SizedBox(height: 20),
                   ],
 
-                  // ── بطاقة العيادة (للأطباء والممرضين) ──
                   if (p['clinic_number'] != null) ...[
                     _ClinicCard(
                       clinicNumber: p['clinic_number'].toString(),
@@ -107,7 +105,6 @@ class PortalProfileScreen extends StatelessWidget {
                     const SizedBox(height: 20),
                   ],
 
-                  // ── البيانات العامة ──
                   Wrap(
                     spacing: 16,
                     runSpacing: 16,
@@ -192,7 +189,6 @@ class PortalProfileScreen extends StatelessWidget {
   }
 }
 
-// ── بطاقة الراتب الأساسي ──
 class _SalaryCard extends StatelessWidget {
   final double salary;
   const _SalaryCard({required this.salary});
@@ -248,7 +244,6 @@ class _SalaryCard extends StatelessWidget {
   }
 }
 
-// ── بطاقة العيادة ──
 class _ClinicCard extends StatelessWidget {
   final String clinicNumber;
   final String shift;
@@ -379,7 +374,6 @@ class _ClinicChip extends StatelessWidget {
   }
 }
 
-// ── بطاقة بيانات عامة ──
 class _InfoCard extends StatelessWidget {
   final String label;
   final String value;
@@ -425,7 +419,6 @@ class _InfoCard extends StatelessWidget {
   }
 }
 
-// ── نافذة تغيير كلمة المرور ──
 class _ChangePasswordSheet extends StatefulWidget {
   const _ChangePasswordSheet();
   @override
@@ -468,7 +461,6 @@ class _ChangePasswordSheetState extends State<_ChangePasswordSheet> {
 
     setState(() { _submitting = true; _error = null; });
     try {
-      // التحقق من كلمة المرور الحالية قبل تغييرها
       await portalClient.auth.signInWithPassword(email: email, password: current);
       await portalClient.auth.updateUser(UserAttributes(password: next));
       if (mounted) {

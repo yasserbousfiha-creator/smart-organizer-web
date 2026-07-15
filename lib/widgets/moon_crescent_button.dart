@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
 
-/// أيقونة هلال صغيرة ومضغوطة (بلا حبل معلّق) — بلون خافت فحالة السكون،
-/// وكتضوي وتصبح ذهبية عند مرور الماوس، بحال شعار Moon Abaya. الضغط
-/// عليها كيفتح نافذة تسجيل الدخول ديال Moon Abaya.
 class MoonCrescentButton extends StatefulWidget {
   final VoidCallback onTap;
   final double size;
@@ -61,7 +58,6 @@ class _CrescentPainter extends CustomPainter {
       );
     }
 
-    // هلال: دائرة كاملة نطرحو منها دائرة أصغر مزاحة — نفس تقنية رسم شعار القمر
     final outer = Path()..addOval(Rect.fromCircle(center: center, radius: w / 2));
     final inner = Path()
       ..addOval(Rect.fromCircle(center: Offset(w * 0.62, h * 0.4), radius: w * 0.42));

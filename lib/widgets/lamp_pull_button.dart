@@ -1,10 +1,5 @@
 import 'package:flutter/material.dart';
 
-/// لمبة صغيرة مجرّدة (بلا صندوق ولا نص) بحبل قابل للسحب فعلاً — تُستعمل
-/// لكل من "بوابة الموظفين" (كهرمانية) و"بوابة Moon Abaya" (بألوان
-/// ضوء القمر) بألوان مختلفة باش تتميّز كل وحدة عن الأخرى. اسحب الحبل
-/// للأسفل (أو اضغط عليه) باش تفتح النافذة المرتبطة بيها. الحجم كيتأقلم
-/// لوحده مع طول الحبل الحالي، فما كاينش خطر overflow.
 class LampPullButton extends StatefulWidget {
   final VoidCallback onPulled;
   final String tooltip;
@@ -88,9 +83,6 @@ class _LampPullButtonState extends State<LampPullButton> with SingleTickerProvid
           onTap: widget.onPulled,
           onVerticalDragUpdate: _onDragUpdate,
           onVerticalDragEnd: _onDragEnd,
-          // بلا صندوق ولا خلفية ولا نص — لمبة مجرّدة فقط. Column بلا
-          // SizedBox خارجي يفرض ارتفاع خاطئ، فتحجم الودجة كيتبع حجم
-          // محتواها الفعلي دايماً (بلا خطر overflow).
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 10),
             child: Column(
@@ -165,7 +157,6 @@ class _LampShadePainter extends CustomPainter {
       );
     }
 
-    // قبة ناعمة (نصف بيضاوي بحواف مدورة)
     final shadePath = Path()
       ..moveTo(w * 0.5, 0)
       ..cubicTo(w * 0.5, h * 0.1, w * 0.05, h * 0.3, w * 0.02, h * 0.75)

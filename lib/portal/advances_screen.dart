@@ -56,14 +56,12 @@ class _PortalAdvancesScreenState extends State<PortalAdvancesScreen> {
     if (deduct == null || deduct <= 0) { _snack('أدخل مبلغ الاستقطاع الشهري'); return; }
     if (deduct > amount) { _snack('الاستقطاع الشهري لا يمكن أن يكون أكثر من إجمالي السلفة'); return; }
 
-    // حساب مدة السداد
     final months = (amount / deduct).ceil();
     if (months > 24) {
       _snack('مدة السداد تتجاوز 24 شهراً — يرجى رفع مبلغ الاستقطاع الشهري');
       return;
     }
 
-    // منع تقديم سلفة جديدة إذا كانت هناك سلفة نشطة أو قيد المراجعة
     final blocked = _advances.where((a) {
       final s = a['status'] as String? ?? '';
       return s == 'قيد المراجعة' || s == 'موافق عليها';
@@ -161,7 +159,6 @@ class _PortalAdvancesScreenState extends State<PortalAdvancesScreen> {
                 ),
           const SizedBox(height: 16),
 
-          // ── بطاقة إجمالي السلف (تظهر فقط إن وجد) ────
           if (totalActive > 0) ...[
             Container(
               width: double.infinity,
@@ -201,7 +198,6 @@ class _PortalAdvancesScreenState extends State<PortalAdvancesScreen> {
             const SizedBox(height: 16),
           ],
 
-          // ── نموذج الطلب ───────────────────────────
           if (_showForm) ...[
             _AdvanceForm(
               amountCtrl: _amountCtrl,
@@ -213,13 +209,11 @@ class _PortalAdvancesScreenState extends State<PortalAdvancesScreen> {
             const SizedBox(height: 16),
           ],
 
-          // ── عنوان السجل ───────────────────────────
           const Text('سجل السلف',
               style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600,
                   color: Color(0xCCFFFFFF))),
           const SizedBox(height: 10),
 
-          // ── القائمة ───────────────────────────────
           Expanded(
             child: _loading
                 ? const Center(child: CircularProgressIndicator(color: _indigo))

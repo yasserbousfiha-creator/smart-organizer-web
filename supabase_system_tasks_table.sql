@@ -1,7 +1,3 @@
--- شغل هاد السكريبت فـ Supabase Dashboard -> SQL Editor. آمن يتشغل حتى
--- إيلا كنت شغلتي نسخة أقدم ديال هاد الجدول من قبل (كيستعمل ALTER ... ADD
--- COLUMN IF NOT EXISTS، ماغاديش يمسح شي حاجة).
-
 create table if not exists public.system_tasks (
   id uuid primary key default gen_random_uuid(),
   task_date date not null,

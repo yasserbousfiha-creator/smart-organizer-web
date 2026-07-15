@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import '../state/visit_counter.dart';
 import '../theme/app_colors.dart';
 
-/// شارة صغيرة كتبان مباشرة بالعدد الحقيقي للزوار (المخزّن فـSupabase)،
-/// من 0 فصاعداً، بصياغة عربية سليمة حسب العدد.
 class VisitorCounterBadge extends StatefulWidget {
   const VisitorCounterBadge({super.key});
 

@@ -6,9 +6,6 @@ import 'package:flutter/services.dart';
 
 import '../theme/app_colors.dart';
 
-/// شاشة الاحتفال اللي كتبان بعد تسجيل أي صلاة: صورتو، إيموجيات طايرة
-/// (ضحك وبوسات)، وصوت ضحكة تليها بوسة. العبارة كتتبدل عشوائيا فكل مرة،
-/// وكتولي خاصة أكثر ملي يكمل الصلوات الخمس ديال اليوم (allDone).
 class PrayerCelebrationOverlay extends StatefulWidget {
   const PrayerCelebrationOverlay({
     super.key,
@@ -90,16 +87,11 @@ class _PrayerCelebrationOverlayState extends State<PrayerCelebrationOverlay>
   }
 
   Future<void> _playCelebrationSounds() async {
-    // الملفات الصوتية (laugh.mp3 و kiss.mp3) خاصهم يتزادو يدويا فـ
-    // assets/prayers/ — إيلا ماكانوش موجودين، الاحتفال البصري كيكمل بلا
-    // صوت بدل ما يوقف بـ error.
     try {
       await _player.play(AssetSource('prayers/laugh.mp3'));
       await Future.delayed(const Duration(milliseconds: 1100));
       await _player.play(AssetSource('prayers/kiss.mp3'));
     } catch (_) {
-      // ملفات laugh.mp3/kiss.mp3 ماكاينش بعد فـ assets/prayers/ — كبديل
-      // مؤقت، نلعبو صوت نظام بسيط باش مايبقاش الاحتفال صامت كليا.
       await SystemSound.play(SystemSoundType.click);
     }
   }

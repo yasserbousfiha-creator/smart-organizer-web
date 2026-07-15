@@ -5,9 +5,6 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <!-- بلا هاد الوسم، متصفحات داخل التطبيقات (Instagram/Facebook in-app
-       browser) كترندر الصفحة بعرض سطح مكتب افتراضي (~980px) وكتصغّرها،
-       وهادشي كيسبب مشاكل عرض/تفاعل غريبة أو صفحة ما كتبانش. -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="description" content="Smart Organizer - نظّم حياتك ومهامك بذكاء وسهولة">
   <meta name="theme-color" content="#061A22">
@@ -43,10 +40,6 @@
     }
   </script>
 
-  <!-- التطبيق مبني بمحرك CanvasKit (يعتمد على WebGL) بلا أي بديل — ومتصفحات
-       داخل التطبيقات (Instagram/Facebook/TikTok...) كتقيّد أو كتمنع WebGL،
-       فكتبقى الصفحة شاشة فارغة. هاد الغطاء كيكتشف هاد الحالة وكيقترح فتح
-       الرابط فمتصفح حقيقي بدل ما يبقى المستخدم واقف قدام شاشة فارغة. -->
   <style>
     #iab-fallback {
       display: none;
@@ -106,12 +99,10 @@
       var url = window.location.href;
       var ua = navigator.userAgent || '';
       if (/Android/i.test(ua)) {
-        // كيجبر أندرويد يفتح الرابط بـChrome مباشرة برا التطبيق الحالي
         var intentUrl = 'intent://' + url.replace(/^https?:\/\//, '') +
           '#Intent;scheme=https;package=com.android.chrome;end;';
         window.location.href = intentUrl;
       } else {
-        // iOS ما كايناش وسيلة برمجية مضمونة للخروج — ننسخو الرابط كبديل
         iabCopyLink(null);
       }
     }

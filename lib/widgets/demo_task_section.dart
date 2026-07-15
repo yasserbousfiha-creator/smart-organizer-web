@@ -2,8 +2,6 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 
-/// قسم تفاعلي فالصفحة الرئيسية — يخلي الزائر يجرّب "تنظيم مهمة" مباشرة
-/// بلا تسجيل دخول، باش يحس بفايدة التطبيق بدل ما يقرا وصفها بس.
 class DemoTaskSection extends StatefulWidget {
   const DemoTaskSection({super.key});
 
@@ -56,7 +54,6 @@ class _DemoTaskSectionState extends State<DemoTaskSection> {
     if (text.isEmpty || _organizing) return;
     _ctrl.clear();
     setState(() => _organizing = true);
-    // تأخير بسيط كيدي إحساس "كنرتّبو ليك المهمة تلقائياً" بدل ما تبان دغيا.
     await Future.delayed(const Duration(milliseconds: 650));
     if (!mounted) return;
     final choice = _tagOptions[math.Random().nextInt(_tagOptions.length)];
