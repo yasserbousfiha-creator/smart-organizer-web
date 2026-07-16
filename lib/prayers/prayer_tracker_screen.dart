@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../theme/app_colors.dart';
+import 'email_notifier.dart';
 import 'prayer_celebration.dart';
 import 'prayer_storage.dart';
 
@@ -103,7 +104,10 @@ class _PrayerTrackerScreenState extends State<PrayerTrackerScreen> {
     final updated = await PrayerStorage.setPrayer(name, value);
     if (!mounted) return;
     setState(() => _day = updated);
-    if (value) _celebrate(updated.allDone);
+    if (value) {
+      _celebrate(updated.allDone);
+      unawaited(PrayerEmailNotifier.notifyPrayerActivated(_labels[name]!));
+    }
   }
 
   Future<void> _sendMessage() async {
