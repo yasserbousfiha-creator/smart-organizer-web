@@ -432,7 +432,9 @@ class _MoonAbayaScreenState extends State<MoonAbayaScreen> {
       child: Row(
         children: [
           IconButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () {
+              if (Navigator.canPop(context)) Navigator.pop(context);
+            },
             icon: const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white54, size: 18),
           ),
           const SizedBox(width: 4),

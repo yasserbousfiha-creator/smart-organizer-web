@@ -57,7 +57,9 @@ class _PortalLoginScreenState extends State<PortalLoginScreen> {
         backgroundColor: const Color(0xFF061A22),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white54, size: 18),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () {
+            if (Navigator.canPop(context)) Navigator.pop(context);
+          },
         ),
         elevation: 0,
       ),
