@@ -32,6 +32,8 @@ class _PrayerTrackerScreenState extends State<PrayerTrackerScreen> {
   List<PrayerChallengeRecord> _history = [];
   bool _loadingChallenge = true;
   Map<String, DateTime>? _todayTimes;
+  DateTime? _tomorrowFajr;
+  Timer? _countdownTimer;
 
   static const _labels = {
     'fajr': 'الفجر',
@@ -50,6 +52,9 @@ class _PrayerTrackerScreenState extends State<PrayerTrackerScreen> {
   void initState() {
     super.initState();
     _load();
+    _countdownTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (mounted) setState(() {});
+    });
   }
 
   Future<void> _load() async {
@@ -79,9 +84,14 @@ class _PrayerTrackerScreenState extends State<PrayerTrackerScreen> {
   }
 
   Future<void> _loadTimes() async {
-    final times = await PrayerTimesService.timingsFor(DateTime.now());
+    final now = DateTime.now();
+    final times = await PrayerTimesService.timingsFor(now);
+    final tomorrowTimes = await PrayerTimesService.timingsFor(now.add(const Duration(days: 1)));
     if (!mounted || times == null) return;
-    setState(() => _todayTimes = times);
+    setState(() {
+      _todayTimes = times;
+      _tomorrowFajr = tomorrowTimes?['fajr'];
+    });
   }
 
   Future<void> _loadChallenge() async {
@@ -228,6 +238,7 @@ class _PrayerTrackerScreenState extends State<PrayerTrackerScreen> {
     _channel?.unsubscribe();
     _messagesChannel?.unsubscribe();
     _messageController.dispose();
+    _countdownTimer?.cancel();
     super.dispose();
   }
 
@@ -537,9 +548,49 @@ class _PrayerTrackerScreenState extends State<PrayerTrackerScreen> {
   String _formatTime(DateTime t) =>
       '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
 
+  String _formatRemaining(Duration d) {
+    final totalMinutes = d.inMinutes;
+    if (totalMinutes < 1) return 'أقل من دقيقة';
+    final h = totalMinutes ~/ 60;
+    final m = totalMinutes % 60;
+    return h > 0 ? '$h س $m د' : '$m د';
+  }
+
+  Widget? _buildCountdown(String name) {
+    final adhan = _todayTimes?[name];
+    if (adhan == null) return null;
+    final idx = kPrayerNames.indexOf(name);
+    final next = name == 'isha' ? _tomorrowFajr : _todayTimes?[kPrayerNames[idx + 1]];
+    if (next == null) return null;
+
+    final now = DateTime.now();
+    final graceEnd = adhan.add(const Duration(minutes: 30));
+
+    late final Color color;
+    late final String text;
+    if (now.isBefore(adhan)) {
+      color = AppColors.success;
+      text = 'متبقي ${_formatRemaining(adhan.difference(now))} لدخول ${_labels[name]}';
+    } else if (now.isBefore(graceEnd)) {
+      color = AppColors.warning;
+      text = 'متبقي ${_formatRemaining(graceEnd.difference(now))} على النقاط الكاملة';
+    } else if (now.isBefore(next)) {
+      color = AppColors.danger;
+      text = 'تدارك قبل ${_labels[kPrayerNames[name == 'isha' ? 0 : idx + 1]]}! متبقي ${_formatRemaining(next.difference(now))}';
+    } else {
+      return null;
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 4),
+      child: Text(text, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w600)),
+    );
+  }
+
   Widget _buildPrayerTile(String name) {
     final done = _day!.status[name] == true;
     final time = _todayTimes?[name];
+    final countdown = done ? null : _buildCountdown(name);
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -555,9 +606,17 @@ class _PrayerTrackerScreenState extends State<PrayerTrackerScreen> {
           _labels[name]!,
           style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
         ),
-        subtitle: time != null
-            ? Text(_formatTime(time), style: const TextStyle(color: Colors.white38, fontSize: 12))
-            : null,
+        subtitle: time == null && countdown == null
+            ? null
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (time != null)
+                    Text(_formatTime(time), style: const TextStyle(color: Colors.white38, fontSize: 12)),
+                  ?countdown,
+                ],
+              ),
         secondary: Icon(
           done ? Icons.check_circle_rounded : Icons.circle_outlined,
           color: done ? AppColors.primary : Colors.white38,

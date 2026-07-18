@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
-import 'connect_four_screen.dart';
 import 'count_to_21_screen.dart';
-import 'rock_paper_scissors_screen.dart';
+import 'dots_and_boxes_screen.dart';
+import 'reversi_screen.dart';
 import 'tic_tac_toe_screen.dart';
 import 'timing_game_screen.dart';
 
@@ -35,21 +35,21 @@ class EntertainmentHubScreen extends StatelessWidget {
             const SizedBox(height: 14),
             _gameTile(
               context,
-              icon: Icons.grid_4x4_rounded,
-              label: 'اربح 4',
-              subtitle: 'رصّوا 4 قطع متتالية قبل خصمكم',
+              icon: Icons.circle_outlined,
+              label: 'ريفيرسي (أوثيلو)',
+              subtitle: 'حاصر قطع خصمك بين قطعك باش تقلبها لك',
               onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const ConnectFourScreen()),
+                MaterialPageRoute(builder: (_) => const ReversiScreen()),
               ),
             ),
             const SizedBox(height: 14),
             _gameTile(
               context,
-              icon: Icons.front_hand_rounded,
-              label: 'حجر ورقة مقص',
-              subtitle: 'مرّروا الهاتف بينكم واختاروا بالسر',
+              icon: Icons.grid_view_rounded,
+              label: 'النقط والصناديق',
+              subtitle: 'ارسم خط، كي تكمل مربع كيبقى ليك وتاخذ دور زايد',
               onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const RockPaperScissorsScreen()),
+                MaterialPageRoute(builder: (_) => const DotsAndBoxesScreen()),
               ),
             ),
             const SizedBox(height: 14),
