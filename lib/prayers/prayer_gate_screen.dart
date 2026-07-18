@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../theme/app_colors.dart';
-import 'prayer_tracker_screen.dart';
+import 'abdulrahman_hub_screen.dart';
 
 const String _kPrayerSecretCode = '2033';
 
@@ -36,7 +36,7 @@ class _PrayerGateScreenState extends State<PrayerGateScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_unlocked) return const PrayerTrackerScreen();
+    if (_unlocked) return const AbdulrahmanHubScreen();
 
     return Directionality(
       textDirection: TextDirection.rtl,

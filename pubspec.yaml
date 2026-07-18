@@ -21,6 +21,7 @@ dependencies:
   audioplayers: ^6.8.1
   http: ^1.2.2
   url_strategy: ^0.3.0
+  timezone: ^0.11.1
 
 dev_dependencies:
   flutter_test:
