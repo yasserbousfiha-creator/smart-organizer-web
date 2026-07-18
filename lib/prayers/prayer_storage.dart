@@ -198,6 +198,16 @@ class PrayerStorage {
         total += (row['${p}_points'] as int?) ?? 0;
       }
     }
+
+    final quizRows = await portalClient
+        .from('english_quiz_days')
+        .select('points')
+        .gte('quiz_date', _dateOnly(start))
+        .lte('quiz_date', _dateOnly(end));
+    for (final row in quizRows) {
+      total += (row['points'] as int?) ?? 0;
+    }
+
     return total;
   }
 

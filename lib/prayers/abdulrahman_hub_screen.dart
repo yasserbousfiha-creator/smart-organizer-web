@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../entertainment/entertainment_hub_screen.dart';
 import '../theme/app_colors.dart';
+import 'english_quiz_screen.dart';
 import 'prayer_tracker_screen.dart';
 
 /// Landing screen shown right after Abdulrahman's passcode is accepted —
@@ -34,6 +35,16 @@ class AbdulrahmanHubScreen extends StatelessWidget {
                     subtitle: 'تتبع صلاتك واجمع النقاط',
                     onTap: () => Navigator.of(context).push(
                       MaterialPageRoute(builder: (_) => const PrayerTrackerScreen()),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _hubButton(
+                    context,
+                    icon: Icons.quiz_rounded,
+                    label: 'أسئلة انجليزية',
+                    subtitle: '5 أسئلة يوميا، كل جواب صحيح يزيد نقطتين لتحدي الصلاة',
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const EnglishQuizScreen()),
                     ),
                   ),
                   const SizedBox(height: 16),
