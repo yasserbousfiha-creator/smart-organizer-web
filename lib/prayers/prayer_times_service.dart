@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
+import 'morocco_time.dart';
 import 'prayer_storage.dart';
 
 /// Fetches daily Adhan times for Abdulrahman's city (Tetouan, Morocco) from
@@ -40,7 +41,7 @@ class PrayerTimesService {
       DateTime parse(String key) {
         final raw = (timings[key] as String).split(' ').first; // strip any "(CET)" suffix
         final parts = raw.split(':');
-        return DateTime(date.year, date.month, date.day, int.parse(parts[0]), int.parse(parts[1]));
+        return MoroccoTime.date(date.year, date.month, date.day, int.parse(parts[0]), int.parse(parts[1]));
       }
 
       final result = {

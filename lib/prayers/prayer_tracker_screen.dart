@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../theme/app_colors.dart';
 import 'email_notifier.dart';
+import 'morocco_time.dart';
 import 'prayer_celebration.dart';
 import 'prayer_points.dart';
 import 'prayer_storage.dart';
@@ -84,7 +85,7 @@ class _PrayerTrackerScreenState extends State<PrayerTrackerScreen> {
   }
 
   Future<void> _loadTimes() async {
-    final now = DateTime.now();
+    final now = MoroccoTime.now();
     final times = await PrayerTimesService.timingsFor(now);
     final tomorrowTimes = await PrayerTimesService.timingsFor(now.add(const Duration(days: 1)));
     if (!mounted || times == null) return;
@@ -137,7 +138,7 @@ class _PrayerTrackerScreenState extends State<PrayerTrackerScreen> {
   }
 
   Future<int> _computePoints(String name) async {
-    final now = DateTime.now();
+    final now = MoroccoTime.now();
     final todayTimes = await PrayerTimesService.timingsFor(now);
     if (todayTimes == null) return 0;
     DateTime? nextBoundary;
@@ -187,9 +188,9 @@ class _PrayerTrackerScreenState extends State<PrayerTrackerScreen> {
     if (current.status[name] == true && !value) return;
 
     if (value) {
-      final times = _todayTimes ?? await PrayerTimesService.timingsFor(DateTime.now());
+      final times = _todayTimes ?? await PrayerTimesService.timingsFor(MoroccoTime.now());
       final adhan = times?[name];
-      if (adhan != null && DateTime.now().isBefore(adhan)) {
+      if (adhan != null && MoroccoTime.now().isBefore(adhan)) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('لم يدخل وقت ${_labels[name]} بعد (الأذان الساعة ${_formatTime(adhan)})')),
@@ -563,7 +564,7 @@ class _PrayerTrackerScreenState extends State<PrayerTrackerScreen> {
     final next = name == 'isha' ? _tomorrowFajr : _todayTimes?[kPrayerNames[idx + 1]];
     if (next == null) return null;
 
-    final now = DateTime.now();
+    final now = MoroccoTime.now();
     final graceEnd = adhan.add(const Duration(minutes: 30));
 
     late final Color color;

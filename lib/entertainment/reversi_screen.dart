@@ -176,6 +176,7 @@ class _ReversiScreenState extends State<ReversiScreen> {
                           final col = i % _kSize;
                           final value = _board[row][col];
                           return GestureDetector(
+                            behavior: HitTestBehavior.opaque,
                             onTap: () => _tap(row, col),
                             child: Container(
                               margin: const EdgeInsets.all(1),

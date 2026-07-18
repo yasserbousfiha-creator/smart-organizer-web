@@ -2,6 +2,7 @@ import 'dart:math';
 
 import '../portal/portal_client.dart';
 import 'english_quiz_bank.dart';
+import 'morocco_time.dart';
 
 const int kEnglishQuizDailyCount = 5;
 const int kEnglishQuizPointsPerCorrect = 2;
@@ -39,7 +40,7 @@ class EnglishQuizStorage {
   static const table = 'english_quiz_days';
 
   static String _todayKey() {
-    final d = DateTime.now();
+    final d = MoroccoTime.now();
     final y = d.year.toString().padLeft(4, '0');
     final m = d.month.toString().padLeft(2, '0');
     final day = d.day.toString().padLeft(2, '0');

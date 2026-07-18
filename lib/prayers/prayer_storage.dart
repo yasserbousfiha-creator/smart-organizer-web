@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../portal/portal_client.dart';
+import 'morocco_time.dart';
 import 'prayer_times_service.dart';
 
 const List<String> kPrayerNames = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
@@ -67,7 +68,7 @@ class PrayerChallengeRecord {
   bool get rewardReached => totalPoints >= kChallengeGoalPoints;
 
   int get daysRemaining {
-    final today = DateTime.now();
+    final today = MoroccoTime.now();
     final todayDate = DateTime(today.year, today.month, today.day);
     final remaining = endDate.difference(todayDate).inDays + 1;
     return remaining < 0 ? 0 : remaining;
@@ -79,7 +80,7 @@ class PrayerStorage {
   static const settingsTable = 'prayer_settings';
   static const challengesTable = 'prayer_challenges';
 
-  static String _todayKey() => _dateOnly(DateTime.now());
+  static String _todayKey() => _dateOnly(MoroccoTime.now());
 
   static String _dateOnly(DateTime d) {
     final y = d.year.toString().padLeft(4, '0');
@@ -154,8 +155,8 @@ class PrayerStorage {
   static const messagesTable = 'prayer_messages';
 
   static DateTime _messagesCycleStart() {
-    final now = DateTime.now();
-    final todayAt5 = DateTime(now.year, now.month, now.day, 5);
+    final now = MoroccoTime.now();
+    final todayAt5 = MoroccoTime.date(now.year, now.month, now.day, 5);
     return now.isBefore(todayAt5) ? todayAt5.subtract(const Duration(days: 1)) : todayAt5;
   }
 
@@ -216,7 +217,7 @@ class PrayerStorage {
   /// start date so it begins clean at the next prayer instead of retroactively
   /// counting whatever was already prayed earlier today.
   static Future<DateTime> _nextFajrStartDate() async {
-    final now = DateTime.now();
+    final now = MoroccoTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final times = await PrayerTimesService.timingsFor(now);
     final fajr = times?['fajr'];
@@ -240,7 +241,7 @@ class PrayerStorage {
 
     var start = _parseDateOnly(settings['current_challenge_start'] as String);
     var end = start.add(const Duration(days: kChallengeLengthDays - 1));
-    final today = DateTime.now();
+    final today = MoroccoTime.now();
     final todayDate = DateTime(today.year, today.month, today.day);
 
     while (todayDate.isAfter(end)) {

@@ -1,8 +1,9 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
-import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
+
+import 'morocco_time.dart';
 
 /// يرسل بريدًا إلكترونيًا عبر EmailJS عند تفعيل صلاة.
 ///
@@ -25,18 +26,6 @@ class PrayerEmailNotifier {
     'يوليوز', 'غشت', 'شتنبر', 'أكتوبر', 'نونبر', 'دجنبر',
   ];
 
-  static bool _tzReady = false;
-
-  /// Tetouan's actual wall-clock time, independent of the sending device's
-  /// own (possibly misconfigured) timezone setting.
-  static tz.TZDateTime _tetouanNow() {
-    if (!_tzReady) {
-      tz_data.initializeTimeZones();
-      _tzReady = true;
-    }
-    return tz.TZDateTime.now(tz.getLocation('Africa/Casablanca'));
-  }
-
   static String _formatTetouanTime(tz.TZDateTime t) {
     final hour12 = t.hour % 12 == 0 ? 12 : t.hour % 12;
     final period = t.hour < 12 ? 'ص' : 'م';
@@ -57,7 +46,7 @@ class PrayerEmailNotifier {
           'template_params': {
             'to_email': _toEmail,
             'prayer_name': prayerLabel,
-            'time': _formatTetouanTime(_tetouanNow()),
+            'time': _formatTetouanTime(MoroccoTime.now()),
           },
         }),
       );

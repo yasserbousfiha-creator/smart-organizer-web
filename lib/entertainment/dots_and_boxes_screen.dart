@@ -189,6 +189,7 @@ class _DotsAndBoxesScreenState extends State<DotsAndBoxesScreen> {
   Widget _horizontalLine(int r, int c) {
     final drawn = _horizontal[r][c];
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: () => _tapHorizontal(r, c),
       child: SizedBox(
         width: _kLineLen,
@@ -219,6 +220,7 @@ class _DotsAndBoxesScreenState extends State<DotsAndBoxesScreen> {
   Widget _verticalLine(int r, int c) {
     final drawn = _vertical[r][c];
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: () => _tapVertical(r, c),
       child: SizedBox(
         width: _kLineThickness,
