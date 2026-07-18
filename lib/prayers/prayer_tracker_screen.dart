@@ -174,6 +174,7 @@ class _PrayerTrackerScreenState extends State<PrayerTrackerScreen> {
   Future<void> _toggle(String name, bool value) async {
     final current = _day;
     if (current == null) return;
+    if (current.status[name] == true && !value) return;
 
     if (value) {
       final times = _todayTimes ?? await PrayerTimesService.timingsFor(DateTime.now());
@@ -548,7 +549,7 @@ class _PrayerTrackerScreenState extends State<PrayerTrackerScreen> {
       ),
       child: SwitchListTile(
         value: done,
-        onChanged: (v) => _toggle(name, v),
+        onChanged: done ? null : (v) => _toggle(name, v),
         activeThumbColor: AppColors.primary,
         title: Text(
           _labels[name]!,
