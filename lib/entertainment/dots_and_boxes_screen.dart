@@ -21,8 +21,8 @@ class DotsAndBoxesScreen extends StatefulWidget {
 }
 
 class _DotsAndBoxesScreenState extends State<DotsAndBoxesScreen> {
-  late List<List<bool>> _horizontal; // [rows][cols-1]
-  late List<List<bool>> _vertical; // [rows-1][cols]
+  late List<List<int>> _horizontal; // [rows][cols-1], 0=undrawn, else owner
+  late List<List<int>> _vertical; // [rows-1][cols], 0=undrawn, else owner
   late List<List<int>> _boxOwner; // [boxRows][boxCols] 0=none,1,2
   int _currentPlayer = 1;
   String? _message;
@@ -35,8 +35,8 @@ class _DotsAndBoxesScreenState extends State<DotsAndBoxesScreen> {
   }
 
   void _reset() {
-    _horizontal = List.generate(_kDotRows, (_) => List.filled(_kDotCols - 1, false));
-    _vertical = List.generate(_kDotRows - 1, (_) => List.filled(_kDotCols, false));
+    _horizontal = List.generate(_kDotRows, (_) => List.filled(_kDotCols - 1, 0));
+    _vertical = List.generate(_kDotRows - 1, (_) => List.filled(_kDotCols, 0));
     _boxOwner = List.generate(_kBoxRows, (_) => List.filled(_kBoxCols, 0));
     _currentPlayer = 1;
     _message = null;
@@ -45,7 +45,7 @@ class _DotsAndBoxesScreenState extends State<DotsAndBoxesScreen> {
   }
 
   bool _boxComplete(int r, int c) {
-    return _horizontal[r][c] && _horizontal[r + 1][c] && _vertical[r][c] && _vertical[r][c + 1];
+    return _horizontal[r][c] != 0 && _horizontal[r + 1][c] != 0 && _vertical[r][c] != 0 && _vertical[r][c + 1] != 0;
   }
 
   int _claimCompletedBoxes() {
@@ -82,17 +82,17 @@ class _DotsAndBoxesScreenState extends State<DotsAndBoxesScreen> {
   }
 
   void _tapHorizontal(int r, int c) {
-    if (_gameOver || _horizontal[r][c]) return;
+    if (_gameOver || _horizontal[r][c] != 0) return;
     setState(() {
-      _horizontal[r][c] = true;
+      _horizontal[r][c] = _currentPlayer;
       _afterMove();
     });
   }
 
   void _tapVertical(int r, int c) {
-    if (_gameOver || _vertical[r][c]) return;
+    if (_gameOver || _vertical[r][c] != 0) return;
     setState(() {
-      _vertical[r][c] = true;
+      _vertical[r][c] = _currentPlayer;
       _afterMove();
     });
   }
@@ -187,7 +187,7 @@ class _DotsAndBoxesScreenState extends State<DotsAndBoxesScreen> {
   }
 
   Widget _horizontalLine(int r, int c) {
-    final drawn = _horizontal[r][c];
+    final owner = _horizontal[r][c];
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () => _tapHorizontal(r, c),
@@ -198,7 +198,7 @@ class _DotsAndBoxesScreenState extends State<DotsAndBoxesScreen> {
           child: Container(
             width: _kLineLen,
             height: 4,
-            color: drawn ? AppColors.success : Colors.white12,
+            color: _lineColor(owner),
           ),
         ),
       ),
@@ -218,7 +218,7 @@ class _DotsAndBoxesScreenState extends State<DotsAndBoxesScreen> {
   }
 
   Widget _verticalLine(int r, int c) {
-    final drawn = _vertical[r][c];
+    final owner = _vertical[r][c];
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () => _tapVertical(r, c),
@@ -229,11 +229,17 @@ class _DotsAndBoxesScreenState extends State<DotsAndBoxesScreen> {
           child: Container(
             width: 4,
             height: _kLineLen,
-            color: drawn ? AppColors.success : Colors.white12,
+            color: _lineColor(owner),
           ),
         ),
       ),
     );
+  }
+
+  Color _lineColor(int owner) {
+    if (owner == 1) return AppColors.primary;
+    if (owner == 2) return AppColors.warning;
+    return Colors.white12;
   }
 
   Widget _boxCell(int r, int c) {

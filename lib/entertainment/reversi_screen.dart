@@ -29,6 +29,7 @@ class _ReversiScreenState extends State<ReversiScreen> {
   int _currentPlayer = 1;
   String? _message;
   bool _gameOver = false;
+  Set<int> _validMoves = {};
 
   @override
   void initState() {
@@ -45,7 +46,20 @@ class _ReversiScreenState extends State<ReversiScreen> {
     _currentPlayer = 1;
     _message = null;
     _gameOver = false;
+    _validMoves = _computeValidMoves(_currentPlayer);
     setState(() {});
+  }
+
+  Set<int> _computeValidMoves(int player) {
+    final moves = <int>{};
+    for (var r = 0; r < _kSize; r++) {
+      for (var c = 0; c < _kSize; c++) {
+        if (_board[r][c] == 0 && _allFlanks(r, c, player).isNotEmpty) {
+          moves.add(r * _kSize + c);
+        }
+      }
+    }
+    return moves;
   }
 
   List<_Pos> _flanksInDirection(int row, int col, int dr, int dc, int player) {
@@ -96,7 +110,17 @@ class _ReversiScreenState extends State<ReversiScreen> {
   void _tap(int row, int col) {
     if (_gameOver) return;
     final flanks = _allFlanks(row, col, _currentPlayer);
-    if (flanks.isEmpty) return;
+    if (flanks.isEmpty) {
+      if (_board[row][col] == 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('ما تقدرش تلعب هنا، خصك تحاصر قطعة ديال خصمك بين قطعتين ديالك'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+      return;
+    }
 
     setState(() {
       _board[row][col] = _currentPlayer;
@@ -117,6 +141,7 @@ class _ReversiScreenState extends State<ReversiScreen> {
             ? 'تعادل! $p1 - $p2'
             : 'فاز ${p1 > p2 ? "اللاعب 1 (أسود)" : "اللاعب 2 (أبيض)"}! $p1 - $p2';
       }
+      _validMoves = _gameOver ? {} : _computeValidMoves(_currentPlayer);
     });
   }
 
@@ -175,15 +200,15 @@ class _ReversiScreenState extends State<ReversiScreen> {
                           final row = i ~/ _kSize;
                           final col = i % _kSize;
                           final value = _board[row][col];
+                          final isValidMove = !_gameOver && _validMoves.contains(row * _kSize + col);
                           return GestureDetector(
                             behavior: HitTestBehavior.opaque,
                             onTap: () => _tap(row, col),
                             child: Container(
                               margin: const EdgeInsets.all(1),
                               color: AppColors.success.withValues(alpha: 0.55),
-                              child: value == 0
-                                  ? null
-                                  : Padding(
+                              child: value != 0
+                                  ? Padding(
                                       padding: const EdgeInsets.all(3),
                                       child: Container(
                                         decoration: BoxDecoration(
@@ -192,7 +217,20 @@ class _ReversiScreenState extends State<ReversiScreen> {
                                           boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 2)],
                                         ),
                                       ),
-                                    ),
+                                    )
+                                  : isValidMove
+                                      ? Center(
+                                          child: Container(
+                                            width: 10,
+                                            height: 10,
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              color: (_currentPlayer == 1 ? Colors.black : Colors.white)
+                                                  .withValues(alpha: 0.45),
+                                            ),
+                                          ),
+                                        )
+                                      : null,
                             ),
                           );
                         },
