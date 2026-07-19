@@ -694,6 +694,26 @@ class _PrayerTrackerScreenState extends State<PrayerTrackerScreen> {
     return h > 0 ? '$h س $m د' : '$m د';
   }
 
+  /// The one prayer the countdown should show under: whichever prayer's
+  /// window we're currently in (or Fajr, before it), skipping ahead past
+  /// any already-marked-done prayers.
+  int _activePrayerIndex() {
+    final times = _todayTimes;
+    final day = _day;
+    if (times == null || day == null) return -1;
+    final now = MoroccoTime.now();
+
+    var idx = 0;
+    for (var i = 0; i < kPrayerNames.length; i++) {
+      final adhan = times[kPrayerNames[i]];
+      if (adhan != null && !now.isBefore(adhan)) idx = i;
+    }
+    while (idx < kPrayerNames.length && day.status[kPrayerNames[idx]] == true) {
+      idx++;
+    }
+    return idx < kPrayerNames.length ? idx : -1;
+  }
+
   Widget? _buildCountdown(String name) {
     final adhan = _todayTimes?[name];
     if (adhan == null) return null;
@@ -728,7 +748,8 @@ class _PrayerTrackerScreenState extends State<PrayerTrackerScreen> {
   Widget _buildPrayerTile(String name) {
     final done = _day!.status[name] == true;
     final time = _todayTimes?[name];
-    final countdown = done ? null : _buildCountdown(name);
+    final isActive = !done && kPrayerNames.indexOf(name) == _activePrayerIndex();
+    final countdown = isActive ? _buildCountdown(name) : null;
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
