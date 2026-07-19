@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
 import 'portal_client.dart';
+import 'portal_i18n.dart';
 
 class ClinicScheduleScreen extends StatefulWidget {
   final String employeeId;
   final String? defaultShift;
+  final bool isEnglish;
 
   const ClinicScheduleScreen({
     super.key,
     required this.employeeId,
     this.defaultShift,
+    this.isEnglish = false,
     // ignored — shift comes from employee profile
     String? defaultClinic,
   });
@@ -114,15 +117,15 @@ class _ClinicScheduleScreenState extends State<ClinicScheduleScreen> {
                 ),
               ),
               const SizedBox(width: 14),
-              const Column(
+              Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('جدول العيادات',
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700,
+                  Text(tr(widget.isEnglish, 'جدول العيادات'),
+                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700,
                           color: Colors.white)),
-                  SizedBox(height: 2),
-                  Text('توزيعك الأسبوعي في العيادات',
-                      style: TextStyle(fontSize: 12, color: Color(0x99FFFFFF))),
+                  const SizedBox(height: 2),
+                  Text(tr(widget.isEnglish, 'توزيعك الأسبوعي في العيادات'),
+                      style: const TextStyle(fontSize: 12, color: Color(0x99FFFFFF))),
                 ],
               ),
             ],
@@ -133,14 +136,14 @@ class _ClinicScheduleScreenState extends State<ClinicScheduleScreen> {
             child: _loading
                 ? const Center(child: CircularProgressIndicator(color: _indigo))
                 : _rows.isEmpty
-                    ? _EmptyState()
+                    ? _EmptyState(isEnglish: widget.isEnglish)
                     : SingleChildScrollView(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             if (summary.isNotEmpty) ...[
-                              const Text('ملخص',
-                                  style: TextStyle(fontSize: 13,
+                              Text(tr(widget.isEnglish, 'ملخص'),
+                                  style: const TextStyle(fontSize: 13,
                                       fontWeight: FontWeight.w600,
                                       color: Color(0xCCFFFFFF))),
                               const SizedBox(height: 10),
@@ -150,13 +153,14 @@ class _ClinicScheduleScreenState extends State<ClinicScheduleScreen> {
                                     _ClinicSummaryCard(
                                       clinic: e.key,
                                       dayNames: e.value,
+                                      isEnglish: widget.isEnglish,
                                     )).toList(),
                               ),
                               const SizedBox(height: 24),
                             ],
 
-                            const Text('الجدول الأسبوعي',
-                                style: TextStyle(fontSize: 13,
+                            Text(tr(widget.isEnglish, 'الجدول الأسبوعي'),
+                                style: const TextStyle(fontSize: 13,
                                     fontWeight: FontWeight.w600,
                                     color: Color(0xCCFFFFFF))),
                             const SizedBox(height: 10),
@@ -172,6 +176,7 @@ class _ClinicScheduleScreenState extends State<ClinicScheduleScreen> {
                                   isOff: isOff,
                                   clinicNumber: entry?['clinic'] as int?,
                                   shift: entry?['shift'] as String?,
+                                  isEnglish: widget.isEnglish,
                                 ),
                               );
                             }),
@@ -186,6 +191,8 @@ class _ClinicScheduleScreenState extends State<ClinicScheduleScreen> {
 }
 
 class _EmptyState extends StatelessWidget {
+  final bool isEnglish;
+  const _EmptyState({this.isEnglish = false});
   @override
   Widget build(BuildContext context) => Center(
     child: Column(
@@ -194,12 +201,12 @@ class _EmptyState extends StatelessWidget {
         Icon(Icons.event_busy_outlined, size: 52,
             color: Colors.white.withValues(alpha: 0.2)),
         const SizedBox(height: 16),
-        const Text('لم يتم تحديد جدول العيادات بعد',
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600,
+        Text(tr(isEnglish, 'لم يتم تحديد جدول العيادات بعد'),
+            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600,
                 color: Color(0x66FFFFFF))),
         const SizedBox(height: 6),
-        const Text('يرجى التواصل مع الإدارة',
-            style: TextStyle(fontSize: 12, color: Color(0x44FFFFFF))),
+        Text(tr(isEnglish, 'يرجى التواصل مع الإدارة'),
+            style: const TextStyle(fontSize: 12, color: Color(0x44FFFFFF))),
       ],
     ),
   );
@@ -208,7 +215,8 @@ class _EmptyState extends StatelessWidget {
 class _ClinicSummaryCard extends StatelessWidget {
   final int clinic;
   final List<String> dayNames;
-  const _ClinicSummaryCard({required this.clinic, required this.dayNames});
+  final bool isEnglish;
+  const _ClinicSummaryCard({required this.clinic, required this.dayNames, this.isEnglish = false});
 
   static const _teal = Color(0xFF06B6D4);
 
@@ -228,14 +236,17 @@ class _ClinicSummaryCard extends StatelessWidget {
           children: [
             const Icon(Icons.door_front_door_outlined, color: _teal, size: 16),
             const SizedBox(width: 6),
-            Text('عيادة $clinic',
+            Text('${isEnglish ? 'Clinic' : 'عيادة'} $clinic',
                 style: const TextStyle(fontSize: 14,
                     fontWeight: FontWeight.w700, color: _teal)),
           ],
         ),
         const SizedBox(height: 6),
-        Text('${dayNames.length} أيام: ${dayNames.join(' · ')}',
-            style: const TextStyle(fontSize: 11, color: Color(0x99FFFFFF))),
+        Text(
+          '${dayNames.length} ${tr(isEnglish, 'أيام')}: '
+          '${dayNames.map((d) => tr(isEnglish, d)).join(' · ')}',
+          style: const TextStyle(fontSize: 11, color: Color(0x99FFFFFF)),
+        ),
       ],
     ),
   );
@@ -247,6 +258,7 @@ class _DayRow extends StatelessWidget {
   final bool isOff;
   final int? clinicNumber;
   final String? shift;
+  final bool isEnglish;
 
   const _DayRow({
     required this.dayName,
@@ -254,6 +266,7 @@ class _DayRow extends StatelessWidget {
     required this.isOff,
     this.clinicNumber,
     this.shift,
+    this.isEnglish = false,
   });
 
   static const _indigo = Color(0xFF06B6D4);
@@ -266,6 +279,7 @@ class _DayRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < 700;
+    final displayDayName = tr(isEnglish, dayName);
 
     final circleAvatar = Container(
       width: 42, height: 42,
@@ -282,7 +296,7 @@ class _DayRow extends StatelessWidget {
       ),
       child: Center(
         child: Text(
-          dayName.length >= 2 ? dayName.substring(0, 2) : dayName,
+          displayDayName.length >= 2 ? displayDayName.substring(0, 2) : displayDayName,
           style: TextStyle(
             fontSize: 11, fontWeight: FontWeight.w700,
             color: isToday ? _indigo : isOff
@@ -295,7 +309,7 @@ class _DayRow extends StatelessWidget {
     final dayNameSection = Expanded(
       child: Row(
         children: [
-          Text(dayName,
+          Text(displayDayName,
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: isToday ? FontWeight.w700 : FontWeight.w500,
@@ -311,8 +325,8 @@ class _DayRow extends StatelessWidget {
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(color: _indigo.withValues(alpha: 0.5)),
               ),
-              child: const Text('اليوم',
-                  style: TextStyle(fontSize: 9, color: _indigo,
+              child: Text(tr(isEnglish, 'اليوم'),
+                  style: const TextStyle(fontSize: 9, color: _indigo,
                       fontWeight: FontWeight.w700)),
             ),
           ],
@@ -327,21 +341,21 @@ class _DayRow extends StatelessWidget {
               color: const Color(0x08FFFFFF),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Text('إجازة',
-                style: TextStyle(fontSize: 12, color: Color(0x44FFFFFF))),
+            child: Text(tr(isEnglish, 'إجازة'),
+                style: const TextStyle(fontSize: 12, color: Color(0x44FFFFFF))),
           )
         : Wrap(
             spacing: 8,
             children: [
               _Badge(
                 icon: Icons.door_front_door_outlined,
-                label: 'عيادة $clinicNumber',
+                label: '${isEnglish ? 'Clinic' : 'عيادة'} $clinicNumber',
                 color: _teal,
               ),
               if (shift != null && shift!.isNotEmpty)
                 _Badge(
                   emoji: _isMorning ? '🌅' : '🌙',
-                  label: shift!,
+                  label: tr(isEnglish, shift!),
                   color: _isMorning ? _amber : _purple,
                 ),
             ],

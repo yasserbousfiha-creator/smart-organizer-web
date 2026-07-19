@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 
 class DemoTaskSection extends StatefulWidget {
-  const DemoTaskSection({super.key});
+  final bool isEnglish;
+  const DemoTaskSection({super.key, this.isEnglish = false});
 
   @override
   State<DemoTaskSection> createState() => _DemoTaskSectionState();
@@ -29,18 +30,38 @@ class _DemoTaskSectionState extends State<DemoTaskSection> {
   int _nextId = 3;
   bool _organizing = false;
 
-  static const _tagOptions = [
+  static const _tagOptionsAr = [
     ('🔥 عاجل', Color(0xFFF87171)),
     ('📅 اليوم', Color(0xFF60A5FA)),
     ('⭐ مهم', Color(0xFFFBBF24)),
     ('💡 فكرة', Color(0xFFA78BFA)),
     ('✅ سهل', Color(0xFF34D399)),
   ];
-
-  late final List<_DemoTask> _tasks = [
-    _DemoTask(id: 1, text: 'تصميم عرض تقديمي للاجتماع', tag: '⭐ مهم', tagColor: const Color(0xFFFBBF24)),
-    _DemoTask(id: 2, text: 'اجتماع الفريق الساعة 5', tag: '📅 اليوم', tagColor: const Color(0xFF60A5FA)),
+  static const _tagOptionsEn = [
+    ('🔥 Urgent', Color(0xFFF87171)),
+    ('📅 Today', Color(0xFF60A5FA)),
+    ('⭐ Important', Color(0xFFFBBF24)),
+    ('💡 Idea', Color(0xFFA78BFA)),
+    ('✅ Easy', Color(0xFF34D399)),
   ];
+  List<(String, Color)> get _tagOptions =>
+      widget.isEnglish ? _tagOptionsEn : _tagOptionsAr;
+
+  late List<_DemoTask> _tasks;
+
+  @override
+  void initState() {
+    super.initState();
+    _tasks = widget.isEnglish
+        ? [
+            _DemoTask(id: 1, text: 'Design a presentation for the meeting', tag: '⭐ Important', tagColor: const Color(0xFFFBBF24)),
+            _DemoTask(id: 2, text: 'Team meeting at 5', tag: '📅 Today', tagColor: const Color(0xFF60A5FA)),
+          ]
+        : [
+            _DemoTask(id: 1, text: 'تصميم عرض تقديمي للاجتماع', tag: '⭐ مهم', tagColor: const Color(0xFFFBBF24)),
+            _DemoTask(id: 2, text: 'اجتماع الفريق الساعة 5', tag: '📅 اليوم', tagColor: const Color(0xFF60A5FA)),
+          ];
+  }
 
   @override
   void dispose() {
@@ -96,21 +117,23 @@ class _DemoTaskSectionState extends State<DemoTaskSection> {
                 const Icon(Icons.auto_awesome_rounded, size: 14, color: AppColors.primaryLight),
                 const SizedBox(width: 6),
                 Text(
-                  'تجربة تفاعلية',
+                  widget.isEnglish ? 'Interactive Demo' : 'تجربة تفاعلية',
                   style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.primaryLight),
                 ),
               ],
             ),
           ),
           const SizedBox(height: 18),
-          const Text(
-            'جرّب التنظيم الذكي بنفسك',
+          Text(
+            widget.isEnglish ? 'Try Smart Organizing Yourself' : 'جرّب التنظيم الذكي بنفسك',
             textAlign: TextAlign.center,
-            style: TextStyle(fontFamily: 'Tajawal', fontSize: 30, fontWeight: FontWeight.w900, color: Colors.white),
+            style: const TextStyle(fontFamily: 'Tajawal', fontSize: 30, fontWeight: FontWeight.w900, color: Colors.white),
           ),
           const SizedBox(height: 12),
           Text(
-            'اكتب أي مهمة تخطر ببالك وشاهد كيف نرتّبها لك تلقائياً — بلا حاجة لتسجيل الدخول.',
+            widget.isEnglish
+                ? 'Type any task that comes to mind and watch us organize it automatically — no login required.'
+                : 'اكتب أي مهمة تخطر ببالك وشاهد كيف نرتّبها لك تلقائياً — بلا حاجة لتسجيل الدخول.',
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 15, color: Colors.white.withValues(alpha: 0.55), height: 1.6),
           ),
@@ -136,7 +159,9 @@ class _DemoTaskSectionState extends State<DemoTaskSection> {
                         textInputAction: TextInputAction.done,
                         style: const TextStyle(color: Colors.white, fontSize: 14),
                         decoration: InputDecoration(
-                          hintText: 'مثلاً: تحضير التقرير الشهري...',
+                          hintText: widget.isEnglish
+                              ? 'e.g., Prepare the monthly report...'
+                              : 'مثلاً: تحضير التقرير الشهري...',
                           hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
                           filled: true,
                           fillColor: Colors.white.withValues(alpha: 0.05),
@@ -184,7 +209,9 @@ class _DemoTaskSectionState extends State<DemoTaskSection> {
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 24),
                     child: Text(
-                      'لا توجد مهام بعد — جرّب إضافة واحدة 👆',
+                      widget.isEnglish
+                          ? 'No tasks yet — try adding one 👆'
+                          : 'لا توجد مهام بعد — جرّب إضافة واحدة 👆',
                       style: TextStyle(color: Colors.white.withValues(alpha: 0.35), fontSize: 13),
                     ),
                   )

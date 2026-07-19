@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'portal_client.dart';
+import 'portal_i18n.dart';
 
 class PortalPayslipScreen extends StatefulWidget {
   final String employeeId;
-  const PortalPayslipScreen({super.key, required this.employeeId});
+  final bool isEnglish;
+  const PortalPayslipScreen({super.key, required this.employeeId, this.isEnglish = false});
 
   @override
   State<PortalPayslipScreen> createState() => _PortalPayslipScreenState();
@@ -48,7 +50,7 @@ class _PortalPayslipScreenState extends State<PortalPayslipScreen> {
     }
   }
 
-  String _monthName(int m) => (m > 0 && m < 13) ? _months[m] : '$m';
+  String _monthName(int m) => tr(widget.isEnglish, (m > 0 && m < 13) ? _months[m] : '$m');
 
   @override
   Widget build(BuildContext context) {
@@ -70,16 +72,16 @@ class _PortalPayslipScreenState extends State<PortalPayslipScreen> {
                 ),
                 const SizedBox(width: 8),
               ],
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('كشف الراتب',
-                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700,
+                    Text(tr(widget.isEnglish, 'كشف الراتب'),
+                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700,
                             color: Colors.white)),
-                    SizedBox(height: 2),
-                    Text('سجل مستحقاتك الشهرية',
-                        style: TextStyle(fontSize: 12, color: Color(0x99FFFFFF))),
+                    const SizedBox(height: 2),
+                    Text(tr(widget.isEnglish, 'سجل مستحقاتك الشهرية'),
+                        style: const TextStyle(fontSize: 12, color: Color(0x99FFFFFF))),
                   ],
                 ),
               ),
@@ -97,8 +99,8 @@ class _PortalPayslipScreenState extends State<PortalPayslipScreen> {
                   Icon(Icons.receipt_long_outlined,
                       size: 52, color: Colors.white.withValues(alpha: 0.15)),
                   const SizedBox(height: 12),
-                  const Text('لا توجد كشوف رواتب',
-                      style: TextStyle(color: Color(0x66FFFFFF), fontSize: 14)),
+                  Text(tr(widget.isEnglish, 'لا توجد كشوف رواتب'),
+                      style: const TextStyle(color: Color(0x66FFFFFF), fontSize: 14)),
                 ],
               ),
             ))
@@ -106,7 +108,7 @@ class _PortalPayslipScreenState extends State<PortalPayslipScreen> {
             Expanded(
               child: _showDetail && _selectedIdx != null
                   ? SingleChildScrollView(
-                      child: _PayslipDetail(record: _records[_selectedIdx!]))
+                      child: _PayslipDetail(record: _records[_selectedIdx!], isEnglish: widget.isEnglish))
                   : ListView.separated(
                       itemCount: _records.length,
                       separatorBuilder: (context, idx) => const SizedBox(height: 8),
@@ -156,13 +158,13 @@ class _PortalPayslipScreenState extends State<PortalPayslipScreen> {
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.end,
                                   children: [
-                                    Text('${net.toStringAsFixed(0)} ريال',
+                                    Text('${net.toStringAsFixed(0)} ${tr(widget.isEnglish, 'ريال')}',
                                         style: const TextStyle(
                                             color: _indigo,
                                             fontWeight: FontWeight.w700,
                                             fontSize: 15)),
-                                    const Text('صافي',
-                                        style: TextStyle(
+                                    Text(tr(widget.isEnglish, 'صافي'),
+                                        style: const TextStyle(
                                             fontSize: 11, color: Color(0x66FFFFFF))),
                                   ],
                                 ),
@@ -232,7 +234,7 @@ class _PortalPayslipScreenState extends State<PortalPayslipScreen> {
                   Expanded(
                     child: _selectedIdx != null
                         ? SingleChildScrollView(
-                            child: _PayslipDetail(record: _records[_selectedIdx!]))
+                            child: _PayslipDetail(record: _records[_selectedIdx!], isEnglish: widget.isEnglish))
                         : const SizedBox(),
                   ),
                 ],
@@ -246,7 +248,8 @@ class _PortalPayslipScreenState extends State<PortalPayslipScreen> {
 
 class _PayslipDetail extends StatelessWidget {
   final Map<String, dynamic> record;
-  const _PayslipDetail({required this.record});
+  final bool isEnglish;
+  const _PayslipDetail({required this.record, this.isEnglish = false});
 
   static const _months = [
     '', 'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
@@ -268,7 +271,7 @@ class _PayslipDetail extends StatelessWidget {
     final deductions = _d('deductions');
     final advDeduct = _d('advance_deduction');
     final net = _d('net_salary');
-    final monthName = month > 0 && month < 13 ? _months[month] : '$month';
+    final monthName = tr(isEnglish, month > 0 && month < 13 ? _months[month] : '$month');
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -298,19 +301,19 @@ class _PayslipDetail extends StatelessWidget {
           ),
           const SizedBox(height: 20),
 
-          _sectionHead('الإيرادات', _green),
+          _sectionHead(tr(isEnglish, 'الإيرادات'), _green),
           const SizedBox(height: 10),
-          _Row(label: 'الراتب الأساسي', value: basic, color: _green),
-          _Row(label: 'البدلات', value: allowances, color: _green),
-          _Row(label: 'العمولات', value: commissions, color: _green),
+          _Row(label: tr(isEnglish, 'الراتب الأساسي'), value: basic, color: _green, isEnglish: isEnglish),
+          _Row(label: tr(isEnglish, 'البدلات'), value: allowances, color: _green, isEnglish: isEnglish),
+          _Row(label: tr(isEnglish, 'العمولات'), value: commissions, color: _green, isEnglish: isEnglish),
 
           const SizedBox(height: 16),
 
-          _sectionHead('الاستقطاعات', _red),
+          _sectionHead(tr(isEnglish, 'الاستقطاعات'), _red),
           const SizedBox(height: 10),
-          _Row(label: 'الاستقطاعات', value: deductions, color: _red, neg: true),
+          _Row(label: tr(isEnglish, 'الاستقطاعات'), value: deductions, color: _red, neg: true, isEnglish: isEnglish),
           if (advDeduct > 0)
-            _Row(label: 'استقطاع السلفة', value: advDeduct, color: _red, neg: true),
+            _Row(label: tr(isEnglish, 'استقطاع السلفة'), value: advDeduct, color: _red, neg: true, isEnglish: isEnglish),
 
           const SizedBox(height: 20),
 
@@ -324,10 +327,10 @@ class _PayslipDetail extends StatelessWidget {
             ),
             child: Column(
               children: [
-                const Text('صافي الراتب',
-                    style: TextStyle(color: Colors.white70, fontSize: 13)),
+                Text(tr(isEnglish, 'صافي الراتب'),
+                    style: const TextStyle(color: Colors.white70, fontSize: 13)),
                 const SizedBox(height: 6),
-                Text('${net.toStringAsFixed(2)} ريال',
+                Text('${net.toStringAsFixed(2)} ${tr(isEnglish, 'ريال')}',
                     style: const TextStyle(color: Colors.white,
                         fontSize: 28, fontWeight: FontWeight.w800)),
               ],
@@ -353,7 +356,8 @@ class _Row extends StatelessWidget {
   final double value;
   final Color color;
   final bool neg;
-  const _Row({required this.label, required this.value, required this.color, this.neg = false});
+  final bool isEnglish;
+  const _Row({required this.label, required this.value, required this.color, this.neg = false, this.isEnglish = false});
 
   @override
   Widget build(BuildContext context) {
@@ -364,7 +368,7 @@ class _Row extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label, style: const TextStyle(fontSize: 13, color: Color(0x99FFFFFF))),
-          Text('${neg ? '- ' : '+ '}${value.toStringAsFixed(2)} ريال',
+          Text('${neg ? '- ' : '+ '}${value.toStringAsFixed(2)} ${tr(isEnglish, 'ريال')}',
               style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: color)),
         ],
       ),

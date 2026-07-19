@@ -6,7 +6,8 @@ const String kQuranRadioStreamUrl = 'https://stream.radiojar.com/0tpy1h0kxtzuv';
 
 class QuranRadioButton extends StatefulWidget {
   final bool compact;
-  const QuranRadioButton({super.key, this.compact = false});
+  final bool isEnglish;
+  const QuranRadioButton({super.key, this.compact = false, this.isEnglish = false});
 
   @override
   State<QuranRadioButton> createState() => _QuranRadioButtonState();
@@ -45,7 +46,9 @@ class _QuranRadioButtonState extends State<QuranRadioButton> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('تعذّر تشغيل إذاعة القرآن الكريم، تحقق من اتصالك بالإنترنت'),
+            content: Text(widget.isEnglish
+                ? 'Could not play the Quran radio, check your internet connection'
+                : 'تعذّر تشغيل إذاعة القرآن الكريم، تحقق من اتصالك بالإنترنت'),
             backgroundColor: AppColors.danger,
           ),
         );
@@ -76,7 +79,7 @@ class _QuranRadioButtonState extends State<QuranRadioButton> {
 
     if (widget.compact) {
       return Tooltip(
-        message: 'إذاعة القرآن الكريم',
+        message: widget.isEnglish ? 'Quran Radio' : 'إذاعة القرآن الكريم',
         child: MouseRegion(
           cursor: SystemMouseCursors.click,
           child: GestureDetector(
@@ -126,7 +129,7 @@ class _QuranRadioButtonState extends State<QuranRadioButton> {
               icon,
               const SizedBox(width: 8),
               Text(
-                'إذاعة القرآن الكريم',
+                widget.isEnglish ? 'Quran Radio' : 'إذاعة القرآن الكريم',
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,

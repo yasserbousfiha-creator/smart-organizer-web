@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'portal_client.dart';
+import 'portal_i18n.dart';
 
 class PortalProfileScreen extends StatelessWidget {
   final Map<String, dynamic>? profile;
-  const PortalProfileScreen({super.key, this.profile});
+  final bool isEnglish;
+  const PortalProfileScreen({super.key, this.profile, this.isEnglish = false});
 
   static const _indigo = Color(0xFF06B6D4);
 
@@ -15,7 +17,10 @@ class PortalProfileScreen extends StatelessWidget {
       backgroundColor: const Color(0xFF0D2731),
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (_) => const _ChangePasswordSheet(),
+      builder: (_) => Directionality(
+        textDirection: isEnglish ? TextDirection.ltr : TextDirection.rtl,
+        child: _ChangePasswordSheet(isEnglish: isEnglish),
+      ),
     );
   }
 
@@ -28,10 +33,10 @@ class PortalProfileScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('الملف الشخصي',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: Colors.white)),
+          Text(tr(isEnglish, 'الملف الشخصي'),
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: Colors.white)),
           const SizedBox(height: 6),
-          const Text('بياناتك الوظيفية', style: TextStyle(color: Color(0x99FFFFFF), fontSize: 13)),
+          Text(tr(isEnglish, 'بياناتك الوظيفية'), style: const TextStyle(color: Color(0x99FFFFFF), fontSize: 13)),
           const SizedBox(height: 28),
           isMobile
               ? Column(
@@ -43,7 +48,7 @@ class PortalProfileScreen extends StatelessWidget {
                         style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: Colors.white),
                         overflow: TextOverflow.ellipsis),
                     const SizedBox(height: 4),
-                    Text('رقم الموظف: ${p['employee_number'] ?? '—'}',
+                    Text('${isEnglish ? 'Employee Number' : 'رقم الموظف'}: ${p['employee_number'] ?? '—'}',
                         style: const TextStyle(color: Color(0x99FFFFFF), fontSize: 13),
                         overflow: TextOverflow.ellipsis),
                   ],
@@ -60,7 +65,7 @@ class PortalProfileScreen extends StatelessWidget {
                               style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: Colors.white),
                               overflow: TextOverflow.ellipsis),
                           const SizedBox(height: 4),
-                          Text('رقم الموظف: ${p['employee_number'] ?? '—'}',
+                          Text('${isEnglish ? 'Employee Number' : 'رقم الموظف'}: ${p['employee_number'] ?? '—'}',
                               style: const TextStyle(color: Color(0x99FFFFFF), fontSize: 13),
                               overflow: TextOverflow.ellipsis),
                         ],
@@ -74,8 +79,8 @@ class PortalProfileScreen extends StatelessWidget {
             child: OutlinedButton.icon(
               onPressed: () => _showChangePasswordSheet(context),
               icon: const Icon(Icons.lock_outline, size: 16, color: _indigo),
-              label: const Text('تغيير كلمة المرور',
-                  style: TextStyle(fontSize: 13, color: _indigo)),
+              label: Text(tr(isEnglish, 'تغيير كلمة المرور'),
+                  style: const TextStyle(fontSize: 13, color: _indigo)),
               style: OutlinedButton.styleFrom(
                 side: BorderSide(color: _indigo.withValues(alpha: 0.4)),
                 shape: RoundedRectangleBorder(
@@ -92,7 +97,7 @@ class PortalProfileScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (p['salary'] != null) ...[
-                    _SalaryCard(salary: (p['salary'] as num).toDouble()),
+                    _SalaryCard(salary: (p['salary'] as num).toDouble(), isEnglish: isEnglish),
                     const SizedBox(height: 20),
                   ],
 
@@ -101,6 +106,7 @@ class PortalProfileScreen extends StatelessWidget {
                       clinicNumber: p['clinic_number'].toString(),
                       shift: p['shift'] as String? ?? '—',
                       department: p['department'] as String? ?? '',
+                      isEnglish: isEnglish,
                     ),
                     const SizedBox(height: 20),
                   ],
@@ -109,19 +115,19 @@ class PortalProfileScreen extends StatelessWidget {
                     spacing: 16,
                     runSpacing: 16,
                     children: [
-                      _InfoCard(label: 'القسم', value: p['department'] ?? '—', icon: Icons.business_center_outlined),
-                      _InfoCard(label: 'الدوام', value: p['shift'] ?? '—', icon: Icons.access_time_outlined),
-                      _InfoCard(label: 'الجنسية', value: p['nationality'] ?? '—', icon: Icons.flag_outlined),
-                      _InfoCard(label: 'الهاتف', value: p['phone'] ?? '—', icon: Icons.phone_outlined),
-                      _InfoCard(label: 'البريد الإلكتروني', value: p['email'] ?? '—', icon: Icons.email_outlined),
-                      _InfoCard(label: 'الحالة الوظيفية', value: p['status'] ?? '—', icon: Icons.check_circle_outline),
+                      _InfoCard(label: tr(isEnglish, 'القسم'), value: p['department'] ?? '—', icon: Icons.business_center_outlined),
+                      _InfoCard(label: tr(isEnglish, 'الدوام'), value: p['shift'] ?? '—', icon: Icons.access_time_outlined),
+                      _InfoCard(label: tr(isEnglish, 'الجنسية'), value: p['nationality'] ?? '—', icon: Icons.flag_outlined),
+                      _InfoCard(label: tr(isEnglish, 'الهاتف'), value: p['phone'] ?? '—', icon: Icons.phone_outlined),
+                      _InfoCard(label: tr(isEnglish, 'البريد الإلكتروني'), value: p['email'] ?? '—', icon: Icons.email_outlined),
+                      _InfoCard(label: tr(isEnglish, 'الحالة الوظيفية'), value: p['status'] ?? '—', icon: Icons.check_circle_outline),
                       _InfoCard(
-                        label: 'تاريخ بداية العقد',
+                        label: tr(isEnglish, 'تاريخ بداية العقد'),
                         value: p['contract_start_date'] ?? '—',
                         icon: Icons.calendar_today_outlined,
                       ),
                       _InfoCard(
-                        label: 'تاريخ نهاية العقد',
+                        label: tr(isEnglish, 'تاريخ نهاية العقد'),
                         value: p['contract_end_date'] ?? '—',
                         icon: Icons.event_outlined,
                       ),
@@ -191,7 +197,8 @@ class PortalProfileScreen extends StatelessWidget {
 
 class _SalaryCard extends StatelessWidget {
   final double salary;
-  const _SalaryCard({required this.salary});
+  final bool isEnglish;
+  const _SalaryCard({required this.salary, this.isEnglish = false});
 
   @override
   Widget build(BuildContext context) {
@@ -223,12 +230,12 @@ class _SalaryCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('الراتب الأساسي الشهري',
-                    style: TextStyle(color: Color(0x99FFFFFF), fontSize: 12),
+                Text(tr(isEnglish, 'الراتب الأساسي الشهري'),
+                    style: const TextStyle(color: Color(0x99FFFFFF), fontSize: 12),
                     overflow: TextOverflow.ellipsis),
                 const SizedBox(height: 4),
                 Text(
-                  '${salary.toStringAsFixed(salary.truncateToDouble() == salary ? 0 : 2)} ريال',
+                  '${salary.toStringAsFixed(salary.truncateToDouble() == salary ? 0 : 2)} ${tr(isEnglish, 'ريال')}',
                   style: const TextStyle(
                       color: Colors.white,
                       fontSize: 22,
@@ -248,10 +255,12 @@ class _ClinicCard extends StatelessWidget {
   final String clinicNumber;
   final String shift;
   final String department;
+  final bool isEnglish;
   const _ClinicCard(
       {required this.clinicNumber,
       required this.shift,
-      required this.department});
+      required this.department,
+      this.isEnglish = false});
 
   @override
   Widget build(BuildContext context) {
@@ -291,8 +300,8 @@ class _ClinicCard extends StatelessWidget {
                           style: const TextStyle(
                               color: Color(0x99FFFFFF), fontSize: 11),
                           overflow: TextOverflow.ellipsis),
-                    const Text('بيانات العيادة',
-                        style: TextStyle(
+                    Text(tr(isEnglish, 'بيانات العيادة'),
+                        style: const TextStyle(
                             color: Colors.white,
                             fontSize: 15,
                             fontWeight: FontWeight.w700),
@@ -310,12 +319,12 @@ class _ClinicCard extends StatelessWidget {
                   children: [
                     _ClinicChip(
                       icon: Icons.door_front_door_outlined,
-                      label: 'عيادة رقم $clinicNumber',
+                      label: '${isEnglish ? 'Clinic No.' : 'عيادة رقم'} $clinicNumber',
                       color: const Color(0xFF34D399),
                     ),
                     _ClinicChip(
                       icon: Icons.schedule_outlined,
-                      label: 'دوام $shift',
+                      label: '${isEnglish ? 'Shift' : 'دوام'} ${tr(isEnglish, shift)}',
                       color: shiftColor,
                     ),
                   ],
@@ -324,13 +333,13 @@ class _ClinicCard extends StatelessWidget {
                   children: [
                     _ClinicChip(
                       icon: Icons.door_front_door_outlined,
-                      label: 'عيادة رقم $clinicNumber',
+                      label: '${isEnglish ? 'Clinic No.' : 'عيادة رقم'} $clinicNumber',
                       color: const Color(0xFF34D399),
                     ),
                     const SizedBox(width: 10),
                     _ClinicChip(
                       icon: Icons.schedule_outlined,
-                      label: 'دوام $shift',
+                      label: '${isEnglish ? 'Shift' : 'دوام'} ${tr(isEnglish, shift)}',
                       color: shiftColor,
                     ),
                   ],
@@ -420,7 +429,8 @@ class _InfoCard extends StatelessWidget {
 }
 
 class _ChangePasswordSheet extends StatefulWidget {
-  const _ChangePasswordSheet();
+  final bool isEnglish;
+  const _ChangePasswordSheet({this.isEnglish = false});
   @override
   State<_ChangePasswordSheet> createState() => _ChangePasswordSheetState();
 }
@@ -451,13 +461,13 @@ class _ChangePasswordSheetState extends State<_ChangePasswordSheet> {
     final next = _newCtrl.text;
     final confirm = _confirmCtrl.text;
 
-    if (current.isEmpty) { setState(() => _error = 'أدخل كلمة المرور الحالية'); return; }
-    if (next.length < 6) { setState(() => _error = 'كلمة المرور الجديدة يجب أن تكون 6 أحرف على الأقل'); return; }
-    if (next != confirm) { setState(() => _error = 'كلمتا المرور الجديدتان غير متطابقتين'); return; }
-    if (next == current) { setState(() => _error = 'كلمة المرور الجديدة مطابقة للحالية'); return; }
+    if (current.isEmpty) { setState(() => _error = tr(widget.isEnglish, 'أدخل كلمة المرور الحالية')); return; }
+    if (next.length < 6) { setState(() => _error = tr(widget.isEnglish, 'كلمة المرور الجديدة يجب أن تكون 6 أحرف على الأقل')); return; }
+    if (next != confirm) { setState(() => _error = tr(widget.isEnglish, 'كلمتا المرور الجديدتان غير متطابقتين')); return; }
+    if (next == current) { setState(() => _error = tr(widget.isEnglish, 'كلمة المرور الجديدة مطابقة للحالية')); return; }
 
     final email = portalClient.auth.currentUser?.email;
-    if (email == null) { setState(() => _error = 'تعذّر التحقق من الجلسة، سجّل الدخول مجدداً'); return; }
+    if (email == null) { setState(() => _error = tr(widget.isEnglish, 'تعذّر التحقق من الجلسة، سجّل الدخول مجدداً')); return; }
 
     setState(() { _submitting = true; _error = null; });
     try {
@@ -465,19 +475,19 @@ class _ChangePasswordSheetState extends State<_ChangePasswordSheet> {
       await portalClient.auth.updateUser(UserAttributes(password: next));
       if (mounted) {
         Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('تم تغيير كلمة المرور بنجاح ✓'),
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(tr(widget.isEnglish, 'تم تغيير كلمة المرور بنجاح ✓')),
           backgroundColor: _green,
           behavior: SnackBarBehavior.floating,
         ));
       }
     } on AuthException catch (e) {
       final msg = e.message.contains('Invalid login')
-          ? 'كلمة المرور الحالية غير صحيحة'
+          ? tr(widget.isEnglish, 'كلمة المرور الحالية غير صحيحة')
           : e.message;
       if (mounted) setState(() => _error = msg);
     } catch (e) {
-      if (mounted) setState(() => _error = 'خطأ: $e');
+      if (mounted) setState(() => _error = widget.isEnglish ? 'Error: $e' : 'خطأ: $e');
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
@@ -516,15 +526,15 @@ class _ChangePasswordSheetState extends State<_ChangePasswordSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('تغيير كلمة المرور',
-              style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700)),
+          Text(tr(widget.isEnglish, 'تغيير كلمة المرور'),
+              style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700)),
           const SizedBox(height: 20),
 
           TextField(
             controller: _currentCtrl,
             obscureText: _obscureCurrent,
             style: const TextStyle(color: Colors.white, fontSize: 14),
-            decoration: _decoration('كلمة المرور الحالية',
+            decoration: _decoration(tr(widget.isEnglish, 'كلمة المرور الحالية'),
                 obscure: _obscureCurrent,
                 onToggle: () => setState(() => _obscureCurrent = !_obscureCurrent)),
           ),
@@ -533,7 +543,7 @@ class _ChangePasswordSheetState extends State<_ChangePasswordSheet> {
             controller: _newCtrl,
             obscureText: _obscureNew,
             style: const TextStyle(color: Colors.white, fontSize: 14),
-            decoration: _decoration('كلمة المرور الجديدة',
+            decoration: _decoration(tr(widget.isEnglish, 'كلمة المرور الجديدة'),
                 obscure: _obscureNew,
                 onToggle: () => setState(() => _obscureNew = !_obscureNew)),
           ),
@@ -542,7 +552,7 @@ class _ChangePasswordSheetState extends State<_ChangePasswordSheet> {
             controller: _confirmCtrl,
             obscureText: _obscureNew,
             style: const TextStyle(color: Colors.white, fontSize: 14),
-            decoration: _decoration('تأكيد كلمة المرور الجديدة',
+            decoration: _decoration(tr(widget.isEnglish, 'تأكيد كلمة المرور الجديدة'),
                 obscure: _obscureNew,
                 onToggle: () => setState(() => _obscureNew = !_obscureNew)),
             onSubmitted: (_) => _submit(),
@@ -576,8 +586,8 @@ class _ChangePasswordSheetState extends State<_ChangePasswordSheet> {
               child: _submitting
                   ? const SizedBox(width: 20, height: 20,
                       child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                  : const Text('حفظ كلمة المرور الجديدة',
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                  : Text(tr(widget.isEnglish, 'حفظ كلمة المرور الجديدة'),
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
             ),
           ),
         ],

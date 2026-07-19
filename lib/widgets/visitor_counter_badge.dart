@@ -3,7 +3,8 @@ import '../state/visit_counter.dart';
 import '../theme/app_colors.dart';
 
 class VisitorCounterBadge extends StatefulWidget {
-  const VisitorCounterBadge({super.key});
+  final bool isEnglish;
+  const VisitorCounterBadge({super.key, this.isEnglish = false});
 
   @override
   State<VisitorCounterBadge> createState() => _VisitorCounterBadgeState();
@@ -22,6 +23,13 @@ class _VisitorCounterBadgeState extends State<VisitorCounterBadge> {
   }
 
   String _label(int count) {
+    if (widget.isEnglish) {
+      if (count == 0) return 'Be the first to join us!';
+      if (count == 1) return '1 visitor joined us';
+      if (count <= 10) return '$count visitors joined us';
+      final rounded = (count ~/ 10) * 10;
+      return 'More than $rounded people joined us';
+    }
     if (count == 0) return 'كن أول من ينضمّ إلينا!';
     if (count == 1) return 'زائر واحد انضمّ إلينا';
     if (count == 2) return 'زائران انضمّا إلينا';

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'portal_client.dart';
+import 'portal_i18n.dart';
 
 class AdminMessagesScreen extends StatefulWidget {
-  const AdminMessagesScreen({super.key});
+  final bool isEnglish;
+  const AdminMessagesScreen({super.key, this.isEnglish = false});
 
   @override
   State<AdminMessagesScreen> createState() => _AdminMessagesScreenState();
@@ -126,13 +128,13 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('المراسلات',
+                      Text(tr(widget.isEnglish, 'المراسلات'),
                           style: TextStyle(
                               fontSize: isMobile ? 17 : 20,
                               fontWeight: FontWeight.w700,
                               color: Colors.white)),
                       const SizedBox(height: 2),
-                      Text('محادثات الموظفين مع الإدارة',
+                      Text(tr(widget.isEnglish, 'محادثات الموظفين مع الإدارة'),
                           style: TextStyle(
                               fontSize: isMobile ? 11 : 12,
                               color: const Color(0x99FFFFFF))),
@@ -152,15 +154,15 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
                 ? const Center(
                     child: CircularProgressIndicator(color: _indigo))
                 : _conversations.isEmpty
-                    ? const Center(
+                    ? Center(
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.chat_bubble_outline,
+                            const Icon(Icons.chat_bubble_outline,
                                 size: 52, color: Color(0x22FFFFFF)),
-                            SizedBox(height: 12),
-                            Text('لا توجد محادثات بعد',
-                                style: TextStyle(
+                            const SizedBox(height: 12),
+                            Text(tr(widget.isEnglish, 'لا توجد محادثات بعد'),
+                                style: const TextStyle(
                                     color: Color(0x66FFFFFF),
                                     fontSize: 13)),
                           ],
@@ -190,6 +192,7 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
                                     employeeId:
                                         conv['employee_id'] as String,
                                     employeeName: name,
+                                    isEnglish: widget.isEnglish,
                                   ),
                                 ),
                               );
@@ -314,10 +317,12 @@ class _AdminMessagesScreenState extends State<AdminMessagesScreen> {
 class AdminChatScreen extends StatefulWidget {
   final String employeeId;
   final String employeeName;
+  final bool isEnglish;
   const AdminChatScreen({
     super.key,
     required this.employeeId,
     required this.employeeName,
+    this.isEnglish = false,
   });
 
   @override
@@ -399,9 +404,9 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
       if (mounted) {
         _ctrl.text = text;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('فشل إرسال الرسالة'),
-            backgroundColor: Color(0xFFF87171),
+          SnackBar(
+            content: Text(tr(widget.isEnglish, 'فشل إرسال الرسالة')),
+            backgroundColor: const Color(0xFFF87171),
           ),
         );
       }
@@ -414,7 +419,7 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
   Widget build(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < 700;
     return Directionality(
-      textDirection: TextDirection.rtl,
+      textDirection: widget.isEnglish ? TextDirection.ltr : TextDirection.rtl,
       child: Scaffold(
         backgroundColor: const Color(0xFF061A22),
         appBar: AppBar(
@@ -476,9 +481,9 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
                         child:
                             CircularProgressIndicator(color: _indigo))
                     : _messages.isEmpty
-                        ? const Center(
-                            child: Text('لا توجد رسائل بعد',
-                                style: TextStyle(
+                        ? Center(
+                            child: Text(tr(widget.isEnglish, 'لا توجد رسائل بعد'),
+                                style: const TextStyle(
                                     color: Color(0x66FFFFFF),
                                     fontSize: 13)))
                         : ListView.builder(
@@ -536,11 +541,11 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
                                               : CrossAxisAlignment.start,
                                           children: [
                                             if (!isEmp)
-                                              const Padding(
-                                                padding: EdgeInsets.only(
+                                              Padding(
+                                                padding: const EdgeInsets.only(
                                                     bottom: 4),
-                                                child: Text('الإدارة',
-                                                    style: TextStyle(
+                                                child: Text(tr(widget.isEnglish, 'الإدارة'),
+                                                    style: const TextStyle(
                                                         color: Color(
                                                             0xFF22D3EE),
                                                         fontSize: 11,
@@ -598,7 +603,7 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
                       onSubmitted: (_) => _send(),
                       maxLines: null,
                       decoration: InputDecoration(
-                        hintText: 'اكتب ردك هنا...',
+                        hintText: tr(widget.isEnglish, 'اكتب ردك هنا...'),
                         hintStyle: const TextStyle(
                             color: Color(0x55FFFFFF), fontSize: 13),
                         filled: true,

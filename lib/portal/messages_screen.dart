@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'portal_client.dart';
+import 'portal_i18n.dart';
 
 class PortalMessagesScreen extends StatefulWidget {
   final String employeeId;
+  final bool isEnglish;
   const PortalMessagesScreen(
-      {super.key, required this.employeeId});
+      {super.key, required this.employeeId, this.isEnglish = false});
 
   @override
   State<PortalMessagesScreen> createState() =>
@@ -80,10 +82,10 @@ class _PortalMessagesScreenState extends State<PortalMessagesScreen> {
       if (mounted) {
         _ctrl.text = text;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('فشل إرسال الرسالة — يرجى التواصل مع المسؤول لإعداد النظام'),
-            backgroundColor: Color(0xFFF87171),
-            duration: Duration(seconds: 4),
+          SnackBar(
+            content: Text(tr(widget.isEnglish, 'فشل إرسال الرسالة — يرجى التواصل مع المسؤول لإعداد النظام')),
+            backgroundColor: const Color(0xFFF87171),
+            duration: const Duration(seconds: 4),
           ),
         );
       }
@@ -100,13 +102,13 @@ class _PortalMessagesScreenState extends State<PortalMessagesScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('المراسلات',
+          Text(tr(widget.isEnglish, 'المراسلات'),
               style: TextStyle(
                   fontSize: isMobile ? 17 : 20,
                   fontWeight: FontWeight.w700,
                   color: Colors.white)),
           const SizedBox(height: 4),
-          Text('تواصل مع إدارة الموارد البشرية',
+          Text(tr(widget.isEnglish, 'تواصل مع إدارة الموارد البشرية'),
               style: TextStyle(
                   fontSize: isMobile ? 11 : 12,
                   color: const Color(0x99FFFFFF))),
@@ -127,16 +129,16 @@ class _PortalMessagesScreenState extends State<PortalMessagesScreen> {
                                 color: Colors.white
                                     .withValues(alpha: 0.1)),
                             const SizedBox(height: 14),
-                            const Text(
-                              'ابدأ محادثة مع الإدارة',
-                              style: TextStyle(
+                            Text(
+                              tr(widget.isEnglish, 'ابدأ محادثة مع الإدارة'),
+                              style: const TextStyle(
                                   color: Color(0x66FFFFFF),
                                   fontSize: 13),
                             ),
                             const SizedBox(height: 6),
-                            const Text(
-                              'يمكنك إرسال أي استفسار أو طلب',
-                              style: TextStyle(
+                            Text(
+                              tr(widget.isEnglish, 'يمكنك إرسال أي استفسار أو طلب'),
+                              style: const TextStyle(
                                   color: Color(0x44FFFFFF),
                                   fontSize: 11),
                             ),
@@ -201,11 +203,11 @@ class _PortalMessagesScreenState extends State<PortalMessagesScreen> {
                                           : CrossAxisAlignment.start,
                                       children: [
                                         if (!isEmp)
-                                          const Padding(
-                                            padding: EdgeInsets.only(
+                                          Padding(
+                                            padding: const EdgeInsets.only(
                                                 bottom: 4),
-                                            child: Text('الإدارة',
-                                                style: TextStyle(
+                                            child: Text(tr(widget.isEnglish, 'الإدارة'),
+                                                style: const TextStyle(
                                                     color:
                                                         Color(0xFF22D3EE),
                                                     fontSize: 11,
@@ -251,7 +253,7 @@ class _PortalMessagesScreenState extends State<PortalMessagesScreen> {
                   onSubmitted: (_) => _send(),
                   maxLines: null,
                   decoration: InputDecoration(
-                    hintText: 'اكتب رسالتك هنا...',
+                    hintText: tr(widget.isEnglish, 'اكتب رسالتك هنا...'),
                     hintStyle: TextStyle(
                         color: const Color(0x55FFFFFF),
                         fontSize: isMobile ? 12 : 13,

@@ -2,14 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' as intl;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'portal_client.dart';
+import 'portal_i18n.dart';
 
 class PortalLeavesScreen extends StatefulWidget {
   final String employeeId;
   final String employeeName;
+  final bool isEnglish;
   const PortalLeavesScreen({
     super.key,
     required this.employeeId,
     required this.employeeName,
+    this.isEnglish = false,
   });
 
   @override
@@ -86,7 +89,7 @@ class _PortalLeavesScreenState extends State<PortalLeavesScreen> {
 
   Future<void> _submit() async {
     if (_start == null || _end == null) {
-      _snack('يرجى تحديد تاريخ البداية والنهاية');
+      _snack(tr(widget.isEnglish, 'يرجى تحديد تاريخ البداية والنهاية'));
       return;
     }
 
@@ -94,12 +97,12 @@ class _PortalLeavesScreenState extends State<PortalLeavesScreen> {
     final startDay = DateTime(_start!.year, _start!.month, _start!.day);
 
     if (startDay.isBefore(today)) {
-      _snack('لا يمكن تسجيل إجازة بتاريخ في الماضي');
+      _snack(tr(widget.isEnglish, 'لا يمكن تسجيل إجازة بتاريخ في الماضي'));
       return;
     }
 
     if (_end!.isBefore(_start!) || _end!.isAtSameMomentAs(_start!.subtract(const Duration(days: 1)))) {
-      _snack('تاريخ النهاية يجب أن يكون بعد البداية');
+      _snack(tr(widget.isEnglish, 'تاريخ النهاية يجب أن يكون بعد البداية'));
       return;
     }
 
@@ -116,7 +119,9 @@ class _PortalLeavesScreenState extends State<PortalLeavesScreen> {
 
     if (overlapping.isNotEmpty) {
       final o = overlapping.first;
-      _snack('يوجد طلب إجازة في نفس الفترة (${o['start_date']} → ${o['end_date']})');
+      _snack(widget.isEnglish
+          ? 'A leave request already exists for the same period (${o['start_date']} → ${o['end_date']})'
+          : 'يوجد طلب إجازة في نفس الفترة (${o['start_date']} → ${o['end_date']})');
       return;
     }
 
@@ -127,21 +132,27 @@ class _PortalLeavesScreenState extends State<PortalLeavesScreen> {
       if (days > remaining) {
         final proceed = await showDialog<bool>(
           context: context,
-          builder: (c) => AlertDialog(
+          builder: (c) => Directionality(
+            textDirection: widget.isEnglish ? TextDirection.ltr : TextDirection.rtl,
+            child: AlertDialog(
             backgroundColor: const Color(0xFF123540),
-            title: const Text('تجاوز الرصيد', style: TextStyle(color: Colors.white)),
+            title: Text(tr(widget.isEnglish, 'تجاوز الرصيد'), style: const TextStyle(color: Colors.white)),
             content: Text(
-              'تطلب $days يوم والرصيد المتبقي $remaining يوم فقط.\n'
-              'هل تريد إرسال الطلب رغم ذلك؟',
+              widget.isEnglish
+                  ? 'You are requesting $days day(s) but only $remaining day(s) remain.\n'
+                      'Do you want to send the request anyway?'
+                  : 'تطلب $days يوم والرصيد المتبقي $remaining يوم فقط.\n'
+                      'هل تريد إرسال الطلب رغم ذلك؟',
               style: const TextStyle(color: Color(0x99FFFFFF)),
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('إلغاء')),
+              TextButton(onPressed: () => Navigator.pop(c, false), child: Text(tr(widget.isEnglish, 'إلغاء'))),
               TextButton(
                 onPressed: () => Navigator.pop(c, true),
-                child: const Text('إرسال رغم التجاوز', style: TextStyle(color: Color(0xFFF59E0B))),
+                child: Text(tr(widget.isEnglish, 'إرسال رغم التجاوز'), style: const TextStyle(color: Color(0xFFF59E0B))),
               ),
             ],
+            ),
           ),
         );
         if (proceed != true) return;
@@ -163,11 +174,11 @@ class _PortalLeavesScreenState extends State<PortalLeavesScreen> {
       });
       if (mounted) {
         setState(() { _showForm = false; _submitting = false; });
-        _snack('تم إرسال طلب الإجازة بنجاح ✓');
+        _snack(tr(widget.isEnglish, 'تم إرسال طلب الإجازة بنجاح ✓'));
         _load();
       }
     } catch (e) {
-      if (mounted) { setState(() => _submitting = false); _snack('خطأ: $e'); }
+      if (mounted) { setState(() => _submitting = false); _snack(widget.isEnglish ? 'Error: $e' : 'خطأ: $e'); }
     }
   }
 
@@ -195,15 +206,15 @@ class _PortalLeavesScreenState extends State<PortalLeavesScreen> {
         children: [
           // ── Header ──────────────────────────────────
           if (isMobile) ...[
-            const Column(
+            Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('الإجازات',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700,
+                Text(tr(widget.isEnglish, 'الإجازات'),
+                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700,
                         color: Colors.white)),
-                SizedBox(height: 2),
-                Text('إدارة إجازاتك وطلباتك',
-                    style: TextStyle(fontSize: 12, color: Color(0x99FFFFFF))),
+                const SizedBox(height: 2),
+                Text(tr(widget.isEnglish, 'إدارة إجازاتك وطلباتك'),
+                    style: const TextStyle(fontSize: 12, color: Color(0x99FFFFFF))),
               ],
             ),
             const SizedBox(height: 10),
@@ -212,7 +223,7 @@ class _PortalLeavesScreenState extends State<PortalLeavesScreen> {
               child: FilledButton.icon(
                 onPressed: () => setState(() => _showForm = !_showForm),
                 icon: Icon(_showForm ? Icons.close : Icons.add, size: 16),
-                label: Text(_showForm ? 'إلغاء' : 'طلب جديد',
+                label: Text(_showForm ? tr(widget.isEnglish, 'إلغاء') : tr(widget.isEnglish, 'طلب جديد'),
                     style: const TextStyle(fontSize: 13)),
                 style: FilledButton.styleFrom(
                   backgroundColor: _indigo,
@@ -224,23 +235,23 @@ class _PortalLeavesScreenState extends State<PortalLeavesScreen> {
           ] else
             Row(
               children: [
-                const Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('الإجازات',
-                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700,
+                      Text(tr(widget.isEnglish, 'الإجازات'),
+                          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700,
                               color: Colors.white)),
-                      SizedBox(height: 2),
-                      Text('إدارة إجازاتك وطلباتك',
-                          style: TextStyle(fontSize: 12, color: Color(0x99FFFFFF))),
+                      const SizedBox(height: 2),
+                      Text(tr(widget.isEnglish, 'إدارة إجازاتك وطلباتك'),
+                          style: const TextStyle(fontSize: 12, color: Color(0x99FFFFFF))),
                     ],
                   ),
                 ),
                 FilledButton.icon(
                   onPressed: () => setState(() => _showForm = !_showForm),
                   icon: Icon(_showForm ? Icons.close : Icons.add, size: 16),
-                  label: Text(_showForm ? 'إلغاء' : 'طلب جديد',
+                  label: Text(_showForm ? tr(widget.isEnglish, 'إلغاء') : tr(widget.isEnglish, 'طلب جديد'),
                       style: const TextStyle(fontSize: 13)),
                   style: FilledButton.styleFrom(
                     backgroundColor: _indigo,
@@ -255,21 +266,21 @@ class _PortalLeavesScreenState extends State<PortalLeavesScreen> {
           if (isMobile)
             Column(
               children: [
-                Row(children: [_BalCard(label: 'الرصيد', value: quota, color: _indigo)]),
+                Row(children: [_BalCard(label: tr(widget.isEnglish, 'الرصيد'), value: quota, color: _indigo)]),
                 const SizedBox(height: 10),
-                Row(children: [_BalCard(label: 'مستخدم', value: used, color: _amber)]),
+                Row(children: [_BalCard(label: tr(widget.isEnglish, 'مستخدم'), value: used, color: _amber)]),
                 const SizedBox(height: 10),
-                Row(children: [_BalCard(label: 'متبقي', value: remaining, color: _green)]),
+                Row(children: [_BalCard(label: tr(widget.isEnglish, 'متبقي'), value: remaining, color: _green)]),
               ],
             )
           else
             Row(
               children: [
-                _BalCard(label: 'الرصيد', value: quota, color: _indigo),
+                _BalCard(label: tr(widget.isEnglish, 'الرصيد'), value: quota, color: _indigo),
                 const SizedBox(width: 10),
-                _BalCard(label: 'مستخدم', value: used, color: _amber),
+                _BalCard(label: tr(widget.isEnglish, 'مستخدم'), value: used, color: _amber),
                 const SizedBox(width: 10),
-                _BalCard(label: 'متبقي', value: remaining, color: _green),
+                _BalCard(label: tr(widget.isEnglish, 'متبقي'), value: remaining, color: _green),
               ],
             ),
           const SizedBox(height: 16),
@@ -278,6 +289,7 @@ class _PortalLeavesScreenState extends State<PortalLeavesScreen> {
             _LeaveForm(
               type: _type, start: _start, end: _end,
               reasonCtrl: _reasonCtrl, submitting: _submitting,
+              isEnglish: widget.isEnglish,
               onTypeChanged: (v) => setState(() => _type = v),
               onStartPicked: (d) => setState(() => _start = d),
               onEndPicked: (d) => setState(() => _end = d),
@@ -286,8 +298,8 @@ class _PortalLeavesScreenState extends State<PortalLeavesScreen> {
             const SizedBox(height: 16),
           ],
 
-          const Text('سجل الطلبات',
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600,
+          Text(tr(widget.isEnglish, 'سجل الطلبات'),
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600,
                   color: Color(0xCCFFFFFF))),
           const SizedBox(height: 10),
 
@@ -295,7 +307,7 @@ class _PortalLeavesScreenState extends State<PortalLeavesScreen> {
             child: _loading
                 ? const Center(child: CircularProgressIndicator(color: _indigo))
                 : _requests.isEmpty
-                    ? _empty('لا توجد طلبات إجازات')
+                    ? _empty(tr(widget.isEnglish, 'لا توجد طلبات إجازات'))
                     : ListView.separated(
                         itemCount: _requests.length,
                         separatorBuilder: (context, idx) => const SizedBox(height: 8),
@@ -312,18 +324,20 @@ class _PortalLeavesScreenState extends State<PortalLeavesScreen> {
                             child: const Icon(Icons.beach_access_outlined,
                                 color: _indigo, size: 18),
                           );
-                          final title = Text('${r['type']} — ${r['days_count']} أيام',
+                          final title = Text(
+                              '${tr(widget.isEnglish, r['type'] as String? ?? '')} — ${r['days_count']} '
+                              '${tr(widget.isEnglish, 'أيام')}',
                               style: const TextStyle(fontWeight: FontWeight.w600,
                                   fontSize: 14, color: Colors.white));
                           final dates = Text('${r['start_date']}  →  ${r['end_date']}',
                               style: const TextStyle(fontSize: 12,
                                   color: Color(0x99FFFFFF)));
                           final reasonText = r['reason'] != null
-                              ? Text('السبب: ${r['reason']}',
+                              ? Text('${tr(widget.isEnglish, 'السبب')}: ${r['reason']}',
                                   style: const TextStyle(fontSize: 11,
                                       color: Color(0x66FFFFFF)))
                               : null;
-                          final badge = _StatusBadge(label: status, color: sc);
+                          final badge = _StatusBadge(label: tr(widget.isEnglish, status), color: sc);
 
                           return _Card(
                             child: isMobile
@@ -421,6 +435,7 @@ class _LeaveForm extends StatelessWidget {
   final DateTime? end;
   final TextEditingController reasonCtrl;
   final bool submitting;
+  final bool isEnglish;
   final ValueChanged<String> onTypeChanged;
   final ValueChanged<DateTime> onStartPicked;
   final ValueChanged<DateTime> onEndPicked;
@@ -428,7 +443,7 @@ class _LeaveForm extends StatelessWidget {
 
   const _LeaveForm({
     required this.type, required this.start, required this.end,
-    required this.reasonCtrl, required this.submitting,
+    required this.reasonCtrl, required this.submitting, required this.isEnglish,
     required this.onTypeChanged, required this.onStartPicked,
     required this.onEndPicked, required this.onSubmit,
   });
@@ -437,7 +452,7 @@ class _LeaveForm extends StatelessWidget {
   static const _indigo = Color(0xFF06B6D4);
 
   String _fmt(DateTime? d) =>
-      d == null ? 'اختر' : intl.DateFormat('yyyy-MM-dd').format(d);
+      d == null ? tr(isEnglish, 'اختر') : intl.DateFormat('yyyy-MM-dd').format(d);
 
   @override
   Widget build(BuildContext context) {
@@ -456,14 +471,14 @@ class _LeaveForm extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('طلب إجازة جديدة',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white)),
+              Text(tr(isEnglish, 'طلب إجازة جديدة'),
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white)),
               const SizedBox(height: 10),
               Builder(builder: (context) {
                 final typeField = Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _FieldLabel('نوع الإجازة'),
+                    _FieldLabel(tr(isEnglish, 'نوع الإجازة')),
                     _inputWrap(
                       child: DropdownButton<String>(
                         value: type,
@@ -472,7 +487,7 @@ class _LeaveForm extends StatelessWidget {
                         dropdownColor: const Color(0xFF123540),
                         style: const TextStyle(color: Colors.white, fontSize: 13),
                         underline: const SizedBox(),
-                        items: _types.map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
+                        items: _types.map((t) => DropdownMenuItem(value: t, child: Text(tr(isEnglish, t)))).toList(),
                         onChanged: (v) { if (v != null) onTypeChanged(v); },
                       ),
                     ),
@@ -481,7 +496,7 @@ class _LeaveForm extends StatelessWidget {
                 final startField = Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _FieldLabel('من تاريخ'),
+                    _FieldLabel(tr(isEnglish, 'من تاريخ')),
                     _DateBtn(text: _fmt(start), onTap: () async {
                       final today = DateTime.now();
                       final d = await showDatePicker(context: context,
@@ -494,7 +509,7 @@ class _LeaveForm extends StatelessWidget {
                 final endField = Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _FieldLabel('إلى تاريخ'),
+                    _FieldLabel(tr(isEnglish, 'إلى تاريخ')),
                     _DateBtn(text: _fmt(end), onTap: () async {
                       final today = DateTime.now();
                       final d = await showDatePicker(context: context,
@@ -532,7 +547,7 @@ class _LeaveForm extends StatelessWidget {
                 final reasonField = Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _FieldLabel('السبب (اختياري)'),
+                    _FieldLabel(tr(isEnglish, 'السبب (اختياري)')),
                     TextField(
                       controller: reasonCtrl,
                       style: const TextStyle(color: Colors.white, fontSize: 13),
@@ -551,7 +566,7 @@ class _LeaveForm extends StatelessWidget {
                   child: submitting
                       ? const SizedBox(width: 16, height: 16,
                           child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                      : const Text('إرسال', style: TextStyle(fontSize: 13)),
+                      : Text(tr(isEnglish, 'إرسال'), style: const TextStyle(fontSize: 13)),
                 );
 
                 if (isMobile) {

@@ -13,6 +13,52 @@ import 'messages_screen.dart';
 import 'clinic_schedule_screen.dart';
 import 'admin_screen.dart';
 import 'admin_messages_screen.dart';
+import 'portal_i18n.dart';
+
+String trGreeting(bool isEnglish, String name) =>
+    isEnglish ? 'Welcome, $name 👋' : 'مرحباً، $name 👋';
+
+class _LanguageToggleButton extends StatelessWidget {
+  final bool isEnglish;
+  final VoidCallback onTap;
+  const _LanguageToggleButton({required this.isEnglish, required this.onTap});
+
+  static const _indigo = Color(0xFF06B6D4);
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: _indigo.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: _indigo.withValues(alpha: 0.3)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.language_rounded, size: 14, color: _indigo),
+              const SizedBox(width: 4),
+              Text(
+                isEnglish ? 'AR' : 'EN',
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: _indigo,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 class PortalHomeScreen extends StatefulWidget {
   const PortalHomeScreen({super.key});
@@ -27,6 +73,7 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> {
   int _unreadMsgCount = 0;
   bool _hasLeaveUpdate = false;
   RealtimeChannel? _badgeChannel;
+  bool _isEnglish = false;
 
   static const _bgColor = Color(0xFF061A22);
   static const _indigo = Color(0xFF06B6D4);
@@ -34,8 +81,22 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> {
   @override
   void initState() {
     super.initState();
+    _loadLanguage();
     _checkSessionTimeout();
     _loadProfile();
+  }
+
+  void _loadLanguage() {
+    try {
+      _isEnglish = html.window.localStorage['portal_lang'] == 'en';
+    } catch (_) {}
+  }
+
+  void _toggleLanguage() {
+    setState(() => _isEnglish = !_isEnglish);
+    try {
+      html.window.localStorage['portal_lang'] = _isEnglish ? 'en' : 'ar';
+    } catch (_) {}
   }
 
   @override
@@ -159,7 +220,7 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> {
     }
 
     final empId = _profile?['id'] as String?;
-    final name = _profile?['name'] as String? ?? 'موظف';
+    final name = _profile?['name'] as String? ?? tr(_isEnglish, 'موظف');
     final dept = _profile?['department'] as String? ?? '';
 
     final isMedical = (_profile?['clinic_number'] != null) ||
@@ -174,35 +235,36 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> {
             _TabItem(
               icon: Icons.home_rounded,
               label: 'الرئيسية',
-              screen: _AdminHomeTab(name: name),
+              screen: _AdminHomeTab(name: name, isEnglish: _isEnglish),
             ),
-            const _TabItem(
+            _TabItem(
               icon: Icons.chat_outlined,
               label: 'المراسلات',
-              screen: AdminMessagesScreen(),
+              screen: AdminMessagesScreen(isEnglish: _isEnglish),
             ),
-            const _TabItem(
+            _TabItem(
               icon: Icons.admin_panel_settings_outlined,
               label: 'الإدارة',
-              screen: AdminScreen(),
+              screen: AdminScreen(isEnglish: _isEnglish),
             ),
           ]
         : [
             _TabItem(icon: Icons.home_rounded, label: 'الرئيسية',
                 screen: _DashboardTab(profile: _profile, isMedical: isMedical,
+                    isEnglish: _isEnglish,
                     onTabSwitch: (i) => setState(() => _tab = i))),
             _TabItem(icon: Icons.person_outline, label: 'ملفي',
-                screen: PortalProfileScreen(profile: _profile)),
+                screen: PortalProfileScreen(profile: _profile, isEnglish: _isEnglish)),
             _TabItem(icon: Icons.beach_access_outlined, label: 'الإجازات',
-                screen: PortalLeavesScreen(employeeId: empId ?? '', employeeName: name)),
+                screen: PortalLeavesScreen(employeeId: empId ?? '', employeeName: name, isEnglish: _isEnglish)),
             _TabItem(icon: Icons.account_balance_wallet_outlined, label: 'السلف',
-                screen: PortalAdvancesScreen(employeeId: empId ?? '', employeeName: name)),
+                screen: PortalAdvancesScreen(employeeId: empId ?? '', employeeName: name, isEnglish: _isEnglish)),
             _TabItem(icon: Icons.receipt_long_outlined, label: 'الراتب',
-                screen: PortalPayslipScreen(employeeId: empId ?? '')),
+                screen: PortalPayslipScreen(employeeId: empId ?? '', isEnglish: _isEnglish)),
             _TabItem(icon: Icons.description_outlined, label: 'الطلبات',
-                screen: PortalRequestsScreen(employeeId: empId ?? '', employeeName: name)),
+                screen: PortalRequestsScreen(employeeId: empId ?? '', employeeName: name, isEnglish: _isEnglish)),
             _TabItem(icon: Icons.chat_outlined, label: 'المراسلات',
-                screen: PortalMessagesScreen(employeeId: empId ?? '')),
+                screen: PortalMessagesScreen(employeeId: empId ?? '', isEnglish: _isEnglish)),
             if (isMedical)
               _TabItem(
                 icon: Icons.mood_outlined,
@@ -211,13 +273,16 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> {
                   employeeId: empId ?? '',
                   defaultClinic: _profile?['clinic_number']?.toString(),
                   defaultShift: _profile?['shift'] as String?,
+                  isEnglish: _isEnglish,
                 ),
               ),
           ];
 
     final isMobile = MediaQuery.of(context).size.width < 650;
 
-    return Scaffold(
+    return Directionality(
+      textDirection: _isEnglish ? TextDirection.ltr : TextDirection.rtl,
+      child: Scaffold(
       backgroundColor: _bgColor,
       // ── Bottom Nav (mobile) ──
       bottomNavigationBar: isMobile
@@ -256,7 +321,7 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> {
                                 count: showMsgBadge ? _unreadMsgCount : 0,
                               ),
                               const SizedBox(height: 3),
-                              Text(tabs[i].label,
+                              Text(tr(_isEnglish, tabs[i].label),
                                   style: TextStyle(
                                       fontSize: 10,
                                       fontWeight: active ? FontWeight.w700 : FontWeight.normal,
@@ -304,12 +369,17 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> {
                         maxLines: 1),
                   ),
                   const Spacer(),
+                  _LanguageToggleButton(
+                    isEnglish: _isEnglish,
+                    onTap: _toggleLanguage,
+                  ),
+                  const SizedBox(width: 6),
                   TextButton.icon(
                     onPressed: _logout,
                     icon: const Icon(Icons.logout,
                         color: Colors.redAccent, size: 15),
-                    label: const Text('خروج',
-                        style: TextStyle(fontSize: 12, color: Colors.redAccent)),
+                    label: Text(tr(_isEnglish, 'خروج'),
+                        style: const TextStyle(fontSize: 12, color: Colors.redAccent)),
                     style: TextButton.styleFrom(
                       backgroundColor: Colors.red.withValues(alpha: 0.10),
                       shape: RoundedRectangleBorder(
@@ -343,6 +413,14 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> {
                         padding: const EdgeInsets.all(20),
                         child: Column(
                           children: [
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: _LanguageToggleButton(
+                                isEnglish: _isEnglish,
+                                onTap: _toggleLanguage,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
                             Container(
                               width: 52, height: 52,
                               decoration: BoxDecoration(
@@ -410,7 +488,7 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> {
                                       count: tabs[i].label == 'المراسلات' ? _unreadMsgCount : 0,
                                     ),
                                     const SizedBox(width: 10),
-                                    Text(tabs[i].label,
+                                    Text(tr(_isEnglish, tabs[i].label),
                                         style: TextStyle(
                                             fontSize: 13,
                                             fontWeight: active
@@ -434,8 +512,8 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> {
                             onPressed: _logout,
                             icon: const Icon(Icons.logout,
                                 size: 16, color: Colors.redAccent),
-                            label: const Text('تسجيل الخروج',
-                                style: TextStyle(
+                            label: Text(tr(_isEnglish, 'تسجيل الخروج'),
+                                style: const TextStyle(
                                     fontSize: 13, color: Colors.redAccent)),
                             style: TextButton.styleFrom(
                               backgroundColor:
@@ -458,13 +536,15 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> {
                 Expanded(child: tabs[_tab].screen),
               ],
             ),
+      ),
     );
   }
 }
 
 class _AdminHomeTab extends StatelessWidget {
   final String name;
-  const _AdminHomeTab({required this.name});
+  final bool isEnglish;
+  const _AdminHomeTab({required this.name, required this.isEnglish});
 
   static const _indigo = Color(0xFF06B6D4);
 
@@ -475,12 +555,12 @@ class _AdminHomeTab extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('مرحباً، $name',
+          Text(isEnglish ? 'Welcome, $name' : 'مرحباً، $name',
               style: const TextStyle(
                   fontSize: 22, fontWeight: FontWeight.w700, color: Colors.white)),
           const SizedBox(height: 4),
-          const Text('لوحة تحكم مدير النظام',
-              style: TextStyle(fontSize: 13, color: Color(0x99FFFFFF))),
+          Text(tr(isEnglish, 'لوحة تحكم مدير النظام'),
+              style: const TextStyle(fontSize: 13, color: Color(0x99FFFFFF))),
           const SizedBox(height: 28),
           Wrap(
             spacing: 12,
@@ -488,29 +568,29 @@ class _AdminHomeTab extends StatelessWidget {
             children: [
               _AdminCard(
                 icon: Icons.chat_outlined,
-                label: 'المراسلات',
-                desc: 'محادثات الموظفين',
+                label: tr(isEnglish, 'المراسلات'),
+                desc: tr(isEnglish, 'محادثات الموظفين'),
                 color: _indigo,
                 onTap: () {},
               ),
               _AdminCard(
                 icon: Icons.beach_access_outlined,
-                label: 'الإجازات',
-                desc: 'مراجعة الطلبات',
+                label: tr(isEnglish, 'الإجازات'),
+                desc: tr(isEnglish, 'مراجعة الطلبات'),
                 color: const Color(0xFF34D399),
                 onTap: () {},
               ),
               _AdminCard(
                 icon: Icons.people_outline,
-                label: 'الموظفون',
-                desc: 'عرض البيانات',
+                label: tr(isEnglish, 'الموظفون'),
+                desc: tr(isEnglish, 'عرض البيانات'),
                 color: const Color(0xFF0EA5E9),
                 onTap: () {},
               ),
               _AdminCard(
                 icon: Icons.access_time_outlined,
-                label: 'الدوامات',
-                desc: 'تعديل الجداول',
+                label: tr(isEnglish, 'الدوامات'),
+                desc: tr(isEnglish, 'تعديل الجداول'),
                 color: const Color(0xFFF59E0B),
                 onTap: () {},
               ),
@@ -630,14 +710,16 @@ class _NavBadge extends StatelessWidget {
 class _DashboardTab extends StatelessWidget {
   final Map<String, dynamic>? profile;
   final bool isMedical;
+  final bool isEnglish;
   final void Function(int) onTabSwitch;
-  const _DashboardTab({this.profile, required this.isMedical, required this.onTabSwitch});
+  const _DashboardTab({this.profile, required this.isMedical,
+      required this.isEnglish, required this.onTabSwitch});
 
   static const _indigo = Color(0xFF06B6D4);
 
   @override
   Widget build(BuildContext context) {
-    final name = profile?['name'] as String? ?? 'الموظف';
+    final name = profile?['name'] as String? ?? tr(isEnglish, 'الموظف');
     final dept = profile?['department'] as String? ?? '';
     final shift = profile?['shift'] as String? ?? '';
     final status = profile?['status'] as String? ?? '';
@@ -647,28 +729,28 @@ class _DashboardTab extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('مرحباً، $name 👋',
+          Text(trGreeting(isEnglish, name),
               style: const TextStyle(
                   fontSize: 22, fontWeight: FontWeight.w700, color: Colors.white)),
           const SizedBox(height: 4),
-          const Text('إليك نظرة سريعة على بياناتك',
-              style: TextStyle(fontSize: 13, color: Color(0x99FFFFFF))),
+          Text(tr(isEnglish, 'إليك نظرة سريعة على بياناتك'),
+              style: const TextStyle(fontSize: 13, color: Color(0x99FFFFFF))),
           const SizedBox(height: 24),
           Wrap(
             spacing: 12,
             runSpacing: 12,
             children: [
               _QuickCard(icon: Icons.business_center_outlined,
-                  label: 'القسم', value: dept, color: _indigo),
+                  label: tr(isEnglish, 'القسم'), value: dept, color: _indigo),
               _QuickCard(icon: Icons.access_time_outlined,
-                  label: 'الدوام', value: shift, color: const Color(0xFF0EA5E9)),
+                  label: tr(isEnglish, 'الدوام'), value: shift, color: const Color(0xFF0EA5E9)),
               _QuickCard(icon: Icons.check_circle_outline,
-                  label: 'الحالة', value: status, color: const Color(0xFF34D399)),
+                  label: tr(isEnglish, 'الحالة'), value: status, color: const Color(0xFF34D399)),
             ],
           ),
           const SizedBox(height: 28),
-          const Text('الوصول السريع',
-              style: TextStyle(
+          Text(tr(isEnglish, 'الوصول السريع'),
+              style: const TextStyle(
                   fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white)),
           const SizedBox(height: 12),
           Wrap(
@@ -676,23 +758,23 @@ class _DashboardTab extends StatelessWidget {
             runSpacing: 10,
             children: [
               _ActionBtn(icon: Icons.beach_access_outlined,
-                  label: 'طلب إجازة', color: _indigo,
+                  label: tr(isEnglish, 'طلب إجازة'), color: _indigo,
                   onTap: () => onTabSwitch(2)),
               _ActionBtn(icon: Icons.account_balance_wallet_outlined,
-                  label: 'طلب سلفة', color: const Color(0xFF34D399),
+                  label: tr(isEnglish, 'طلب سلفة'), color: const Color(0xFF34D399),
                   onTap: () => onTabSwitch(3)),
               _ActionBtn(icon: Icons.receipt_long_outlined,
-                  label: 'كشف الراتب', color: const Color(0xFFF59E0B),
+                  label: tr(isEnglish, 'كشف الراتب'), color: const Color(0xFFF59E0B),
                   onTap: () => onTabSwitch(4)),
               _ActionBtn(icon: Icons.description_outlined,
-                  label: 'طلباتي', color: const Color(0xFF0EA5E9),
+                  label: tr(isEnglish, 'طلباتي'), color: const Color(0xFF0EA5E9),
                   onTap: () => onTabSwitch(5)),
               _ActionBtn(icon: Icons.chat_outlined,
-                  label: 'مراسلة الإدارة', color: const Color(0xFF0EA5E9),
+                  label: tr(isEnglish, 'مراسلة الإدارة'), color: const Color(0xFF0EA5E9),
                   onTap: () => onTabSwitch(6)),
               if (isMedical)
                 _ActionBtn(icon: Icons.mood_outlined,
-                    label: 'جدول العيادات', color: const Color(0xFF06B6D4),
+                    label: tr(isEnglish, 'جدول العيادات'), color: const Color(0xFF06B6D4),
                     onTap: () => onTabSwitch(7)),
             ],
           ),

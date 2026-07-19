@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'portal_client.dart';
+import 'portal_i18n.dart';
 
 class PortalAdvancesScreen extends StatefulWidget {
   final String employeeId;
   final String employeeName;
-  const PortalAdvancesScreen({super.key, required this.employeeId, required this.employeeName});
+  final bool isEnglish;
+  const PortalAdvancesScreen({super.key, required this.employeeId, required this.employeeName, this.isEnglish = false});
 
   @override
   State<PortalAdvancesScreen> createState() => _PortalAdvancesScreenState();
@@ -52,13 +54,13 @@ class _PortalAdvancesScreenState extends State<PortalAdvancesScreen> {
   Future<void> _submit() async {
     final amount = double.tryParse(_amountCtrl.text);
     final deduct = double.tryParse(_deductCtrl.text);
-    if (amount == null || amount <= 0) { _snack('أدخل مبلغاً صحيحاً'); return; }
-    if (deduct == null || deduct <= 0) { _snack('أدخل مبلغ الاستقطاع الشهري'); return; }
-    if (deduct > amount) { _snack('الاستقطاع الشهري لا يمكن أن يكون أكثر من إجمالي السلفة'); return; }
+    if (amount == null || amount <= 0) { _snack(tr(widget.isEnglish, 'أدخل مبلغاً صحيحاً')); return; }
+    if (deduct == null || deduct <= 0) { _snack(tr(widget.isEnglish, 'أدخل مبلغ الاستقطاع الشهري')); return; }
+    if (deduct > amount) { _snack(tr(widget.isEnglish, 'الاستقطاع الشهري لا يمكن أن يكون أكثر من إجمالي السلفة')); return; }
 
     final months = (amount / deduct).ceil();
     if (months > 24) {
-      _snack('مدة السداد تتجاوز 24 شهراً — يرجى رفع مبلغ الاستقطاع الشهري');
+      _snack(tr(widget.isEnglish, 'مدة السداد تتجاوز 24 شهراً — يرجى رفع مبلغ الاستقطاع الشهري'));
       return;
     }
 
@@ -68,7 +70,9 @@ class _PortalAdvancesScreenState extends State<PortalAdvancesScreen> {
     }).toList();
     if (blocked.isNotEmpty) {
       final s = blocked.first['status'] as String;
-      _snack('لديك سلفة $s بالفعل — يجب تسديدها قبل طلب سلفة جديدة');
+      _snack(widget.isEnglish
+          ? 'You already have an advance ${tr(widget.isEnglish, s)} — it must be repaid before requesting a new one'
+          : 'لديك سلفة $s بالفعل — يجب تسديدها قبل طلب سلفة جديدة');
       return;
     }
 
@@ -87,11 +91,11 @@ class _PortalAdvancesScreenState extends State<PortalAdvancesScreen> {
       if (mounted) {
         setState(() { _showForm = false; _submitting = false; });
         _amountCtrl.clear(); _deductCtrl.clear(); _reasonCtrl.clear();
-        _snack('تم إرسال طلب السلفة ✓');
+        _snack(tr(widget.isEnglish, 'تم إرسال طلب السلفة ✓'));
         _load();
       }
     } catch (e) {
-      if (mounted) { setState(() => _submitting = false); _snack('خطأ: $e'); }
+      if (mounted) { setState(() => _submitting = false); _snack(widget.isEnglish ? 'Error: $e' : 'خطأ: $e'); }
     }
   }
 
@@ -112,21 +116,21 @@ class _PortalAdvancesScreenState extends State<PortalAdvancesScreen> {
         .where((a) => a['status'] == 'موافق عليها')
         .fold<double>(0, (s, a) => s + ((a['remaining_amount'] as num?)?.toDouble() ?? 0));
 
-    final titleBlock = const Column(
+    final titleBlock = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('السلف',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700,
+        Text(tr(widget.isEnglish, 'السلف'),
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700,
                 color: Colors.white)),
-        SizedBox(height: 2),
-        Text('إدارة سلفك وطلباتك',
-            style: TextStyle(fontSize: 12, color: Color(0x99FFFFFF))),
+        const SizedBox(height: 2),
+        Text(tr(widget.isEnglish, 'إدارة سلفك وطلباتك'),
+            style: const TextStyle(fontSize: 12, color: Color(0x99FFFFFF))),
       ],
     );
     final requestButton = FilledButton.icon(
       onPressed: () => setState(() => _showForm = !_showForm),
       icon: Icon(_showForm ? Icons.close : Icons.add, size: 16),
-      label: Text(_showForm ? 'إلغاء' : 'طلب جديد',
+      label: Text(_showForm ? tr(widget.isEnglish, 'إلغاء') : tr(widget.isEnglish, 'طلب جديد'),
           style: const TextStyle(fontSize: 13)),
       style: FilledButton.styleFrom(
         backgroundColor: _green,
@@ -184,9 +188,9 @@ class _PortalAdvancesScreenState extends State<PortalAdvancesScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('إجمالي السلف المتبقية',
-                            style: TextStyle(fontSize: 12, color: Color(0x99FFFFFF))),
-                        Text('${totalActive.toStringAsFixed(2)} ريال',
+                        Text(tr(widget.isEnglish, 'إجمالي السلف المتبقية'),
+                            style: const TextStyle(fontSize: 12, color: Color(0x99FFFFFF))),
+                        Text('${totalActive.toStringAsFixed(2)} ${tr(widget.isEnglish, 'ريال')}',
                             style: TextStyle(fontSize: isMobile ? 17 : 20,
                                 fontWeight: FontWeight.w700, color: _amber)),
                       ],
@@ -204,13 +208,14 @@ class _PortalAdvancesScreenState extends State<PortalAdvancesScreen> {
               deductCtrl: _deductCtrl,
               reasonCtrl: _reasonCtrl,
               submitting: _submitting,
+              isEnglish: widget.isEnglish,
               onSubmit: _submit,
             ),
             const SizedBox(height: 16),
           ],
 
-          const Text('سجل السلف',
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600,
+          Text(tr(widget.isEnglish, 'سجل السلف'),
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600,
                   color: Color(0xCCFFFFFF))),
           const SizedBox(height: 10),
 
@@ -218,7 +223,7 @@ class _PortalAdvancesScreenState extends State<PortalAdvancesScreen> {
             child: _loading
                 ? const Center(child: CircularProgressIndicator(color: _indigo))
                 : _advances.isEmpty
-                    ? _empty('لا توجد سلف')
+                    ? _empty(tr(widget.isEnglish, 'لا توجد سلف'))
                     : ListView.separated(
                         itemCount: _advances.length,
                         separatorBuilder: (context, idx) => const SizedBox(height: 8),
@@ -253,17 +258,18 @@ class _PortalAdvancesScreenState extends State<PortalAdvancesScreen> {
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text('${amount.toStringAsFixed(0)} ريال',
+                                      Text('${amount.toStringAsFixed(0)} ${tr(widget.isEnglish, 'ريال')}',
                                           style: const TextStyle(fontSize: 15,
                                               fontWeight: FontWeight.w700, color: Colors.white)),
                                       const SizedBox(height: 3),
                                       Text(
-                                        'المتبقي: ${remaining.toStringAsFixed(0)} ريال  •  شهري: ${monthly.toStringAsFixed(0)} ريال',
+                                        '${tr(widget.isEnglish, 'المتبقي')}: ${remaining.toStringAsFixed(0)} ${tr(widget.isEnglish, 'ريال')}'
+                                        '  •  ${tr(widget.isEnglish, 'شهري')}: ${monthly.toStringAsFixed(0)} ${tr(widget.isEnglish, 'ريال')}',
                                         style: const TextStyle(fontSize: 12, color: Color(0x99FFFFFF)),
                                       ),
                                       if (a['reason'] != null) ...[
                                         const SizedBox(height: 2),
-                                        Text('السبب: ${a['reason']}',
+                                        Text('${tr(widget.isEnglish, 'السبب')}: ${a['reason']}',
                                             style: const TextStyle(fontSize: 11,
                                                 color: Color(0x66FFFFFF))),
                                       ],
@@ -271,7 +277,7 @@ class _PortalAdvancesScreenState extends State<PortalAdvancesScreen> {
                                   ),
                                 ),
                                 const SizedBox(width: 8),
-                                _StatusBadge(label: status, color: sc),
+                                _StatusBadge(label: tr(widget.isEnglish, status), color: sc),
                               ],
                             ),
                           );
@@ -289,11 +295,13 @@ class _AdvanceForm extends StatelessWidget {
   final TextEditingController deductCtrl;
   final TextEditingController reasonCtrl;
   final bool submitting;
+  final bool isEnglish;
   final VoidCallback onSubmit;
 
   const _AdvanceForm({
     required this.amountCtrl, required this.deductCtrl,
-    required this.reasonCtrl, required this.submitting, required this.onSubmit,
+    required this.reasonCtrl, required this.submitting, required this.isEnglish,
+    required this.onSubmit,
   });
 
   static const _green = Color(0xFF34D399);
@@ -317,10 +325,10 @@ class _AdvanceForm extends StatelessWidget {
     final isMobile = MediaQuery.of(context).size.width < 700;
     final amountField = TextField(controller: amountCtrl, keyboardType: TextInputType.number,
         style: const TextStyle(color: Colors.white, fontSize: 14),
-        decoration: _d('المبلغ المطلوب (ريال)'));
+        decoration: _d(tr(isEnglish, 'المبلغ المطلوب (ريال)')));
     final deductField = TextField(controller: deductCtrl, keyboardType: TextInputType.number,
         style: const TextStyle(color: Colors.white, fontSize: 14),
-        decoration: _d('الاستقطاع الشهري (ريال)'));
+        decoration: _d(tr(isEnglish, 'الاستقطاع الشهري (ريال)')));
 
     return Container(
       padding: EdgeInsets.all(isMobile ? 12 : 16),
@@ -332,8 +340,8 @@ class _AdvanceForm extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('طلب سلفة جديدة',
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white)),
+          Text(tr(isEnglish, 'طلب سلفة جديدة'),
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white)),
           const SizedBox(height: 12),
           isMobile
               ? Column(
@@ -353,7 +361,7 @@ class _AdvanceForm extends StatelessWidget {
           const SizedBox(height: 10),
           TextField(controller: reasonCtrl, maxLines: 2,
               style: const TextStyle(color: Colors.white, fontSize: 14),
-              decoration: _d('السبب (اختياري)')),
+              decoration: _d(tr(isEnglish, 'السبب (اختياري)'))),
           const SizedBox(height: 12),
           SizedBox(
             width: double.infinity,
@@ -368,8 +376,8 @@ class _AdvanceForm extends StatelessWidget {
               child: submitting
                   ? const SizedBox(width: 18, height: 18,
                       child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2))
-                  : const Text('إرسال الطلب',
-                      style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                  : Text(tr(isEnglish, 'إرسال الطلب'),
+                      style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
             ),
           ),
         ],

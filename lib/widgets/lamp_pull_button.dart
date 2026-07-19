@@ -2,14 +2,16 @@ import 'package:flutter/material.dart';
 
 class LampPullButton extends StatefulWidget {
   final VoidCallback onPulled;
-  final String tooltip;
+  final String? tooltip;
+  final bool isEnglish;
   final Color shadeTop;
   final Color shadeBottom;
   final Color accentColor;
   const LampPullButton({
     super.key,
     required this.onPulled,
-    this.tooltip = 'بوابة الموظفين — اسحب لتسجيل الدخول',
+    this.tooltip,
+    this.isEnglish = false,
     this.shadeTop = const Color(0xFFFFFDF5),
     this.shadeBottom = const Color(0xFFFDE9C8),
     this.accentColor = const Color(0xFFF59E0B),
@@ -73,7 +75,10 @@ class _LampPullButtonState extends State<LampPullButton> with SingleTickerProvid
     final cordLength = _restLength + _dragExtra;
     final lit = _hovered || _dragExtra > 0;
     return Tooltip(
-      message: widget.tooltip,
+      message: widget.tooltip ??
+          (widget.isEnglish
+              ? 'Employee portal — pull to sign in'
+              : 'بوابة الموظفين — اسحب لتسجيل الدخول'),
       child: MouseRegion(
         cursor: SystemMouseCursors.click,
         onEnter: (_) => setState(() => _hovered = true),

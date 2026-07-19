@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'portal_client.dart';
+import 'portal_i18n.dart';
 
 class PortalRequestsScreen extends StatefulWidget {
   final String employeeId;
   final String employeeName;
+  final bool isEnglish;
   const PortalRequestsScreen(
-      {super.key, required this.employeeId, required this.employeeName});
+      {super.key, required this.employeeId, required this.employeeName, this.isEnglish = false});
 
   @override
   State<PortalRequestsScreen> createState() => _PortalRequestsScreenState();
@@ -75,10 +77,10 @@ class _PortalRequestsScreenState extends State<PortalRequestsScreen> {
       await _load();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('تم إرسال الطلب بنجاح'),
-            backgroundColor: Color(0xFF34D399),
-            duration: Duration(seconds: 3),
+          SnackBar(
+            content: Text(tr(widget.isEnglish, 'تم إرسال الطلب بنجاح')),
+            backgroundColor: const Color(0xFF34D399),
+            duration: const Duration(seconds: 3),
           ),
         );
       }
@@ -86,7 +88,9 @@ class _PortalRequestsScreenState extends State<PortalRequestsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('فشل إرسال الطلب: ${e.toString().contains('relation') ? 'يرجى التواصل مع المسؤول لإعداد النظام' : e.toString()}'),
+            content: Text(widget.isEnglish
+                ? 'Failed to send request: ${e.toString().contains('relation') ? tr(widget.isEnglish, 'يرجى التواصل مع المسؤول لإعداد النظام') : e.toString()}'
+                : 'فشل إرسال الطلب: ${e.toString().contains('relation') ? 'يرجى التواصل مع المسؤول لإعداد النظام' : e.toString()}'),
             backgroundColor: const Color(0xFFF87171),
             duration: const Duration(seconds: 5),
           ),
@@ -103,34 +107,34 @@ class _PortalRequestsScreenState extends State<PortalRequestsScreen> {
     await showDialog(
       context: context,
       builder: (ctx) => Directionality(
-        textDirection: TextDirection.rtl,
+        textDirection: widget.isEnglish ? TextDirection.ltr : TextDirection.rtl,
         child: AlertDialog(
           backgroundColor: const Color(0xFF061A22),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Text('طلب جديد',
-              style: TextStyle(color: Colors.white, fontSize: 17, fontFamily: 'Tajawal')),
+          title: Text(tr(widget.isEnglish, 'طلب جديد'),
+              style: const TextStyle(color: Colors.white, fontSize: 17, fontFamily: 'Tajawal')),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
                 controller: typeCtrl,
                 style: const TextStyle(color: Colors.white, fontFamily: 'Tajawal'),
-                decoration: _fieldDec('نوع الطلب (مثال: خطاب بنكي، إجازة طارئة...)'),
+                decoration: _fieldDec(tr(widget.isEnglish, 'نوع الطلب (مثال: خطاب بنكي، إجازة طارئة...)')),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: detailsCtrl,
                 style: const TextStyle(color: Colors.white, fontFamily: 'Tajawal'),
                 maxLines: 3,
-                decoration: _fieldDec('تفاصيل إضافية (اختياري)'),
+                decoration: _fieldDec(tr(widget.isEnglish, 'تفاصيل إضافية (اختياري)')),
               ),
             ],
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('إلغاء',
-                  style: TextStyle(color: Color(0x99FFFFFF), fontFamily: 'Tajawal')),
+              child: Text(tr(widget.isEnglish, 'إلغاء'),
+                  style: const TextStyle(color: Color(0x99FFFFFF), fontFamily: 'Tajawal')),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: _indigo),
@@ -141,7 +145,7 @@ class _PortalRequestsScreenState extends State<PortalRequestsScreen> {
                   _submitRequest(t, details: detailsCtrl.text.trim());
                 }
               },
-              child: const Text('إرسال', style: TextStyle(fontFamily: 'Tajawal')),
+              child: Text(tr(widget.isEnglish, 'إرسال'), style: const TextStyle(fontFamily: 'Tajawal')),
             ),
           ],
         ),
@@ -188,11 +192,11 @@ class _PortalRequestsScreenState extends State<PortalRequestsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('الطلبات',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: Colors.white)),
+          Text(tr(widget.isEnglish, 'الطلبات'),
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: Colors.white)),
           const SizedBox(height: 4),
-          const Text('إرسال طلباتك الرسمية إلى الإدارة',
-              style: TextStyle(fontSize: 12, color: Color(0x99FFFFFF))),
+          Text(tr(widget.isEnglish, 'إرسال طلباتك الرسمية إلى الإدارة'),
+              style: const TextStyle(fontSize: 12, color: Color(0x99FFFFFF))),
           const SizedBox(height: 20),
 
           Wrap(
@@ -201,39 +205,42 @@ class _PortalRequestsScreenState extends State<PortalRequestsScreen> {
             children: [
               _ReqBtn(
                 icon: Icons.workspace_premium_outlined,
-                label: 'شهادة خبرة',
+                label: tr(widget.isEnglish, 'شهادة خبرة'),
                 color: _indigo,
                 cooldownDays: xpDays,
+                isEnglish: widget.isEnglish,
                 onTap: (_sending || xpDays > 0) ? null : () => _submitRequest('شهادة خبرة'),
               ),
               _ReqBtn(
                 icon: Icons.receipt_outlined,
-                label: 'شهادة راتب',
+                label: tr(widget.isEnglish, 'شهادة راتب'),
                 color: const Color(0xFF0EA5E9),
                 cooldownDays: salDays,
+                isEnglish: widget.isEnglish,
                 onTap: (_sending || salDays > 0) ? null : () => _submitRequest('شهادة راتب'),
               ),
               _ReqBtn(
                 icon: Icons.add_circle_outline,
-                label: 'طلب آخر',
+                label: tr(widget.isEnglish, 'طلب آخر'),
                 color: const Color(0xFFF59E0B),
                 cooldownDays: 0,
+                isEnglish: widget.isEnglish,
                 onTap: _sending ? null : _showCustomDialog,
               ),
             ],
           ),
 
           if (_sending)
-            const Padding(
-              padding: EdgeInsets.only(top: 12),
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
               child: Row(
                 children: [
-                  SizedBox(
+                  const SizedBox(
                       width: 16,
                       height: 16,
                       child: CircularProgressIndicator(strokeWidth: 2, color: _indigo)),
-                  SizedBox(width: 8),
-                  Text('جاري الإرسال...', style: TextStyle(color: Color(0x99FFFFFF), fontSize: 12)),
+                  const SizedBox(width: 8),
+                  Text(tr(widget.isEnglish, 'جاري الإرسال...'), style: const TextStyle(color: Color(0x99FFFFFF), fontSize: 12)),
                 ],
               ),
             ),
@@ -261,8 +268,8 @@ class _PortalRequestsScreenState extends State<PortalRequestsScreen> {
                 ),
               ),
               const SizedBox(width: 8),
-              const Text('الطلبات السابقة',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0x99FFFFFF))),
+              Text(tr(widget.isEnglish, 'الطلبات السابقة'),
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0x99FFFFFF))),
             ],
           ),
           const SizedBox(height: 12),
@@ -278,8 +285,8 @@ class _PortalRequestsScreenState extends State<PortalRequestsScreen> {
                             Icon(Icons.inbox_outlined,
                                 size: 48, color: Colors.white.withValues(alpha: 0.12)),
                             const SizedBox(height: 12),
-                            const Text('لا توجد طلبات سابقة',
-                                style: TextStyle(color: Color(0x66FFFFFF), fontSize: 13)),
+                            Text(tr(widget.isEnglish, 'لا توجد طلبات سابقة'),
+                                style: const TextStyle(color: Color(0x66FFFFFF), fontSize: 13)),
                           ],
                         ),
                       )
@@ -302,7 +309,7 @@ class _PortalRequestsScreenState extends State<PortalRequestsScreen> {
                             dateStr = submittedAt.length >= 10 ? submittedAt.substring(0, 10) : submittedAt;
                           }
                           final sc = _statusColor(status);
-                          final typeText = Text(type,
+                          final typeText = Text(tr(widget.isEnglish, type),
                               style: const TextStyle(
                                   color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14));
                           final statusBadge = Container(
@@ -312,7 +319,7 @@ class _PortalRequestsScreenState extends State<PortalRequestsScreen> {
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(color: sc.withValues(alpha: 0.3)),
                             ),
-                            child: Text(status,
+                            child: Text(tr(widget.isEnglish, status),
                                 style: TextStyle(
                                     color: sc, fontSize: 12, fontWeight: FontWeight.w600)),
                           );
@@ -398,6 +405,7 @@ class _ReqBtn extends StatelessWidget {
   final String label;
   final Color color;
   final int cooldownDays;
+  final bool isEnglish;
   final VoidCallback? onTap;
 
   const _ReqBtn({
@@ -405,6 +413,7 @@ class _ReqBtn extends StatelessWidget {
     required this.label,
     required this.color,
     required this.cooldownDays,
+    this.isEnglish = false,
     this.onTap,
   });
 
@@ -448,7 +457,7 @@ class _ReqBtn extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.only(top: 4),
                   child: Text(
-                    'متاح بعد $cooldownDays يوم',
+                    isEnglish ? 'Available in $cooldownDays day(s)' : 'متاح بعد $cooldownDays يوم',
                     style: const TextStyle(color: Color(0x88FFFFFF), fontSize: 10),
                   ),
                 ),

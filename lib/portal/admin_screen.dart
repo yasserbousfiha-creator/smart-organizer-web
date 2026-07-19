@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' as intl;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'portal_client.dart';
+import 'portal_i18n.dart';
 
 class AdminScreen extends StatefulWidget {
-  const AdminScreen({super.key});
+  final bool isEnglish;
+  const AdminScreen({super.key, this.isEnglish = false});
   @override
   State<AdminScreen> createState() => _AdminScreenState();
 }
@@ -50,8 +52,8 @@ class _AdminScreenState extends State<AdminScreen>
                   color: Colors.white, size: 17),
             ),
             const SizedBox(width: 10),
-            const Text('لوحة الإدارة',
-                style: TextStyle(
+            Text(tr(widget.isEnglish, 'لوحة الإدارة'),
+                style: const TextStyle(
                     color: Colors.white,
                     fontSize: 16,
                     fontWeight: FontWeight.w700)),
@@ -65,25 +67,25 @@ class _AdminScreenState extends State<AdminScreen>
           labelStyle: const TextStyle(
               fontSize: 13, fontWeight: FontWeight.w600),
           unselectedLabelStyle: const TextStyle(fontSize: 13),
-          tabs: const [
-            Tab(icon: Icon(Icons.beach_access_outlined, size: 18),
-                text: 'الإجازات'),
-            Tab(icon: Icon(Icons.account_balance_wallet_outlined, size: 18),
-                text: 'السلف'),
-            Tab(icon: Icon(Icons.people_outline, size: 18),
-                text: 'الموظفون'),
-            Tab(icon: Icon(Icons.access_time_outlined, size: 18),
-                text: 'الدوامات'),
+          tabs: [
+            Tab(icon: const Icon(Icons.beach_access_outlined, size: 18),
+                text: tr(widget.isEnglish, 'الإجازات')),
+            Tab(icon: const Icon(Icons.account_balance_wallet_outlined, size: 18),
+                text: tr(widget.isEnglish, 'السلف')),
+            Tab(icon: const Icon(Icons.people_outline, size: 18),
+                text: tr(widget.isEnglish, 'الموظفون')),
+            Tab(icon: const Icon(Icons.access_time_outlined, size: 18),
+                text: tr(widget.isEnglish, 'الدوامات')),
           ],
         ),
       ),
       body: TabBarView(
         controller: _tabCtrl,
-        children: const [
-          _LeavesTab(),
-          _AdvancesTab(),
-          _EmployeesTab(),
-          _ShiftsTab(),
+        children: [
+          _LeavesTab(isEnglish: widget.isEnglish),
+          _AdvancesTab(isEnglish: widget.isEnglish),
+          _EmployeesTab(isEnglish: widget.isEnglish),
+          _ShiftsTab(isEnglish: widget.isEnglish),
         ],
       ),
     );
@@ -92,7 +94,8 @@ class _AdminScreenState extends State<AdminScreen>
 
 // ── Leaves Tab ─────────────────────────────────────────────────
 class _LeavesTab extends StatefulWidget {
-  const _LeavesTab();
+  final bool isEnglish;
+  const _LeavesTab({this.isEnglish = false});
   @override
   State<_LeavesTab> createState() => _LeavesTabState();
 }
@@ -164,11 +167,11 @@ class _LeavesTabState extends State<_LeavesTab> {
           .eq('id', id);
       await _load();
       if (mounted) {
-        _snack(status == 'موافق عليها' ? 'تمت الموافقة' : 'تم الرفض',
+        _snack(status == 'موافق عليها' ? tr(widget.isEnglish, 'تمت الموافقة') : tr(widget.isEnglish, 'تم الرفض'),
             status == 'موافق عليها' ? _green : _red);
       }
     } catch (e) {
-      if (mounted) _snack('خطأ: $e', _red);
+      if (mounted) _snack(widget.isEnglish ? 'Error: $e' : 'خطأ: $e', _red);
     }
   }
 
@@ -221,7 +224,7 @@ class _LeavesTabState extends State<_LeavesTab> {
                       : const Color(0x1AFFFFFF),
                 ),
               ),
-              child: Text(f,
+              child: Text(tr(widget.isEnglish, f),
                   style: TextStyle(
                       fontSize: 12,
                       fontWeight: _filter == f
@@ -237,7 +240,7 @@ class _LeavesTabState extends State<_LeavesTab> {
     final refreshButton = IconButton(
       icon: const Icon(Icons.refresh, color: Color(0x99FFFFFF), size: 18),
       onPressed: _load,
-      tooltip: 'تحديث',
+      tooltip: tr(widget.isEnglish, 'تحديث'),
     );
 
     return Column(
@@ -264,13 +267,13 @@ class _LeavesTabState extends State<_LeavesTab> {
           child: _error != null
               ? Center(child: Padding(
                   padding: const EdgeInsets.all(20),
-                  child: Text('خطأ: $_error',
+                  child: Text(widget.isEnglish ? 'Error: $_error' : 'خطأ: $_error',
                       style: const TextStyle(color: Color(0xFFF87171), fontSize: 12)),
                 ))
               : _filtered.isEmpty
-              ? const Center(
-                  child: Text('لا توجد طلبات',
-                      style: TextStyle(color: Color(0x66FFFFFF))))
+              ? Center(
+                  child: Text(tr(widget.isEnglish, 'لا توجد طلبات'),
+                      style: const TextStyle(color: Color(0x66FFFFFF))))
               : ListView.separated(
                   padding: const EdgeInsets.symmetric(
                       horizontal: 16, vertical: 4),
@@ -339,7 +342,7 @@ class _LeavesTabState extends State<_LeavesTab> {
                                       color: _statusColor(status)
                                           .withValues(alpha: 0.4)),
                                 ),
-                                child: Text(status,
+                                child: Text(tr(widget.isEnglish, status),
                                     style: TextStyle(
                                         fontSize: 11,
                                         fontWeight: FontWeight.w600,
@@ -352,7 +355,7 @@ class _LeavesTabState extends State<_LeavesTab> {
                             spacing: 12,
                             runSpacing: 6,
                             children: [
-                              _infoChip(Icons.category_outlined, type),
+                              _infoChip(Icons.category_outlined, tr(widget.isEnglish, type)),
                               _infoChip(Icons.calendar_today_outlined,
                                   '${fmtDate(start)} → ${fmtDate(end)}'),
                               if (submittedAt != null)
@@ -377,14 +380,14 @@ class _LeavesTabState extends State<_LeavesTab> {
                                     runSpacing: 8,
                                     children: [
                                       _actionBtn(
-                                        label: 'رفض',
+                                        label: tr(widget.isEnglish, 'رفض'),
                                         color: _red,
                                         icon: Icons.close_rounded,
                                         onTap: () => _updateStatus(
                                             req['id'].toString(), 'مرفوضة'),
                                       ),
                                       _actionBtn(
-                                        label: 'موافقة',
+                                        label: tr(widget.isEnglish, 'موافقة'),
                                         color: _green,
                                         icon: Icons.check_rounded,
                                         onTap: () => _updateStatus(
@@ -397,7 +400,7 @@ class _LeavesTabState extends State<_LeavesTab> {
                                     mainAxisAlignment: MainAxisAlignment.end,
                                     children: [
                                       _actionBtn(
-                                        label: 'رفض',
+                                        label: tr(widget.isEnglish, 'رفض'),
                                         color: _red,
                                         icon: Icons.close_rounded,
                                         onTap: () => _updateStatus(
@@ -405,7 +408,7 @@ class _LeavesTabState extends State<_LeavesTab> {
                                       ),
                                       const SizedBox(width: 8),
                                       _actionBtn(
-                                        label: 'موافقة',
+                                        label: tr(widget.isEnglish, 'موافقة'),
                                         color: _green,
                                         icon: Icons.check_rounded,
                                         onTap: () => _updateStatus(
@@ -470,7 +473,8 @@ class _LeavesTabState extends State<_LeavesTab> {
 
 // ── Advances Tab ───────────────────────────────────────────────
 class _AdvancesTab extends StatefulWidget {
-  const _AdvancesTab();
+  final bool isEnglish;
+  const _AdvancesTab({this.isEnglish = false});
   @override
   State<_AdvancesTab> createState() => _AdvancesTabState();
 }
@@ -542,11 +546,11 @@ class _AdvancesTabState extends State<_AdvancesTab> {
           .eq('id', id);
       await _load();
       if (mounted) {
-        _snack(status == 'موافق عليها' ? 'تمت الموافقة' : 'تم الرفض',
+        _snack(status == 'موافق عليها' ? tr(widget.isEnglish, 'تمت الموافقة') : tr(widget.isEnglish, 'تم الرفض'),
             status == 'موافق عليها' ? _green : _red);
       }
     } catch (e) {
-      if (mounted) _snack('خطأ: $e', _red);
+      if (mounted) _snack(widget.isEnglish ? 'Error: $e' : 'خطأ: $e', _red);
     }
   }
 
@@ -599,7 +603,7 @@ class _AdvancesTabState extends State<_AdvancesTab> {
                       : const Color(0x1AFFFFFF),
                 ),
               ),
-              child: Text(f,
+              child: Text(tr(widget.isEnglish, f),
                   style: TextStyle(
                       fontSize: 12,
                       fontWeight: _filter == f
@@ -615,7 +619,7 @@ class _AdvancesTabState extends State<_AdvancesTab> {
     final refreshButton = IconButton(
       icon: const Icon(Icons.refresh, color: Color(0x99FFFFFF), size: 18),
       onPressed: _load,
-      tooltip: 'تحديث',
+      tooltip: tr(widget.isEnglish, 'تحديث'),
     );
 
     return Column(
@@ -639,13 +643,13 @@ class _AdvancesTabState extends State<_AdvancesTab> {
           child: _error != null
               ? Center(child: Padding(
                   padding: const EdgeInsets.all(20),
-                  child: Text('خطأ: $_error',
+                  child: Text(widget.isEnglish ? 'Error: $_error' : 'خطأ: $_error',
                       style: const TextStyle(color: Color(0xFFF87171), fontSize: 12)),
                 ))
               : _filtered.isEmpty
-              ? const Center(
-                  child: Text('لا توجد طلبات',
-                      style: TextStyle(color: Color(0x66FFFFFF))))
+              ? Center(
+                  child: Text(tr(widget.isEnglish, 'لا توجد طلبات'),
+                      style: const TextStyle(color: Color(0x66FFFFFF))))
               : ListView.separated(
                   padding: const EdgeInsets.symmetric(
                       horizontal: 16, vertical: 4),
@@ -716,7 +720,7 @@ class _AdvancesTabState extends State<_AdvancesTab> {
                                       color: _statusColor(status)
                                           .withValues(alpha: 0.4)),
                                 ),
-                                child: Text(status,
+                                child: Text(tr(widget.isEnglish, status),
                                     style: TextStyle(
                                         fontSize: 11,
                                         fontWeight: FontWeight.w600,
@@ -730,11 +734,11 @@ class _AdvancesTabState extends State<_AdvancesTab> {
                             runSpacing: 6,
                             children: [
                               _infoChip(Icons.payments_outlined,
-                                  '${amount.toStringAsFixed(0)} ريال'),
+                                  '${amount.toStringAsFixed(0)} ${tr(widget.isEnglish, 'ريال')}'),
                               _infoChip(Icons.account_balance_wallet_outlined,
-                                  'المتبقي: ${remaining.toStringAsFixed(0)}'),
+                                  '${tr(widget.isEnglish, 'المتبقي')}: ${remaining.toStringAsFixed(0)}'),
                               _infoChip(Icons.calendar_month_outlined,
-                                  'شهري: ${monthly.toStringAsFixed(0)}'),
+                                  '${tr(widget.isEnglish, 'شهري')}: ${monthly.toStringAsFixed(0)}'),
                               if (submittedAt != null)
                                 _infoChip(Icons.schedule_outlined,
                                     fmtDate(submittedAt)),
@@ -757,14 +761,14 @@ class _AdvancesTabState extends State<_AdvancesTab> {
                                     runSpacing: 8,
                                     children: [
                                       _actionBtn(
-                                        label: 'رفض',
+                                        label: tr(widget.isEnglish, 'رفض'),
                                         color: _red,
                                         icon: Icons.close_rounded,
                                         onTap: () => _updateStatus(
                                             req['id'].toString(), 'مرفوضة'),
                                       ),
                                       _actionBtn(
-                                        label: 'موافقة',
+                                        label: tr(widget.isEnglish, 'موافقة'),
                                         color: _green,
                                         icon: Icons.check_rounded,
                                         onTap: () => _updateStatus(
@@ -777,7 +781,7 @@ class _AdvancesTabState extends State<_AdvancesTab> {
                                     mainAxisAlignment: MainAxisAlignment.end,
                                     children: [
                                       _actionBtn(
-                                        label: 'رفض',
+                                        label: tr(widget.isEnglish, 'رفض'),
                                         color: _red,
                                         icon: Icons.close_rounded,
                                         onTap: () => _updateStatus(
@@ -785,7 +789,7 @@ class _AdvancesTabState extends State<_AdvancesTab> {
                                       ),
                                       const SizedBox(width: 8),
                                       _actionBtn(
-                                        label: 'موافقة',
+                                        label: tr(widget.isEnglish, 'موافقة'),
                                         color: _green,
                                         icon: Icons.check_rounded,
                                         onTap: () => _updateStatus(
@@ -850,7 +854,8 @@ class _AdvancesTabState extends State<_AdvancesTab> {
 
 // ── Employees Tab ───────────────────────────────────────────────
 class _EmployeesTab extends StatefulWidget {
-  const _EmployeesTab();
+  final bool isEnglish;
+  const _EmployeesTab({this.isEnglish = false});
   @override
   State<_EmployeesTab> createState() => _EmployeesTabState();
 }
@@ -917,7 +922,7 @@ class _EmployeesTabState extends State<_EmployeesTab> {
                   onChanged: (v) => setState(() => _search = v),
                   style: const TextStyle(color: Colors.white, fontSize: 14),
                   decoration: InputDecoration(
-                    hintText: 'بحث باسم الموظف أو القسم...',
+                    hintText: tr(widget.isEnglish, 'بحث باسم الموظف أو القسم...'),
                     hintStyle:
                         const TextStyle(color: Color(0x55FFFFFF), fontSize: 13),
                     prefixIcon: const Icon(Icons.search,
@@ -949,7 +954,7 @@ class _EmployeesTabState extends State<_EmployeesTab> {
                 icon: const Icon(Icons.refresh,
                     color: Color(0x99FFFFFF), size: 18),
                 onPressed: _load,
-                tooltip: 'تحديث',
+                tooltip: tr(widget.isEnglish, 'تحديث'),
               ),
             ],
           ),
@@ -957,7 +962,7 @@ class _EmployeesTabState extends State<_EmployeesTab> {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Text(
-            '${_filtered.length} موظف',
+            widget.isEnglish ? '${_filtered.length} employee(s)' : '${_filtered.length} موظف',
             style: const TextStyle(
                 fontSize: 12, color: Color(0x55FFFFFF)),
           ),
@@ -965,9 +970,9 @@ class _EmployeesTabState extends State<_EmployeesTab> {
         const SizedBox(height: 8),
         Expanded(
           child: _filtered.isEmpty
-              ? const Center(
-                  child: Text('لا توجد نتائج',
-                      style: TextStyle(color: Color(0x66FFFFFF))))
+              ? Center(
+                  child: Text(tr(widget.isEnglish, 'لا توجد نتائج'),
+                      style: const TextStyle(color: Color(0x66FFFFFF))))
               : ListView.separated(
                   padding: const EdgeInsets.symmetric(
                       horizontal: 16, vertical: 4),
@@ -1008,7 +1013,7 @@ class _EmployeesTabState extends State<_EmployeesTab> {
                                 fontWeight: FontWeight.w600,
                                 fontSize: 14)),
                         const SizedBox(height: 2),
-                        Text('$dept  •  $shift',
+                        Text('$dept  •  ${tr(widget.isEnglish, shift)}',
                             style: const TextStyle(
                                 color: Color(0x99FFFFFF),
                                 fontSize: 11)),
@@ -1029,7 +1034,7 @@ class _EmployeesTabState extends State<_EmployeesTab> {
                             : Colors.red.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: Text(status,
+                      child: Text(tr(widget.isEnglish, status),
                           style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w600,
@@ -1038,7 +1043,7 @@ class _EmployeesTabState extends State<_EmployeesTab> {
                                   : Colors.redAccent)),
                     );
                     final clinicText = clinicNum != null
-                        ? Text('عيادة $clinicNum',
+                        ? Text('${widget.isEnglish ? 'Clinic' : 'عيادة'} $clinicNum',
                             style: const TextStyle(
                                 fontSize: 10, color: Color(0x66FFFFFF)))
                         : null;
@@ -1105,7 +1110,8 @@ class _EmployeesTabState extends State<_EmployeesTab> {
 
 // ── Shifts Tab ──────────────────────────────────────────────────
 class _ShiftsTab extends StatefulWidget {
-  const _ShiftsTab();
+  final bool isEnglish;
+  const _ShiftsTab({this.isEnglish = false});
   @override
   State<_ShiftsTab> createState() => _ShiftsTabState();
 }
@@ -1164,7 +1170,7 @@ class _ShiftsTabState extends State<_ShiftsTab> {
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: const Text('تم تحديث الدوام'),
+          content: Text(tr(widget.isEnglish, 'تم تحديث الدوام')),
           backgroundColor: _green,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
@@ -1174,7 +1180,7 @@ class _ShiftsTabState extends State<_ShiftsTab> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('خطأ: $e'),
+          content: Text(widget.isEnglish ? 'Error: $e' : 'خطأ: $e'),
           backgroundColor: _red,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
@@ -1193,14 +1199,17 @@ class _ShiftsTabState extends State<_ShiftsTab> {
       backgroundColor: _surface,
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (ctx) => StatefulBuilder(
+      builder: (ctx) => Directionality(
+        textDirection: widget.isEnglish ? TextDirection.ltr : TextDirection.rtl,
+        child: StatefulBuilder(
         builder: (ctx, setLocal) => Padding(
           padding: const EdgeInsets.all(24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('تغيير دوام: $name',
+              Text(
+                  widget.isEnglish ? 'Change Shift: $name' : 'تغيير دوام: $name',
                   style: const TextStyle(
                       color: Colors.white,
                       fontSize: 16,
@@ -1238,7 +1247,7 @@ class _ShiftsTabState extends State<_ShiftsTab> {
                           size: 18,
                         ),
                         const SizedBox(width: 10),
-                        Text(opt,
+                        Text(tr(widget.isEnglish, opt),
                             style: TextStyle(
                                 color: isSelected
                                     ? Colors.white
@@ -1263,7 +1272,7 @@ class _ShiftsTabState extends State<_ShiftsTab> {
                         padding:
                             const EdgeInsets.symmetric(vertical: 12),
                       ),
-                      child: const Text('إلغاء'),
+                      child: Text(tr(widget.isEnglish, 'إلغاء')),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -1281,14 +1290,15 @@ class _ShiftsTabState extends State<_ShiftsTab> {
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10)),
                       ),
-                      child: const Text('حفظ',
-                          style: TextStyle(fontWeight: FontWeight.w600)),
+                      child: Text(tr(widget.isEnglish, 'حفظ'),
+                          style: const TextStyle(fontWeight: FontWeight.w600)),
                     ),
                   ),
                 ],
               ),
             ],
           ),
+        ),
         ),
       ),
     );
@@ -1325,7 +1335,7 @@ class _ShiftsTabState extends State<_ShiftsTab> {
                   style:
                       const TextStyle(color: Colors.white, fontSize: 14),
                   decoration: InputDecoration(
-                    hintText: 'بحث...',
+                    hintText: tr(widget.isEnglish, 'بحث...'),
                     hintStyle: const TextStyle(
                         color: Color(0x55FFFFFF), fontSize: 13),
                     prefixIcon: const Icon(Icons.search,
@@ -1357,16 +1367,16 @@ class _ShiftsTabState extends State<_ShiftsTab> {
                 icon: const Icon(Icons.refresh,
                     color: Color(0x99FFFFFF), size: 18),
                 onPressed: _load,
-                tooltip: 'تحديث',
+                tooltip: tr(widget.isEnglish, 'تحديث'),
               ),
             ],
           ),
         ),
         Expanded(
           child: _filtered.isEmpty
-              ? const Center(
-                  child: Text('لا توجد نتائج',
-                      style: TextStyle(color: Color(0x66FFFFFF))))
+              ? Center(
+                  child: Text(tr(widget.isEnglish, 'لا توجد نتائج'),
+                      style: const TextStyle(color: Color(0x66FFFFFF))))
               : ListView.separated(
                   padding: const EdgeInsets.symmetric(
                       horizontal: 16, vertical: 4),
@@ -1424,7 +1434,7 @@ class _ShiftsTabState extends State<_ShiftsTab> {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Text(shift,
+                            Text(tr(widget.isEnglish, shift),
                                 style: const TextStyle(
                                     color: _indigo,
                                     fontSize: 12,

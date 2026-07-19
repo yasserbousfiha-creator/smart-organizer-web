@@ -3,7 +3,8 @@ import '../portal/portal_client.dart';
 import '../theme/app_colors.dart';
 
 class WaitlistSection extends StatefulWidget {
-  const WaitlistSection({super.key});
+  final bool isEnglish;
+  const WaitlistSection({super.key, this.isEnglish = false});
 
   @override
   State<WaitlistSection> createState() => _WaitlistSectionState();
@@ -26,7 +27,9 @@ class _WaitlistSectionState extends State<WaitlistSection> {
   Future<void> _submit() async {
     final email = _ctrl.text.trim();
     if (!_emailRegex.hasMatch(email)) {
-      setState(() => _error = 'أدخل بريداً إلكترونياً صحيحاً');
+      setState(() => _error = widget.isEnglish
+          ? 'Enter a valid email address'
+          : 'أدخل بريداً إلكترونياً صحيحاً');
       return;
     }
     setState(() { _submitting = true; _error = null; });
@@ -39,7 +42,9 @@ class _WaitlistSectionState extends State<WaitlistSection> {
       final isDuplicate = e.toString().contains('duplicate') || e.toString().contains('unique');
       setState(() {
         _submitting = false;
-        _error = isDuplicate ? 'هذا البريد مسجّل مسبقاً' : 'تعذّر الإرسال، حاول مرة أخرى';
+        _error = widget.isEnglish
+            ? (isDuplicate ? 'This email is already registered' : 'Failed to send, please try again')
+            : (isDuplicate ? 'هذا البريد مسجّل مسبقاً' : 'تعذّر الإرسال، حاول مرة أخرى');
       });
     }
   }
@@ -84,13 +89,15 @@ class _WaitlistSectionState extends State<WaitlistSection> {
           child: const Icon(Icons.check_rounded, color: AppColors.success, size: 30),
         ),
         const SizedBox(height: 18),
-        const Text(
-          'تم التسجيل بنجاح!',
-          style: TextStyle(fontFamily: 'Tajawal', fontSize: 20, fontWeight: FontWeight.w800, color: Colors.white),
+        Text(
+          widget.isEnglish ? 'Successfully registered!' : 'تم التسجيل بنجاح!',
+          style: const TextStyle(fontFamily: 'Tajawal', fontSize: 20, fontWeight: FontWeight.w800, color: Colors.white),
         ),
         const SizedBox(height: 8),
         Text(
-          'سنراسلك فور فتح التسجيل للجميع.',
+          widget.isEnglish
+              ? "We'll email you as soon as registration opens to everyone."
+              : 'سنراسلك فور فتح التسجيل للجميع.',
           textAlign: TextAlign.center,
           style: TextStyle(fontSize: 14, color: Colors.white.withValues(alpha: 0.55)),
         ),
@@ -104,14 +111,16 @@ class _WaitlistSectionState extends State<WaitlistSection> {
       children: [
         const Icon(Icons.notifications_active_rounded, color: AppColors.primaryLight, size: 30),
         const SizedBox(height: 16),
-        const Text(
-          'أشعرني عند فتح التسجيل',
+        Text(
+          widget.isEnglish ? 'Notify me when registration opens' : 'أشعرني عند فتح التسجيل',
           textAlign: TextAlign.center,
-          style: TextStyle(fontFamily: 'Tajawal', fontSize: 22, fontWeight: FontWeight.w800, color: Colors.white),
+          style: const TextStyle(fontFamily: 'Tajawal', fontSize: 22, fontWeight: FontWeight.w800, color: Colors.white),
         ),
         const SizedBox(height: 10),
         Text(
-          'الوصول حالياً خاص بالمدعوين فقط. اترك بريدك الإلكتروني وسنعلمك عند فتح التسجيل للجميع.',
+          widget.isEnglish
+              ? "Access is currently invite-only. Leave your email and we'll notify you when registration opens to everyone."
+              : 'الوصول حالياً خاص بالمدعوين فقط. اترك بريدك الإلكتروني وسنعلمك عند فتح التسجيل للجميع.',
           textAlign: TextAlign.center,
           style: TextStyle(fontSize: 14, color: Colors.white.withValues(alpha: 0.55), height: 1.7),
         ),
@@ -127,7 +136,7 @@ class _WaitlistSectionState extends State<WaitlistSection> {
                 onSubmitted: (_) => _submit(),
                 style: const TextStyle(color: Colors.white, fontSize: 14),
                 decoration: InputDecoration(
-                  hintText: 'بريدك الإلكتروني',
+                  hintText: widget.isEnglish ? 'Your email' : 'بريدك الإلكتروني',
                   hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
                   filled: true,
                   fillColor: Colors.white.withValues(alpha: 0.05),
@@ -165,7 +174,7 @@ class _WaitlistSectionState extends State<WaitlistSection> {
                           width: 18, height: 18,
                           child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                         )
-                      : const Text('أشعرني', style: TextStyle(fontWeight: FontWeight.w700, color: Colors.white)),
+                      : Text(widget.isEnglish ? 'Notify Me' : 'أشعرني', style: const TextStyle(fontWeight: FontWeight.w700, color: Colors.white)),
                 ),
               ),
             ),

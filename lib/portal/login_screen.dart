@@ -1,7 +1,10 @@
+// ignore: avoid_web_libraries_in_flutter, deprecated_member_use
+import 'dart:html' as html;
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'portal_client.dart';
 import 'home_screen.dart';
+import 'portal_i18n.dart';
 
 class PortalLoginScreen extends StatefulWidget {
   const PortalLoginScreen({super.key});
@@ -15,12 +18,28 @@ class _PortalLoginScreenState extends State<PortalLoginScreen> {
   bool _loading = false;
   String? _error;
   bool _obscure = true;
+  bool _isEnglish = false;
+
+  @override
+  void initState() {
+    super.initState();
+    try {
+      _isEnglish = html.window.localStorage['portal_lang'] == 'en';
+    } catch (_) {}
+  }
+
+  void _toggleLanguage() {
+    setState(() => _isEnglish = !_isEnglish);
+    try {
+      html.window.localStorage['portal_lang'] = _isEnglish ? 'en' : 'ar';
+    } catch (_) {}
+  }
 
   String _toEmail(String username) => '${username.trim().toLowerCase()}@ybhrportal.com';
 
   Future<void> _login() async {
     if (_userCtrl.text.trim().isEmpty) {
-      setState(() => _error = 'أدخل اسم المستخدم');
+      setState(() => _error = tr(_isEnglish, 'أدخل اسم المستخدم'));
       return;
     }
     final email = _toEmail(_userCtrl.text);
@@ -37,21 +56,27 @@ class _PortalLoginScreenState extends State<PortalLoginScreen> {
     } on AuthException catch (e) {
       setState(() => _error = _arabicError(e.message));
     } catch (e) {
-      setState(() => _error = 'خطأ: $e');
+      setState(() => _error = _isEnglish ? 'Error: $e' : 'خطأ: $e');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
   }
 
   String _arabicError(String msg) {
-    if (msg.contains('Invalid login')) return 'اسم المستخدم أو كلمة المرور غير صحيحة';
-    if (msg.contains('Too many requests')) return 'محاولات كثيرة، انتظر قليلاً';
+    if (msg.contains('Invalid login')) {
+      return tr(_isEnglish, 'اسم المستخدم أو كلمة المرور غير صحيحة');
+    }
+    if (msg.contains('Too many requests')) {
+      return tr(_isEnglish, 'محاولات كثيرة، انتظر قليلاً');
+    }
     return msg;
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return Directionality(
+      textDirection: _isEnglish ? TextDirection.ltr : TextDirection.rtl,
+      child: Scaffold(
       backgroundColor: const Color(0xFF061A22),
       appBar: AppBar(
         backgroundColor: const Color(0xFF061A22),
@@ -62,6 +87,38 @@ class _PortalLoginScreenState extends State<PortalLoginScreen> {
           },
         ),
         elevation: 0,
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: Center(
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: _toggleLanguage,
+                  borderRadius: BorderRadius.circular(8),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF06B6D4).withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: const Color(0xFF06B6D4).withValues(alpha: 0.3)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.language_rounded, size: 14, color: Color(0xFF06B6D4)),
+                        const SizedBox(width: 4),
+                        Text(_isEnglish ? 'AR' : 'EN',
+                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700,
+                                color: Color(0xFF06B6D4))),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
       body: Center(
         child: SingleChildScrollView(
@@ -98,21 +155,21 @@ class _PortalLoginScreenState extends State<PortalLoginScreen> {
                       color: Colors.white, size: 32),
                 ),
                 const SizedBox(height: 20),
-                const Text('بوابة الموظفين',
-                    style: TextStyle(
+                Text(tr(_isEnglish, 'بوابة الموظفين'),
+                    style: const TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.w700,
                         color: Colors.white)),
                 const SizedBox(height: 6),
-                const Text('سجّل دخولك للاطلاع على بياناتك',
-                    style: TextStyle(fontSize: 13, color: Color(0x99FFFFFF))),
+                Text(tr(_isEnglish, 'سجّل دخولك للاطلاع على بياناتك'),
+                    style: const TextStyle(fontSize: 13, color: Color(0x99FFFFFF))),
                 const SizedBox(height: 32),
 
                 TextField(
                   controller: _userCtrl,
                   keyboardType: TextInputType.text,
                   style: const TextStyle(color: Colors.white),
-                  decoration: _inputDecoration('اسم المستخدم', Icons.person_outline),
+                  decoration: _inputDecoration(tr(_isEnglish, 'اسم المستخدم'), Icons.person_outline),
                   onSubmitted: (_) => _login(),
                 ),
                 const SizedBox(height: 14),
@@ -122,7 +179,7 @@ class _PortalLoginScreenState extends State<PortalLoginScreen> {
                   obscureText: _obscure,
                   style: const TextStyle(color: Colors.white),
                   decoration: _inputDecoration(
-                    'كلمة المرور',
+                    tr(_isEnglish, 'كلمة المرور'),
                     Icons.lock_outline,
                     suffix: IconButton(
                       icon: Icon(_obscure ? Icons.visibility_off : Icons.visibility,
@@ -166,8 +223,8 @@ class _PortalLoginScreenState extends State<PortalLoginScreen> {
                             height: 20,
                             child: CircularProgressIndicator(
                                 color: Colors.white, strokeWidth: 2))
-                        : const Text('تسجيل الدخول',
-                            style: TextStyle(
+                        : Text(tr(_isEnglish, 'تسجيل الدخول'),
+                            style: const TextStyle(
                                 fontSize: 15, fontWeight: FontWeight.w600)),
                   ),
                 ),
@@ -175,6 +232,7 @@ class _PortalLoginScreenState extends State<PortalLoginScreen> {
             ),
           ),
         ),
+      ),
       ),
     );
   }

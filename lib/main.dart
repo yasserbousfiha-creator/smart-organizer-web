@@ -1,4 +1,6 @@
 import 'dart:math' as math;
+// ignore: avoid_web_libraries_in_flutter, deprecated_member_use
+import 'dart:html' as html;
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:url_strategy/url_strategy.dart';
@@ -34,6 +36,98 @@ void main() async {
     // if the auth check below fails, so no user-facing handling needed here.
   } finally {
     markPortalReady();
+  }
+}
+
+// ── Landing page translations (EN/AR toggle) ───────────────────
+const Map<String, String> _siteArToEn = {
+  'الدعم الفني': 'Support',
+  'وصول خاص للمدعوين فقط': 'Private access, invite only',
+  'نظّم حياتك ومهامك': 'Organize Your Life',
+  'بذكاء وسهولة': 'Smart & Simple',
+  'تطبيق Smart Organizer هو رفيقك اليومي لإدارة مهامك وترتيب أفكارك بكفاءة. يتطلب التحميل أو الدخول باستخدام رمز المرور الخاص بك.':
+      'Smart Organizer is your daily companion for managing tasks and organizing your ideas efficiently. Requires downloading the app or signing in with your access code.',
+  'تحميل التطبيق': 'Download App',
+  'تنزيل مباشر للأندرويد': 'Direct download for Android',
+  'تشغيل في المتصفح': 'Open in Browser',
+  'للايفون والمنصات الأخرى': 'For iPhone & other platforms',
+  'المميزات الرئيسية': 'Key Features',
+  'كل ما تحتاجه في مكان واحد': 'Everything You Need in One Place',
+  'مصمم خصيصاً لمساعدتك على تحقيق أقصى إنتاجية يومياً':
+      'Designed to help you achieve maximum productivity every day',
+  'إدارة المهام': 'Task Management',
+  'رتّب مهامك اليومية بسهولة وتابع تقدمك بشكل مرئي وواضح.':
+      'Organize your daily tasks easily and track your progress clearly.',
+  'تذكيرات ذكية': 'Smart Reminders',
+  'لن تنسى موعداً أو مهمة مع نظام التذكير الذكي التلقائي.':
+      "You'll never miss a task or deadline with automatic smart reminders.",
+  'إحصائيات وتقارير': 'Stats & Reports',
+  'تابع إنتاجيتك عبر تقارير مفصّلة وسهلة الفهم في لحظة.':
+      'Track your productivity with detailed, easy-to-read reports.',
+  'خصوصية تامة': 'Complete Privacy',
+  'وصول مؤمَّن بكلمة مرور خاصة لحماية بياناتك الشخصية.':
+      'Password-secured access to protect your personal data.',
+  'معاينة التطبيق': 'App Preview',
+  'واجهات التطبيق': 'App Screens',
+  'تصميم عصري يركز على سهولة الاستخدام والجمالية':
+      'A modern design focused on usability and aesthetics',
+  'تواصل معنا': 'Contact Us',
+  'الدعم الفني والمساندة': 'Support & Assistance',
+  'فريقنا جاهز للرد على استفساراتك ومساعدتك في أي وقت':
+      'Our team is ready to answer your questions anytime',
+  'واتساب': 'WhatsApp',
+  'البريد الإلكتروني': 'Email',
+  'جميع الحقوق محفوظة By YASSER BOUSFIHA © 2026 — Smart Organizer':
+      'All rights reserved By YASSER BOUSFIHA © 2026 — Smart Organizer',
+  'وصول مقيّد': 'Restricted Access',
+  'الرجاء إدخال رمز الدخول الخاص بك للمتابعة وفتح الرابط.':
+      'Please enter your access code to continue and open the link.',
+  'أدخل الرمز هنا': 'Enter code here',
+  'إلغاء': 'Cancel',
+  'تحقق وافتح': 'Verify & Open',
+  'رمز الدخول غير صحيح!': 'Incorrect access code!',
+};
+
+String siteTr(bool isEnglish, String ar) =>
+    isEnglish ? (_siteArToEn[ar] ?? ar) : ar;
+
+class _SiteLanguageToggleButton extends StatelessWidget {
+  final bool isEnglish;
+  final VoidCallback onTap;
+  const _SiteLanguageToggleButton({required this.isEnglish, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: AppColors.secondary.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: AppColors.secondary.withValues(alpha: 0.3)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.language_rounded, size: 14, color: AppColors.secondary),
+              const SizedBox(width: 4),
+              Text(
+                isEnglish ? 'AR' : 'EN',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.secondary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -328,7 +422,8 @@ class _GridIconWidgetState extends State<GridIconWidget>
 // ── Circle Logo ───────────────────────────────────────────────
 class CircleLogoWidget extends StatefulWidget {
   final double size;
-  const CircleLogoWidget({super.key, this.size = 220});
+  final bool isEnglish;
+  const CircleLogoWidget({super.key, this.size = 220, this.isEnglish = false});
 
   @override
   State<CircleLogoWidget> createState() => _CircleLogoWidgetState();
@@ -530,7 +625,7 @@ class _CircleLogoWidgetState extends State<CircleLogoWidget>
                       ),
                     ),
                     Directionality(
-                      textDirection: TextDirection.rtl,
+                      textDirection: widget.isEnglish ? TextDirection.ltr : TextDirection.rtl,
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -544,7 +639,7 @@ class _CircleLogoWidgetState extends State<CircleLogoWidget>
                               end: Alignment.bottomRight,
                             ).createShader(b),
                             child: Text(
-                              'منظمك الذكي',
+                              widget.isEnglish ? 'Smart Organizer' : 'منظمك الذكي',
                               style: TextStyle(fontFamily: 'Cairo',
                                 fontWeight: FontWeight.w900,
                                 fontSize: s * 0.088,
@@ -707,6 +802,20 @@ class _LandingPageState extends State<LandingPage>
   final GlobalKey _supportKey = GlobalKey();
   final ScrollController _scrollController = ScrollController();
   bool _showScrollTop = false;
+  bool _isEnglish = false;
+
+  void _loadLanguage() {
+    try {
+      _isEnglish = html.window.localStorage['site_lang'] == 'en';
+    } catch (_) {}
+  }
+
+  void _toggleLanguage() {
+    setState(() => _isEnglish = !_isEnglish);
+    try {
+      html.window.localStorage['site_lang'] = _isEnglish ? 'en' : 'ar';
+    } catch (_) {}
+  }
 
   void _scrollToSupport() {
     final ctx = _supportKey.currentContext;
@@ -735,6 +844,7 @@ class _LandingPageState extends State<LandingPage>
   @override
   void initState() {
     super.initState();
+    _loadLanguage();
     _heroController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1200),
@@ -763,7 +873,9 @@ class _LandingPageState extends State<LandingPage>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return Directionality(
+      textDirection: _isEnglish ? TextDirection.ltr : TextDirection.rtl,
+      child: Scaffold(
       backgroundColor: kBg,
       floatingActionButton: _showScrollTop
           ? FloatingActionButton(
@@ -791,7 +903,7 @@ class _LandingPageState extends State<LandingPage>
                   ),
                 ),
                 _RevealOnScroll(child: _buildFeaturesSection()),
-                const _RevealOnScroll(child: DemoTaskSection()),
+                _RevealOnScroll(child: DemoTaskSection(isEnglish: _isEnglish)),
                 _RevealOnScroll(child: _buildScreenshotsSection(context)),
                 const Center(child: HiddenMoonIcon()),
                 KeyedSubtree(
@@ -799,7 +911,7 @@ class _LandingPageState extends State<LandingPage>
                   child: _RevealOnScroll(child: _buildSupportSection()),
                 ),
                 const Center(child: HiddenFlameIcon()),
-                const _RevealOnScroll(child: WaitlistSection()),
+                _RevealOnScroll(child: WaitlistSection(isEnglish: _isEnglish)),
                 _RevealOnScroll(
                   triggerOffset: 40,
                   child: _buildFooter(),
@@ -808,6 +920,7 @@ class _LandingPageState extends State<LandingPage>
             ),
           ),
         ],
+      ),
       ),
     );
   }
@@ -898,9 +1011,11 @@ class _LandingPageState extends State<LandingPage>
           MoonCrescentButton(onTap: () => _openMoonAbaya(context)),
           const Spacer(),
           if (isMobile) ...[
-            const QuranRadioButton(compact: true),
+            _SiteLanguageToggleButton(isEnglish: _isEnglish, onTap: _toggleLanguage),
             const SizedBox(width: 4),
-            LampPullButton(onPulled: () => _openPortal(context)),
+            QuranRadioButton(compact: true, isEnglish: _isEnglish),
+            const SizedBox(width: 4),
+            LampPullButton(onPulled: () => _openPortal(context), isEnglish: _isEnglish),
             const SizedBox(width: 4),
             MouseRegion(
               cursor: SystemMouseCursors.click,
@@ -915,11 +1030,13 @@ class _LandingPageState extends State<LandingPage>
               ),
             ),
           ] else ...[
-            _navLink('الدعم الفني', _scrollToSupport),
+            _navLink(siteTr(_isEnglish, 'الدعم الفني'), _scrollToSupport),
             const SizedBox(width: 16),
-            const QuranRadioButton(),
+            _SiteLanguageToggleButton(isEnglish: _isEnglish, onTap: _toggleLanguage),
             const SizedBox(width: 16),
-            LampPullButton(onPulled: () => _openPortal(context)),
+            QuranRadioButton(isEnglish: _isEnglish),
+            const SizedBox(width: 16),
+            LampPullButton(onPulled: () => _openPortal(context), isEnglish: _isEnglish),
           ],
         ],
       ),
@@ -945,7 +1062,9 @@ class _LandingPageState extends State<LandingPage>
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (sheetContext) {
-        return SafeArea(
+        return Directionality(
+          textDirection: _isEnglish ? TextDirection.ltr : TextDirection.rtl,
+          child: SafeArea(
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 8),
             child: Column(
@@ -962,9 +1081,9 @@ class _LandingPageState extends State<LandingPage>
                 ),
                 ListTile(
                   leading: const Icon(Icons.support_agent_rounded, color: Colors.white70),
-                  title: const Text(
-                    'الدعم الفني',
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                  title: Text(
+                    siteTr(_isEnglish, 'الدعم الفني'),
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
                   ),
                   onTap: () {
                     Navigator.pop(sheetContext);
@@ -973,6 +1092,7 @@ class _LandingPageState extends State<LandingPage>
                 ),
               ],
             ),
+          ),
           ),
         );
       },
@@ -1003,14 +1123,14 @@ class _LandingPageState extends State<LandingPage>
                   runSpacing: 10,
                   children: [
                     _heroBadge(),
-                    const VisitorCounterBadge(),
+                    VisitorCounterBadge(isEnglish: _isEnglish),
                   ],
                 ),
                 const SizedBox(height: 30),
                 ShaderMask(
                   shaderCallback: (b) => kMainGradient.createShader(b),
                   child: Text(
-                    'نظّم حياتك ومهامك',
+                    siteTr(_isEnglish, 'نظّم حياتك ومهامك'),
                     style: TextStyle(fontFamily: 'Tajawal',
                       fontSize: isMobile ? 40 : 62,
                       fontWeight: FontWeight.w900,
@@ -1020,7 +1140,7 @@ class _LandingPageState extends State<LandingPage>
                   ),
                 ),
                 Text(
-                  'بذكاء وسهولة',
+                  siteTr(_isEnglish, 'بذكاء وسهولة'),
                   style: TextStyle(fontFamily: 'Tajawal',
                     fontSize: isMobile ? 40 : 62,
                     fontWeight: FontWeight.w900,
@@ -1030,7 +1150,8 @@ class _LandingPageState extends State<LandingPage>
                 ),
                 const SizedBox(height: 26),
                 Text(
-                  'تطبيق Smart Organizer هو رفيقك اليومي لإدارة مهامك وترتيب أفكارك بكفاءة. يتطلب التحميل أو الدخول باستخدام رمز المرور الخاص بك.',
+                  siteTr(_isEnglish,
+                      'تطبيق Smart Organizer هو رفيقك اليومي لإدارة مهامك وترتيب أفكارك بكفاءة. يتطلب التحميل أو الدخول باستخدام رمز المرور الخاص بك.'),
                   style: TextStyle(
                     fontSize: 17,
                     color: Colors.white.withValues(alpha: 0.6),
@@ -1045,8 +1166,8 @@ class _LandingPageState extends State<LandingPage>
                     _buildGradientButton(
                       context: context,
                       icon: Icons.android_rounded,
-                      title: 'تحميل التطبيق',
-                      subtitle: 'تنزيل مباشر للأندرويد',
+                      title: siteTr(_isEnglish, 'تحميل التطبيق'),
+                      subtitle: siteTr(_isEnglish, 'تنزيل مباشر للأندرويد'),
                       gradient: kMainGradient,
                       url:
                           'https://raw.githubusercontent.com/yasserbousfiha-creator/smart-organizer-web/main/apk/smart-organizer.zip',
@@ -1054,8 +1175,8 @@ class _LandingPageState extends State<LandingPage>
                     _buildOutlineButton(
                       context: context,
                       icon: Icons.language_rounded,
-                      title: 'تشغيل في المتصفح',
-                      subtitle: 'للايفون والمنصات الأخرى',
+                      title: siteTr(_isEnglish, 'تشغيل في المتصفح'),
+                      subtitle: siteTr(_isEnglish, 'للايفون والمنصات الأخرى'),
                       url: 'https://celebrated-chimera-576e3d.netlify.app/',
                     ),
                   ],
@@ -1063,7 +1184,7 @@ class _LandingPageState extends State<LandingPage>
               ],
             ),
           ),
-          _buildHeroVisual(isMobile),
+          _buildHeroVisual(isMobile, _isEnglish),
         ],
       ),
     );
@@ -1094,9 +1215,9 @@ class _LandingPageState extends State<LandingPage>
             ),
           ),
           const SizedBox(width: 8),
-          const Text(
-            'وصول خاص للمدعوين فقط',
-            style: TextStyle(
+          Text(
+            siteTr(_isEnglish, 'وصول خاص للمدعوين فقط'),
+            style: const TextStyle(
               color: kCyan,
               fontSize: 13,
               fontWeight: FontWeight.w600,
@@ -1107,8 +1228,8 @@ class _LandingPageState extends State<LandingPage>
     );
   }
 
-  Widget _buildHeroVisual(bool isMobile) {
-    return CircleLogoWidget(size: isMobile ? 260 : 320);
+  Widget _buildHeroVisual(bool isMobile, bool isEnglish) {
+    return CircleLogoWidget(size: isMobile ? 260 : 320, isEnglish: isEnglish);
   }
 
   Widget _buildFeaturesSection() {
@@ -1143,12 +1264,12 @@ class _LandingPageState extends State<LandingPage>
       padding: const EdgeInsets.symmetric(vertical: 100, horizontal: 40),
       child: Column(
         children: [
-          _sectionBadge('المميزات الرئيسية'),
+          _sectionBadge(siteTr(_isEnglish, 'المميزات الرئيسية')),
           const SizedBox(height: 18),
-          _sectionTitle('كل ما تحتاجه في مكان واحد'),
+          _sectionTitle(siteTr(_isEnglish, 'كل ما تحتاجه في مكان واحد')),
           const SizedBox(height: 14),
           _sectionSubtitle(
-            'مصمم خصيصاً لمساعدتك على تحقيق أقصى إنتاجية يومياً',
+            siteTr(_isEnglish, 'مصمم خصيصاً لمساعدتك على تحقيق أقصى إنتاجية يومياً'),
           ),
           const SizedBox(height: 68),
           Wrap(
@@ -1159,8 +1280,8 @@ class _LandingPageState extends State<LandingPage>
                 .map(
                   (f) => _buildFeatureCard(
                     icon: f['icon'] as IconData,
-                    title: f['title'] as String,
-                    desc: f['desc'] as String,
+                    title: siteTr(_isEnglish, f['title'] as String),
+                    desc: siteTr(_isEnglish, f['desc'] as String),
                     color: f['color'] as Color,
                   ),
                 )
@@ -1244,11 +1365,11 @@ class _LandingPageState extends State<LandingPage>
       ),
       child: Column(
         children: [
-          _sectionBadge('معاينة التطبيق'),
+          _sectionBadge(siteTr(_isEnglish, 'معاينة التطبيق')),
           const SizedBox(height: 18),
-          _sectionTitle('واجهات التطبيق'),
+          _sectionTitle(siteTr(_isEnglish, 'واجهات التطبيق')),
           const SizedBox(height: 14),
-          _sectionSubtitle('تصميم عصري يركز على سهولة الاستخدام والجمالية'),
+          _sectionSubtitle(siteTr(_isEnglish, 'تصميم عصري يركز على سهولة الاستخدام والجمالية')),
           const SizedBox(height: 68),
           CarouselSlider.builder(
             itemCount: screenshots.length,
@@ -1311,12 +1432,12 @@ class _LandingPageState extends State<LandingPage>
       padding: const EdgeInsets.symmetric(vertical: 100, horizontal: 40),
       child: Column(
         children: [
-          _sectionBadge('تواصل معنا'),
+          _sectionBadge(siteTr(_isEnglish, 'تواصل معنا')),
           const SizedBox(height: 18),
-          _sectionTitle('الدعم الفني والمساندة'),
+          _sectionTitle(siteTr(_isEnglish, 'الدعم الفني والمساندة')),
           const SizedBox(height: 14),
           _sectionSubtitle(
-            'فريقنا جاهز للرد على استفساراتك ومساعدتك في أي وقت',
+            siteTr(_isEnglish, 'فريقنا جاهز للرد على استفساراتك ومساعدتك في أي وقت'),
           ),
           const SizedBox(height: 68),
           Wrap(
@@ -1326,7 +1447,7 @@ class _LandingPageState extends State<LandingPage>
             children: [
               _buildContactCard(
                 icon: Icons.wechat_rounded,
-                title: 'واتساب',
+                title: siteTr(_isEnglish, 'واتساب'),
                 subtitle: '+966 50 015 0309',
                 gradient: const LinearGradient(
                   colors: [Color(0xFF25D366), Color(0xFF128C7E)],
@@ -1335,7 +1456,7 @@ class _LandingPageState extends State<LandingPage>
               ),
               _buildContactCard(
                 icon: Icons.email_rounded,
-                title: 'البريد الإلكتروني',
+                title: siteTr(_isEnglish, 'البريد الإلكتروني'),
                 subtitle: 'yasserbousfiha@gmail.com',
                 gradient: kMainGradient,
                 onTap: () => _launchURL('mailto:yasserbousfiha@gmail.com'),
@@ -1446,7 +1567,8 @@ class _LandingPageState extends State<LandingPage>
           Padding(
             padding: EdgeInsets.symmetric(horizontal: isMobile ? 24 : 0),
             child: Text(
-              'جميع الحقوق محفوظة By YASSER BOUSFIHA © 2026 — Smart Organizer',
+              siteTr(_isEnglish,
+                  'جميع الحقوق محفوظة By YASSER BOUSFIHA © 2026 — Smart Organizer'),
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.28),
@@ -1632,7 +1754,7 @@ class _LandingPageState extends State<LandingPage>
     return showDialog(
       context: context,
       builder: (ctx) => Directionality(
-        textDirection: TextDirection.rtl,
+        textDirection: _isEnglish ? TextDirection.ltr : TextDirection.rtl,
         child: AlertDialog(
           backgroundColor: AppColors.surface,
           shape: RoundedRectangleBorder(
@@ -1640,7 +1762,7 @@ class _LandingPageState extends State<LandingPage>
             side: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
           ),
           title: Text(
-            'وصول مقيّد',
+            siteTr(_isEnglish, 'وصول مقيّد'),
             style: TextStyle(fontFamily: 'Tajawal',
               fontWeight: FontWeight.bold,
               fontSize: 20,
@@ -1651,7 +1773,7 @@ class _LandingPageState extends State<LandingPage>
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'الرجاء إدخال رمز الدخول الخاص بك للمتابعة وفتح الرابط.',
+                siteTr(_isEnglish, 'الرجاء إدخال رمز الدخول الخاص بك للمتابعة وفتح الرابط.'),
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.6),
                   fontSize: 14,
@@ -1663,7 +1785,7 @@ class _LandingPageState extends State<LandingPage>
                 obscureText: true,
                 style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
-                  hintText: 'أدخل الرمز هنا',
+                  hintText: siteTr(_isEnglish, 'أدخل الرمز هنا'),
                   hintStyle: TextStyle(
                     color: Colors.white.withValues(alpha: 0.3),
                   ),
@@ -1693,7 +1815,7 @@ class _LandingPageState extends State<LandingPage>
             TextButton(
               onPressed: () => Navigator.pop(ctx),
               child: Text(
-                'إلغاء',
+                siteTr(_isEnglish, 'إلغاء'),
                 style: TextStyle(color: Colors.white.withValues(alpha: 0.4)),
               ),
             ),
@@ -1726,7 +1848,7 @@ class _LandingPageState extends State<LandingPage>
                     Navigator.pop(ctx);
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: const Text('رمز الدخول غير صحيح!'),
+                        content: Text(siteTr(_isEnglish, 'رمز الدخول غير صحيح!')),
                         backgroundColor: Colors.red.shade700,
                         behavior: SnackBarBehavior.floating,
                         shape: RoundedRectangleBorder(
@@ -1736,7 +1858,7 @@ class _LandingPageState extends State<LandingPage>
                     );
                   }
                 },
-                child: const Text('تحقق وافتح'),
+                child: Text(siteTr(_isEnglish, 'تحقق وافتح')),
               ),
             ),
           ],
