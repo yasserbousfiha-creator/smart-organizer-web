@@ -310,7 +310,6 @@ class _PrayerTrackerScreenState extends State<PrayerTrackerScreen> {
   }
 
   void _showAddPointsDialog() {
-    final remaining = kPrayerNames.where((p) => _day?.status[p] != true).toList();
     showDialog(
       context: context,
       builder: (ctx) => Directionality(
@@ -318,42 +317,37 @@ class _PrayerTrackerScreenState extends State<PrayerTrackerScreen> {
         child: AlertDialog(
           backgroundColor: AppColors.surface,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: const Text('إضافة نقاط يدويًا', style: TextStyle(color: Colors.white, fontSize: 16)),
+          title: const Text('إضافة/تصحيح نقاط يدويًا', style: TextStyle(color: Colors.white, fontSize: 16)),
           content: SizedBox(
             width: double.maxFinite,
-            child: remaining.isEmpty
-                ? const Text(
-                    'كل صلوات اليوم مسجلة بالفعل.',
-                    style: TextStyle(color: Colors.white70),
-                  )
-                : Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: remaining
-                        .map(
-                          (name) => Padding(
-                            padding: const EdgeInsets.only(bottom: 10),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    _labels[name]!,
-                                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
-                                  ),
-                                ),
-                                TextButton(
-                                  onPressed: () => _addManualPoints(ctx, name, 20),
-                                  child: const Text('فالوقت +20'),
-                                ),
-                                TextButton(
-                                  onPressed: () => _addManualPoints(ctx, name, 5),
-                                  child: const Text('متأخر +5'),
-                                ),
-                              ],
-                            ),
-                          ),
-                        )
-                        .toList(),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: kPrayerNames.map((name) {
+                final done = _day?.status[name] == true;
+                final points = _day?.points[name] ?? 0;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          done ? '${_labels[name]} ($points)' : _labels[name]!,
+                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () => _addManualPoints(ctx, name, 20),
+                        child: const Text('فالوقت +20'),
+                      ),
+                      TextButton(
+                        onPressed: () => _addManualPoints(ctx, name, 5),
+                        child: const Text('متأخر +5'),
+                      ),
+                    ],
                   ),
+                );
+              }).toList(),
+            ),
           ),
           actions: [
             TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إغلاق')),
@@ -363,6 +357,9 @@ class _PrayerTrackerScreenState extends State<PrayerTrackerScreen> {
     );
   }
 
+  /// Always overwrites the prayer's points column to exactly [points] —
+  /// re-clicking for a prayer that was already logged corrects it instead
+  /// of stacking on top of the previous value.
   Future<void> _addManualPoints(BuildContext dialogContext, String name, int points) async {
     Navigator.pop(dialogContext);
     try {
@@ -371,7 +368,7 @@ class _PrayerTrackerScreenState extends State<PrayerTrackerScreen> {
       setState(() => _day = updated);
       unawaited(_refreshChallengeAndCheckGoal());
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('تمت إضافة $points نقطة لـ${_labels[name]}')),
+        SnackBar(content: Text('نقاط ${_labels[name]} الآن $points')),
       );
     } catch (e) {
       if (!mounted) return;
