@@ -1,15 +1,19 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show FilteringTextInputFormatter;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../theme/app_colors.dart';
 import 'email_notifier.dart';
+import 'hidden_parent_icon.dart';
 import 'morocco_time.dart';
 import 'prayer_celebration.dart';
 import 'prayer_points.dart';
 import 'prayer_storage.dart';
 import 'prayer_times_service.dart';
+
+const String _kParentPin = '0000';
 
 class PrayerTrackerScreen extends StatefulWidget {
   const PrayerTrackerScreen({super.key});
@@ -245,6 +249,138 @@ class _PrayerTrackerScreenState extends State<PrayerTrackerScreen> {
 
   String _formatDate(DateTime d) => '${d.day} ${_months[d.month - 1]} ${d.year}';
 
+  void _showParentPinDialog() {
+    final controller = TextEditingController();
+    String? error;
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) {
+          return Directionality(
+            textDirection: TextDirection.rtl,
+            child: AlertDialog(
+              backgroundColor: AppColors.surface,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              title: const Text('رمز ولي الأمر', style: TextStyle(color: Colors.white, fontSize: 16)),
+              content: TextField(
+                controller: controller,
+                autofocus: true,
+                obscureText: true,
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.white, letterSpacing: 4),
+                decoration: InputDecoration(
+                  hintText: 'الرمز السري',
+                  hintStyle: const TextStyle(color: Colors.white38),
+                  errorText: error,
+                  filled: true,
+                  fillColor: AppColors.surfaceHi,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                ),
+                onSubmitted: (_) {
+                  if (controller.text.trim() == _kParentPin) {
+                    Navigator.pop(ctx);
+                    _showAddPointsDialog();
+                  } else {
+                    setDialogState(() => error = 'الرمز غير صحيح');
+                  }
+                },
+              ),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
+                ElevatedButton(
+                  onPressed: () {
+                    if (controller.text.trim() == _kParentPin) {
+                      Navigator.pop(ctx);
+                      _showAddPointsDialog();
+                    } else {
+                      setDialogState(() => error = 'الرمز غير صحيح');
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
+                  child: const Text('دخول'),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  void _showAddPointsDialog() {
+    final remaining = kPrayerNames.where((p) => _day?.status[p] != true).toList();
+    showDialog(
+      context: context,
+      builder: (ctx) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: AlertDialog(
+          backgroundColor: AppColors.surface,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Text('إضافة نقاط يدويًا', style: TextStyle(color: Colors.white, fontSize: 16)),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: remaining.isEmpty
+                ? const Text(
+                    'كل صلوات اليوم مسجلة بالفعل.',
+                    style: TextStyle(color: Colors.white70),
+                  )
+                : Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: remaining
+                        .map(
+                          (name) => Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    _labels[name]!,
+                                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                                  ),
+                                ),
+                                TextButton(
+                                  onPressed: () => _addManualPoints(ctx, name, 20),
+                                  child: const Text('فالوقت +20'),
+                                ),
+                                TextButton(
+                                  onPressed: () => _addManualPoints(ctx, name, 5),
+                                  child: const Text('متأخر +5'),
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
+                        .toList(),
+                  ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إغلاق')),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _addManualPoints(BuildContext dialogContext, String name, int points) async {
+    Navigator.pop(dialogContext);
+    try {
+      final updated = await PrayerStorage.setPrayer(name, true, points: points);
+      if (!mounted) return;
+      setState(() => _day = updated);
+      unawaited(_refreshChallengeAndCheckGoal());
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('تمت إضافة $points نقطة لـ${_labels[name]}')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('تعذرت الإضافة: $e')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Directionality(
@@ -254,6 +390,7 @@ class _PrayerTrackerScreenState extends State<PrayerTrackerScreen> {
         appBar: AppBar(
           backgroundColor: AppColors.surface,
           title: const Text('تتبع صلاة عبدالرحمن'),
+          actions: [HiddenParentIcon(onTap: _showParentPinDialog)],
         ),
         body: _loading
             ? const Center(child: CircularProgressIndicator())
