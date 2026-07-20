@@ -199,9 +199,7 @@ class _PortalLeavesScreenState extends State<PortalLeavesScreen> {
     final remaining = quota - used;
     final isMobile = MediaQuery.of(context).size.width < 700;
 
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Column(
+    final body = Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // ── Header ──────────────────────────────────
@@ -303,97 +301,124 @@ class _PortalLeavesScreenState extends State<PortalLeavesScreen> {
                   color: Color(0xCCFFFFFF))),
           const SizedBox(height: 10),
 
-          Expanded(
-            child: _loading
-                ? const Center(child: CircularProgressIndicator(color: _indigo))
+          if (isMobile)
+            _loading
+                ? const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 40),
+                    child: Center(child: CircularProgressIndicator(color: _indigo)),
+                  )
                 : _requests.isEmpty
                     ? _empty(tr(widget.isEnglish, 'لا توجد طلبات إجازات'))
-                    : ListView.separated(
-                        itemCount: _requests.length,
-                        separatorBuilder: (context, idx) => const SizedBox(height: 8),
-                        itemBuilder: (_, i) {
-                          final r = _requests[i];
-                          final status = r['status'] as String? ?? '';
-                          final sc = _statusColor(status);
-                          final icon = Container(
-                            width: 40, height: 40,
-                            decoration: BoxDecoration(
-                              color: _indigo.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: const Icon(Icons.beach_access_outlined,
-                                color: _indigo, size: 18),
-                          );
-                          final title = Text(
-                              '${tr(widget.isEnglish, r['type'] as String? ?? '')} — ${r['days_count']} '
-                              '${tr(widget.isEnglish, 'أيام')}',
-                              style: const TextStyle(fontWeight: FontWeight.w600,
-                                  fontSize: 14, color: Colors.white));
-                          final dates = Text('${r['start_date']}  →  ${r['end_date']}',
-                              style: const TextStyle(fontSize: 12,
-                                  color: Color(0x99FFFFFF)));
-                          final reasonText = r['reason'] != null
-                              ? Text('${tr(widget.isEnglish, 'السبب')}: ${r['reason']}',
-                                  style: const TextStyle(fontSize: 11,
-                                      color: Color(0x66FFFFFF)))
-                              : null;
-                          final badge = _StatusBadge(label: tr(widget.isEnglish, status), color: sc);
-
-                          return _Card(
-                            child: isMobile
-                                ? Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          icon,
-                                          const SizedBox(width: 12),
-                                          Expanded(child: title),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 6),
-                                      Wrap(
-                                        spacing: 8,
-                                        runSpacing: 4,
-                                        crossAxisAlignment: WrapCrossAlignment.center,
-                                        children: [dates, badge],
-                                      ),
-                                      if (reasonText != null) ...[
-                                        const SizedBox(height: 4),
-                                        reasonText,
-                                      ],
-                                    ],
-                                  )
-                                : Row(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      icon,
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            title,
-                                            const SizedBox(height: 3),
-                                            dates,
-                                            if (reasonText != null) ...[
-                                              const SizedBox(height: 2),
-                                              reasonText,
-                                            ],
-                                          ],
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      badge,
-                                    ],
-                                  ),
-                          );
-                        },
-                      ),
-          ),
+                    : Column(
+                        children: [
+                          for (int i = 0; i < _requests.length; i++) ...[
+                            if (i > 0) const SizedBox(height: 8),
+                            _buildRequestItem(_requests[i], isMobile),
+                          ],
+                        ],
+                      )
+          else
+            Expanded(
+              child: _loading
+                  ? const Center(child: CircularProgressIndicator(color: _indigo))
+                  : _requests.isEmpty
+                      ? _empty(tr(widget.isEnglish, 'لا توجد طلبات إجازات'))
+                      : ListView.separated(
+                          itemCount: _requests.length,
+                          separatorBuilder: (context, idx) => const SizedBox(height: 8),
+                          itemBuilder: (_, i) => _buildRequestItem(_requests[i], isMobile),
+                        ),
+            ),
         ],
+      );
+
+    return isMobile
+        ? SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: body,
+          )
+        : Padding(
+            padding: const EdgeInsets.all(20),
+            child: body,
+          );
+  }
+
+  Widget _buildRequestItem(Map<String, dynamic> r, bool isMobile) {
+    final status = r['status'] as String? ?? '';
+    final sc = _statusColor(status);
+    final icon = Container(
+      width: 40, height: 40,
+      decoration: BoxDecoration(
+        color: _indigo.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(10),
       ),
+      child: const Icon(Icons.beach_access_outlined,
+          color: _indigo, size: 18),
+    );
+    final title = Text(
+        '${tr(widget.isEnglish, r['type'] as String? ?? '')} — ${r['days_count']} '
+        '${tr(widget.isEnglish, 'أيام')}',
+        style: const TextStyle(fontWeight: FontWeight.w600,
+            fontSize: 14, color: Colors.white));
+    final dates = Text('${r['start_date']}  →  ${r['end_date']}',
+        style: const TextStyle(fontSize: 12,
+            color: Color(0x99FFFFFF)));
+    final reasonText = r['reason'] != null
+        ? Text('${tr(widget.isEnglish, 'السبب')}: ${r['reason']}',
+            style: const TextStyle(fontSize: 11,
+                color: Color(0x66FFFFFF)))
+        : null;
+    final badge = _StatusBadge(label: tr(widget.isEnglish, status), color: sc);
+
+    return _Card(
+      child: isMobile
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    icon,
+                    const SizedBox(width: 12),
+                    Expanded(child: title),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [dates, badge],
+                ),
+                if (reasonText != null) ...[
+                  const SizedBox(height: 4),
+                  reasonText,
+                ],
+              ],
+            )
+          : Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                icon,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      title,
+                      const SizedBox(height: 3),
+                      dates,
+                      if (reasonText != null) ...[
+                        const SizedBox(height: 2),
+                        reasonText,
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                badge,
+              ],
+            ),
     );
   }
 }

@@ -60,9 +60,21 @@ class _PortalMessagesScreenState extends State<PortalMessagesScreen> {
         _messages = List<Map<String, dynamic>>.from(data as List);
         _loading = false;
       });
+      _markRead();
     } catch (_) {
       if (mounted) setState(() => _loading = false);
     }
+  }
+
+  Future<void> _markRead() async {
+    try {
+      await portalClient
+          .from('portal_messages')
+          .update({'is_read': true})
+          .eq('employee_id', widget.employeeId)
+          .inFilter('sender', ['admin', 'hr'])
+          .eq('is_read', false);
+    } catch (_) {}
   }
 
   Future<void> _send() async {
