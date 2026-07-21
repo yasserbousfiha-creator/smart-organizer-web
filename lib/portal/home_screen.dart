@@ -296,48 +296,46 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> {
               child: SafeArea(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8),
-                  child: Row(
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: List.generate(tabs.length, (i) {
                       final active = _tab == i;
                       final showMsgBadge   = tabs[i].label == 'المراسلات' && _unreadMsgCount > 0;
                       final showLeaveBadge = tabs[i].label == 'الإجازات'  && _hasLeaveUpdate;
                       final showBadge = showMsgBadge || showLeaveBadge;
-                      return Expanded(
-                        child: GestureDetector(
-                          onTap: () => _switchTab(i, tabs),
-                          child: Center(
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 150),
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: active ? _indigo.withValues(alpha: 0.15) : Colors.transparent,
-                                borderRadius: BorderRadius.circular(10),
+                      return GestureDetector(
+                        onTap: () => _switchTab(i, tabs),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 150),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: active ? _indigo.withValues(alpha: 0.15) : Colors.transparent,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              _NavBadge(
+                                icon: tabs[i].icon,
+                                iconSize: 22,
+                                iconColor: active ? _indigo : const Color(0x66FFFFFF),
+                                show: showBadge,
+                                count: showMsgBadge ? _unreadMsgCount : 0,
                               ),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  _NavBadge(
-                                    icon: tabs[i].icon,
-                                    iconSize: 22,
-                                    iconColor: active ? _indigo : const Color(0x66FFFFFF),
-                                    show: showBadge,
-                                    count: showMsgBadge ? _unreadMsgCount : 0,
-                                  ),
-                                  const SizedBox(height: 3),
-                                  Text(tr(_isEnglish, tabs[i].label),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                          fontSize: 10,
-                                          fontWeight: active ? FontWeight.w700 : FontWeight.normal,
-                                          color: active ? _indigo : const Color(0x66FFFFFF))),
-                                ],
-                              ),
-                            ),
+                              const SizedBox(height: 3),
+                              Text(tr(_isEnglish, tabs[i].label),
+                                  style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: active ? FontWeight.w700 : FontWeight.normal,
+                                      color: active ? _indigo : const Color(0x66FFFFFF))),
+                            ],
                           ),
                         ),
                       );
                     }),
+                    ),
                   ),
                 ),
               ),
