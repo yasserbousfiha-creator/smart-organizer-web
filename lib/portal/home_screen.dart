@@ -221,6 +221,8 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> {
 
     final empId = _profile?['id'] as String?;
     final name = _profile?['name'] as String? ?? tr(_isEnglish, 'موظف');
+    final nameEn = _profile?['name_en'] as String?;
+    final displayName = (_isEnglish && nameEn != null && nameEn.isNotEmpty) ? nameEn : name;
     final dept = _profile?['department'] as String? ?? '';
 
     final isMedical = (_profile?['clinic_number'] != null) ||
@@ -235,7 +237,7 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> {
             _TabItem(
               icon: Icons.home_rounded,
               label: 'الرئيسية',
-              screen: _AdminHomeTab(name: name, isEnglish: _isEnglish),
+              screen: _AdminHomeTab(name: displayName, isEnglish: _isEnglish),
             ),
             _TabItem(
               icon: Icons.chat_outlined,
@@ -295,38 +297,43 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> {
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: List.generate(tabs.length, (i) {
                       final active = _tab == i;
                       final showMsgBadge   = tabs[i].label == 'المراسلات' && _unreadMsgCount > 0;
                       final showLeaveBadge = tabs[i].label == 'الإجازات'  && _hasLeaveUpdate;
                       final showBadge = showMsgBadge || showLeaveBadge;
-                      return GestureDetector(
-                        onTap: () => _switchTab(i, tabs),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 150),
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: active ? _indigo.withValues(alpha: 0.15) : Colors.transparent,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              _NavBadge(
-                                icon: tabs[i].icon,
-                                iconSize: 22,
-                                iconColor: active ? _indigo : const Color(0x66FFFFFF),
-                                show: showBadge,
-                                count: showMsgBadge ? _unreadMsgCount : 0,
+                      return Expanded(
+                        child: GestureDetector(
+                          onTap: () => _switchTab(i, tabs),
+                          child: Center(
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 150),
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: active ? _indigo.withValues(alpha: 0.15) : Colors.transparent,
+                                borderRadius: BorderRadius.circular(10),
                               ),
-                              const SizedBox(height: 3),
-                              Text(tr(_isEnglish, tabs[i].label),
-                                  style: TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: active ? FontWeight.w700 : FontWeight.normal,
-                                      color: active ? _indigo : const Color(0x66FFFFFF))),
-                            ],
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  _NavBadge(
+                                    icon: tabs[i].icon,
+                                    iconSize: 22,
+                                    iconColor: active ? _indigo : const Color(0x66FFFFFF),
+                                    show: showBadge,
+                                    count: showMsgBadge ? _unreadMsgCount : 0,
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Text(tr(_isEnglish, tabs[i].label),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: active ? FontWeight.w700 : FontWeight.normal,
+                                          color: active ? _indigo : const Color(0x66FFFFFF))),
+                                ],
+                              ),
+                            ),
                           ),
                         ),
                       );
@@ -354,7 +361,7 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> {
                     ),
                     child: Center(
                       child: Text(
-                        name.isNotEmpty ? name[0] : '?',
+                        displayName.isNotEmpty ? displayName[0] : '?',
                         style: const TextStyle(color: Colors.white,
                             fontSize: 15, fontWeight: FontWeight.w700),
                       ),
@@ -362,7 +369,7 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> {
                   ),
                   const SizedBox(width: 8),
                   Flexible(
-                    child: Text(name,
+                    child: Text(displayName,
                         style: const TextStyle(color: Colors.white,
                             fontSize: 14, fontWeight: FontWeight.w600),
                         overflow: TextOverflow.ellipsis,
@@ -430,14 +437,14 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> {
                               ),
                               child: Center(
                                 child: Text(
-                                  name.isNotEmpty ? name[0] : '?',
+                                  displayName.isNotEmpty ? displayName[0] : '?',
                                   style: const TextStyle(color: Colors.white,
                                       fontSize: 22, fontWeight: FontWeight.w700),
                                 ),
                               ),
                             ),
                             const SizedBox(height: 10),
-                            Text(name,
+                            Text(displayName,
                                 style: const TextStyle(color: Colors.white,
                                     fontWeight: FontWeight.w600, fontSize: 14),
                                 textAlign: TextAlign.center),
@@ -720,6 +727,8 @@ class _DashboardTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final name = profile?['name'] as String? ?? tr(isEnglish, 'الموظف');
+    final nameEn = profile?['name_en'] as String?;
+    final displayName = (isEnglish && nameEn != null && nameEn.isNotEmpty) ? nameEn : name;
     final dept = profile?['department'] as String? ?? '';
     final shift = profile?['shift'] as String? ?? '';
     final status = profile?['status'] as String? ?? '';
@@ -729,7 +738,7 @@ class _DashboardTab extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(trGreeting(isEnglish, name),
+          Text(trGreeting(isEnglish, displayName),
               style: const TextStyle(
                   fontSize: 22, fontWeight: FontWeight.w700, color: Colors.white)),
           const SizedBox(height: 4),
@@ -741,11 +750,11 @@ class _DashboardTab extends StatelessWidget {
             runSpacing: 12,
             children: [
               _QuickCard(icon: Icons.business_center_outlined,
-                  label: tr(isEnglish, 'القسم'), value: dept, color: _indigo),
+                  label: tr(isEnglish, 'القسم'), value: tr(isEnglish, dept), color: _indigo),
               _QuickCard(icon: Icons.access_time_outlined,
-                  label: tr(isEnglish, 'الدوام'), value: shift, color: const Color(0xFF0EA5E9)),
+                  label: tr(isEnglish, 'الدوام'), value: tr(isEnglish, shift), color: const Color(0xFF0EA5E9)),
               _QuickCard(icon: Icons.check_circle_outline,
-                  label: tr(isEnglish, 'الحالة'), value: status, color: const Color(0xFF34D399)),
+                  label: tr(isEnglish, 'الحالة'), value: tr(isEnglish, status), color: const Color(0xFF34D399)),
             ],
           ),
           const SizedBox(height: 28),

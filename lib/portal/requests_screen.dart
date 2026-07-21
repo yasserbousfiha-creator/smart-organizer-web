@@ -145,7 +145,8 @@ class _PortalRequestsScreenState extends State<PortalRequestsScreen> {
                   _submitRequest(t, details: detailsCtrl.text.trim());
                 }
               },
-              child: Text(tr(widget.isEnglish, 'إرسال'), style: const TextStyle(fontFamily: 'Tajawal')),
+              child: Text(tr(widget.isEnglish, 'إرسال'),
+                  style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white)),
             ),
           ],
         ),

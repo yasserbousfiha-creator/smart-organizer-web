@@ -273,6 +273,14 @@ class _PortalAdvancesScreenState extends State<PortalAdvancesScreen> {
                                             style: const TextStyle(fontSize: 11,
                                                 color: Color(0x66FFFFFF))),
                                       ],
+                                      if (a['admin_notes'] != null &&
+                                          (a['admin_notes'] as String).isNotEmpty) ...[
+                                        const SizedBox(height: 2),
+                                        Text(
+                                            '${tr(widget.isEnglish, 'ملاحظة الإدارة')}: ${a['admin_notes']}',
+                                            style: TextStyle(fontSize: 11,
+                                                fontWeight: FontWeight.w600, color: sc)),
+                                      ],
                                     ],
                                   ),
                                 ),

@@ -324,7 +324,7 @@ class _LeavesTabState extends State<_LeavesTab> {
                                             fontWeight: FontWeight.w600,
                                             fontSize: 14)),
                                     if (dept.isNotEmpty)
-                                      Text(dept,
+                                      Text(tr(widget.isEnglish, dept),
                                           style: const TextStyle(
                                               color: Color(0x66FFFFFF),
                                               fontSize: 11)),
@@ -702,7 +702,7 @@ class _AdvancesTabState extends State<_AdvancesTab> {
                                             fontWeight: FontWeight.w600,
                                             fontSize: 14)),
                                     if (dept.isNotEmpty)
-                                      Text(dept,
+                                      Text(tr(widget.isEnglish, dept),
                                           style: const TextStyle(
                                               color: Color(0x66FFFFFF),
                                               fontSize: 11)),
@@ -981,6 +981,8 @@ class _EmployeesTabState extends State<_EmployeesTab> {
                   itemBuilder: (_, i) {
                     final emp = _filtered[i];
                     final name = emp['name'] as String? ?? '—';
+                    final nameEn = emp['name_en'] as String?;
+                    final displayName = (widget.isEnglish && nameEn != null && nameEn.isNotEmpty) ? nameEn : name;
                     final dept = emp['department'] as String? ?? '—';
                     final shift = emp['shift'] as String? ?? '—';
                     final status = emp['status'] as String? ?? '—';
@@ -996,7 +998,7 @@ class _EmployeesTabState extends State<_EmployeesTab> {
                       ),
                       child: Center(
                         child: Text(
-                          name.isNotEmpty ? name[0] : '?',
+                          displayName.isNotEmpty ? displayName[0] : '?',
                           style: const TextStyle(
                               color: _indigo,
                               fontWeight: FontWeight.w700,
@@ -1007,13 +1009,13 @@ class _EmployeesTabState extends State<_EmployeesTab> {
                     final nameColumn = Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(name,
+                        Text(displayName,
                             style: const TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w600,
                                 fontSize: 14)),
                         const SizedBox(height: 2),
-                        Text('$dept  •  ${tr(widget.isEnglish, shift)}',
+                        Text('${tr(widget.isEnglish, dept)}  •  ${tr(widget.isEnglish, shift)}',
                             style: const TextStyle(
                                 color: Color(0x99FFFFFF),
                                 fontSize: 11)),
@@ -1385,6 +1387,8 @@ class _ShiftsTabState extends State<_ShiftsTab> {
                   itemBuilder: (_, i) {
                     final emp = _filtered[i];
                     final name = emp['name'] as String? ?? '—';
+                    final nameEn = emp['name_en'] as String?;
+                    final displayName = (widget.isEnglish && nameEn != null && nameEn.isNotEmpty) ? nameEn : name;
                     final dept = emp['department'] as String? ?? '—';
                     final shift = emp['shift'] as String? ?? '—';
 
@@ -1397,7 +1401,7 @@ class _ShiftsTabState extends State<_ShiftsTab> {
                       ),
                       child: Center(
                         child: Text(
-                          name.isNotEmpty ? name[0] : '?',
+                          displayName.isNotEmpty ? displayName[0] : '?',
                           style: const TextStyle(
                               color: _indigo,
                               fontWeight: FontWeight.w700,
@@ -1408,13 +1412,13 @@ class _ShiftsTabState extends State<_ShiftsTab> {
                     final nameColumn = Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(name,
+                        Text(displayName,
                             style: const TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w600,
                                 fontSize: 13)),
                         const SizedBox(height: 2),
-                        Text(dept,
+                        Text(tr(widget.isEnglish, dept),
                             style: const TextStyle(
                                 color: Color(0x66FFFFFF),
                                 fontSize: 11)),

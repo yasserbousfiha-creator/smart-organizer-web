@@ -174,7 +174,7 @@ class _PortalLeavesScreenState extends State<PortalLeavesScreen> {
       });
       if (mounted) {
         setState(() { _showForm = false; _submitting = false; });
-        _snack(tr(widget.isEnglish, 'تم إرسال طلب الإجازة بنجاح ✓'));
+        _snack(tr(widget.isEnglish, 'تم إرسال طلب الإجازة بنجاح ✓'), isError: false);
         _load();
       }
     } catch (e) {
@@ -182,8 +182,12 @@ class _PortalLeavesScreenState extends State<PortalLeavesScreen> {
     }
   }
 
-  void _snack(String msg) => ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(content: Text(msg), backgroundColor: const Color(0xFF123540)),
+  void _snack(String msg, {bool isError = true}) => ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(msg, style: const TextStyle(color: Colors.white)),
+      backgroundColor:
+          isError ? const Color(0xFFF87171) : const Color(0xFF34D399),
+    ),
   );
 
   Color _statusColor(String s) {
@@ -368,6 +372,11 @@ class _PortalLeavesScreenState extends State<PortalLeavesScreen> {
             style: const TextStyle(fontSize: 11,
                 color: Color(0x66FFFFFF)))
         : null;
+    final adminNotes = r['admin_notes'] as String?;
+    final adminNoteText = (adminNotes != null && adminNotes.isNotEmpty)
+        ? Text('${tr(widget.isEnglish, 'ملاحظة الإدارة')}: $adminNotes',
+            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: sc))
+        : null;
     final badge = _StatusBadge(label: tr(widget.isEnglish, status), color: sc);
 
     return _Card(
@@ -394,6 +403,10 @@ class _PortalLeavesScreenState extends State<PortalLeavesScreen> {
                   const SizedBox(height: 4),
                   reasonText,
                 ],
+                if (adminNoteText != null) ...[
+                  const SizedBox(height: 4),
+                  adminNoteText,
+                ],
               ],
             )
           : Row(
@@ -411,6 +424,10 @@ class _PortalLeavesScreenState extends State<PortalLeavesScreen> {
                       if (reasonText != null) ...[
                         const SizedBox(height: 2),
                         reasonText,
+                      ],
+                      if (adminNoteText != null) ...[
+                        const SizedBox(height: 2),
+                        adminNoteText,
                       ],
                     ],
                   ),

@@ -27,6 +27,9 @@ class PortalProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = profile ?? {};
+    final name = p['name'] as String? ?? '—';
+    final nameEn = p['name_en'] as String?;
+    final displayName = (isEnglish && nameEn != null && nameEn.isNotEmpty) ? nameEn : name;
     final isMobile = MediaQuery.of(context).size.width < 700;
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -42,9 +45,9 @@ class PortalProfileScreen extends StatelessWidget {
               ? Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildAvatar(p),
+                    _buildAvatar(p, displayName),
                     const SizedBox(height: 12),
-                    Text(p['name'] as String? ?? '—',
+                    Text(displayName,
                         style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: Colors.white),
                         overflow: TextOverflow.ellipsis),
                     const SizedBox(height: 4),
@@ -55,7 +58,7 @@ class PortalProfileScreen extends StatelessWidget {
                 )
               : Row(
                   children: [
-                    _buildAvatar(p),
+                    _buildAvatar(p, displayName),
                     const SizedBox(width: 18),
                     Expanded(
                       child: Column(
@@ -115,12 +118,12 @@ class PortalProfileScreen extends StatelessWidget {
                     spacing: 16,
                     runSpacing: 16,
                     children: [
-                      _InfoCard(label: tr(isEnglish, 'القسم'), value: p['department'] ?? '—', icon: Icons.business_center_outlined),
-                      _InfoCard(label: tr(isEnglish, 'الدوام'), value: p['shift'] ?? '—', icon: Icons.access_time_outlined),
-                      _InfoCard(label: tr(isEnglish, 'الجنسية'), value: p['nationality'] ?? '—', icon: Icons.flag_outlined),
+                      _InfoCard(label: tr(isEnglish, 'القسم'), value: tr(isEnglish, p['department'] as String? ?? '—'), icon: Icons.business_center_outlined),
+                      _InfoCard(label: tr(isEnglish, 'الدوام'), value: tr(isEnglish, p['shift'] as String? ?? '—'), icon: Icons.access_time_outlined),
+                      _InfoCard(label: tr(isEnglish, 'الجنسية'), value: tr(isEnglish, p['nationality'] as String? ?? '—'), icon: Icons.flag_outlined),
                       _InfoCard(label: tr(isEnglish, 'الهاتف'), value: p['phone'] ?? '—', icon: Icons.phone_outlined),
                       _InfoCard(label: tr(isEnglish, 'البريد الإلكتروني'), value: p['email'] ?? '—', icon: Icons.email_outlined),
-                      _InfoCard(label: tr(isEnglish, 'الحالة الوظيفية'), value: p['status'] ?? '—', icon: Icons.check_circle_outline),
+                      _InfoCard(label: tr(isEnglish, 'الحالة الوظيفية'), value: tr(isEnglish, p['status'] as String? ?? '—'), icon: Icons.check_circle_outline),
                       _InfoCard(
                         label: tr(isEnglish, 'تاريخ بداية العقد'),
                         value: p['contract_start_date'] ?? '—',
@@ -142,10 +145,9 @@ class PortalProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildAvatar(Map<String, dynamic> p) {
-    final name = p['name'] as String? ?? '?';
+  Widget _buildAvatar(Map<String, dynamic> p, String displayName) {
     final photoUrl = p['photo_url'] as String?;
-    final initial = name.isNotEmpty ? name[0] : '?';
+    final initial = displayName.isNotEmpty ? displayName[0] : '?';
 
     if (photoUrl != null && photoUrl.isNotEmpty) {
       return ClipRRect(
@@ -296,7 +298,7 @@ class _ClinicCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     if (department.isNotEmpty)
-                      Text(department,
+                      Text(tr(isEnglish, department),
                           style: const TextStyle(
                               color: Color(0x99FFFFFF), fontSize: 11),
                           overflow: TextOverflow.ellipsis),

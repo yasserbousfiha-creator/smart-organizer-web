@@ -38,6 +38,27 @@ const Map<String, String> portalArToEn = {
   'صباحي + مسائي': 'Morning + Evening',
   'متناوب': 'Rotating',
   'إداري': 'Administrative',
+  // Desktop app's exact shift dropdown values (with hours)
+  'صباحي (8ص - 4م)': 'Morning (8am - 4pm)',
+  'مسائي (3م - 11م)': 'Evening (3pm - 11pm)',
+
+  // Departments (desktop app's employee dropdown values)
+  'طبيب': 'Doctor',
+  'التمريض': 'Nursing',
+  'الاستقبال': 'Reception',
+  'الادارة': 'Administration',
+  'أقسام متفرقة': 'Miscellaneous',
+
+  // Nationalities
+  'سعودية': 'Saudi',
+  'مغربية': 'Moroccan',
+  'مصرية': 'Egyptian',
+  'أردنية': 'Jordanian',
+  'سودانية': 'Sudanese',
+  'يمنية': 'Yemeni',
+
+  // Employee status
+  'غير نشط': 'Inactive',
 
   // Request types
   'شهادة خبرة': 'Experience Certificate',
@@ -103,6 +124,7 @@ const Map<String, String> portalArToEn = {
   'السبب (اختياري)': 'Reason (optional)',
   'السبب': 'Reason',
   'أيام': 'days',
+  'ملاحظة الإدارة': "HR's note",
 
   // Advances screen
   'السلف': 'Advances',
