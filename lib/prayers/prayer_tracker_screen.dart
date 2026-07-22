@@ -215,6 +215,45 @@ class _PrayerTrackerScreenState extends State<PrayerTrackerScreen> {
     }
   }
 
+  Future<void> _markQuranDone() async {
+    if (_day == null || _day!.quranDone) return;
+    try {
+      final updated = await PrayerStorage.setQuranDone();
+      if (!mounted) return;
+      setState(() => _day = updated);
+      unawaited(_refreshChallengeAndCheckGoal());
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذرت الإضافة: $e')));
+    }
+  }
+
+  Future<void> _markSabahDone() async {
+    if (_day == null || _day!.sabahDone) return;
+    try {
+      final updated = await PrayerStorage.setSabahDone();
+      if (!mounted) return;
+      setState(() => _day = updated);
+      unawaited(_refreshChallengeAndCheckGoal());
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذرت الإضافة: $e')));
+    }
+  }
+
+  Future<void> _markMasaaDone() async {
+    if (_day == null || _day!.masaaDone) return;
+    try {
+      final updated = await PrayerStorage.setMasaaDone();
+      if (!mounted) return;
+      setState(() => _day = updated);
+      unawaited(_refreshChallengeAndCheckGoal());
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذرت الإضافة: $e')));
+    }
+  }
+
   Future<void> _sendMessage() async {
     final text = _messageController.text.trim();
     if (text.isEmpty || _sendingMessage) return;
@@ -310,62 +349,208 @@ class _PrayerTrackerScreenState extends State<PrayerTrackerScreen> {
   }
 
   void _showAddPointsDialog() {
+    var selectedDay = 'today'; // 'today' | 'yesterday'
+    var dialogDay = _day;
+    var loadingDay = false;
+    var showRewardChange = false;
+    final bonusNoteController = TextEditingController();
+
     showDialog(
       context: context,
-      builder: (ctx) => Directionality(
-        textDirection: TextDirection.rtl,
-        child: AlertDialog(
-          backgroundColor: AppColors.surface,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: const Text('إضافة/تصحيح نقاط يدويًا', style: TextStyle(color: Colors.white, fontSize: 16)),
-          content: SizedBox(
-            width: double.maxFinite,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: kPrayerNames.map((name) {
-                final done = _day?.status[name] == true;
-                final points = _day?.points[name] ?? 0;
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: Row(
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) {
+          final targetDate = selectedDay == 'today'
+              ? MoroccoTime.now()
+              : MoroccoTime.now().subtract(const Duration(days: 1));
+
+          Future<void> selectDay(String day) async {
+            if (day == selectedDay) return;
+            final date =
+                day == 'today' ? MoroccoTime.now() : MoroccoTime.now().subtract(const Duration(days: 1));
+            setDialogState(() {
+              selectedDay = day;
+              loadingDay = day == 'yesterday';
+            });
+            if (day == 'yesterday') {
+              final fetched = await PrayerStorage.fetchForDate(date);
+              setDialogState(() {
+                dialogDay = fetched;
+                loadingDay = false;
+              });
+            } else {
+              setDialogState(() => dialogDay = _day);
+            }
+          }
+
+          Widget dayTab(String value, String label) {
+            final selected = selectedDay == value;
+            return Expanded(
+              child: OutlinedButton(
+                onPressed: () => selectDay(value),
+                style: OutlinedButton.styleFrom(
+                  backgroundColor: selected ? AppColors.primary.withValues(alpha: 0.2) : Colors.transparent,
+                  side: BorderSide(color: selected ? AppColors.primary : Colors.white24),
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                child: Text(
+                  label,
+                  style: TextStyle(color: selected ? AppColors.primary : Colors.white70, fontWeight: FontWeight.w600),
+                ),
+              ),
+            );
+          }
+
+          return Directionality(
+            textDirection: TextDirection.rtl,
+            child: AlertDialog(
+              backgroundColor: AppColors.surface,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              title: const Text('لوحة الوالد', style: TextStyle(color: Colors.white, fontSize: 16)),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: Text(
-                          done ? '${_labels[name]} ($points)' : _labels[name]!,
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                      const Text(
+                        'تصحيح نقاط الصلوات',
+                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 14),
+                      ),
+                      const SizedBox(height: 10),
+                      Row(children: [dayTab('today', 'اليوم'), const SizedBox(width: 8), dayTab('yesterday', 'أمس')]),
+                      const SizedBox(height: 12),
+                      if (loadingDay)
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 16),
+                          child: Center(child: CircularProgressIndicator()),
+                        )
+                      else
+                        ...kPrayerNames.map((name) {
+                          final done = dialogDay?.status[name] == true;
+                          final points = dialogDay?.points[name] ?? 0;
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    done ? '${_labels[name]} ($points)' : _labels[name]!,
+                                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                                  ),
+                                ),
+                                TextButton(
+                                  onPressed: () => _addManualPoints(ctx, targetDate, name, 20),
+                                  child: const Text('فالوقت +20'),
+                                ),
+                                TextButton(
+                                  onPressed: () => _addManualPoints(ctx, targetDate, name, 5),
+                                  child: const Text('متأخر +5'),
+                                ),
+                              ],
+                            ),
+                          );
+                        }),
+                      const Divider(color: Colors.white12, height: 30),
+                      const Text(
+                        'إضافة نقاط إضافية (مثلا: عمل حاجة حلوة اليوم)',
+                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 14),
+                      ),
+                      const SizedBox(height: 10),
+                      TextField(
+                        controller: bonusNoteController,
+                        style: const TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          hintText: 'السبب (اختياري)',
+                          hintStyle: const TextStyle(color: Colors.white38),
+                          filled: true,
+                          fillColor: AppColors.surfaceHi,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
                         ),
                       ),
-                      TextButton(
-                        onPressed: () => _addManualPoints(ctx, name, 20),
-                        child: const Text('فالوقت +20'),
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [5, 10, 20].map((amount) {
+                          return Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 4),
+                              child: OutlinedButton(
+                                onPressed: () => _addBonusPoints(ctx, amount, bonusNoteController.text.trim()),
+                                style: OutlinedButton.styleFrom(side: const BorderSide(color: Colors.white24)),
+                                child: Text('+$amount', style: const TextStyle(color: Colors.white)),
+                              ),
+                            ),
+                          );
+                        }).toList(),
                       ),
-                      TextButton(
-                        onPressed: () => _addManualPoints(ctx, name, 5),
-                        child: const Text('متأخر +5'),
+                      const Divider(color: Colors.white12, height: 30),
+                      const Text(
+                        'الجائزة',
+                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 14),
                       ),
+                      const SizedBox(height: 10),
+                      if (!showRewardChange)
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                _rewardChoice == null
+                                    ? 'لم تُختر بعد'
+                                    : (_rewardChoice == 'brawl_stars' ? 'Brawl Stars' : 'Fortnite'),
+                                style: const TextStyle(color: Colors.white70),
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () => setDialogState(() => showRewardChange = true),
+                              child: const Text('تغيير'),
+                            ),
+                          ],
+                        )
+                      else
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed: () => _changeRewardFromDialog(ctx, 'fortnite'),
+                                child: const Text('Fortnite'),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed: () => _changeRewardFromDialog(ctx, 'brawl_stars'),
+                                child: const Text('Brawl Stars'),
+                              ),
+                            ),
+                          ],
+                        ),
                     ],
                   ),
-                );
-              }).toList(),
+                ),
+              ),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إغلاق')),
+              ],
             ),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إغلاق')),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
 
   /// Always overwrites the prayer's points column to exactly [points] —
   /// re-clicking for a prayer that was already logged corrects it instead
-  /// of stacking on top of the previous value.
-  Future<void> _addManualPoints(BuildContext dialogContext, String name, int points) async {
+  /// of stacking on top of the previous value. Works on [date]'s row, so it
+  /// also covers correcting yesterday's forgotten prayer from the "أمس" tab.
+  Future<void> _addManualPoints(BuildContext dialogContext, DateTime date, String name, int points) async {
     Navigator.pop(dialogContext);
+    final isToday = _dateOnly(date) == _dateOnly(MoroccoTime.now());
     try {
-      final updated = await PrayerStorage.setPrayer(name, true, points: points);
+      final updated = await PrayerStorage.setPrayerForDate(date, name, true, points: points);
       if (!mounted) return;
-      setState(() => _day = updated);
+      if (isToday) setState(() => _day = updated);
       unawaited(_refreshChallengeAndCheckGoal());
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('نقاط ${_labels[name]} الآن $points')),
@@ -377,6 +562,30 @@ class _PrayerTrackerScreenState extends State<PrayerTrackerScreen> {
       );
     }
   }
+
+  Future<void> _addBonusPoints(BuildContext dialogContext, int amount, String note) async {
+    Navigator.pop(dialogContext);
+    try {
+      await PrayerStorage.addBonusPoints(amount, note.isEmpty ? null : note);
+      unawaited(_refreshChallengeAndCheckGoal());
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('تمت إضافة $amount نقطة إضافية')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('تعذرت الإضافة: $e')),
+      );
+    }
+  }
+
+  Future<void> _changeRewardFromDialog(BuildContext dialogContext, String value) async {
+    Navigator.pop(dialogContext);
+    await _selectReward(value);
+  }
+
+  String _dateOnly(DateTime d) => '${d.year}-${d.month}-${d.day}';
 
   @override
   Widget build(BuildContext context) {
@@ -429,6 +638,8 @@ class _PrayerTrackerScreenState extends State<PrayerTrackerScreen> {
                   ),
                   const SizedBox(height: 16),
                   ...kPrayerNames.map(_buildPrayerTile),
+                  const SizedBox(height: 20),
+                  _buildDailyWirdSection(),
                   const SizedBox(height: 20),
                   _buildChallengeSection(),
                   const SizedBox(height: 8),
@@ -603,9 +814,13 @@ class _PrayerTrackerScreenState extends State<PrayerTrackerScreen> {
             style: const TextStyle(color: Colors.white70, fontSize: 13),
           ),
           const SizedBox(height: 18),
-          const Text(
-            'اختر جائزتك',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
+          Row(
+            children: [
+              Text(
+                _rewardChoice == null ? 'اختر جائزتك' : '🔒 تم اختيار الجائزة',
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
+              ),
+            ],
           ),
           const SizedBox(height: 10),
           Row(
@@ -631,18 +846,20 @@ class _PrayerTrackerScreenState extends State<PrayerTrackerScreen> {
 
   Widget _rewardButton(String value, String label) {
     final selected = _rewardChoice == value;
+    final locked = _rewardChoice != null;
     return OutlinedButton(
-      onPressed: () => _selectReward(value),
+      onPressed: locked ? null : () => _selectReward(value),
       style: OutlinedButton.styleFrom(
         backgroundColor: selected ? AppColors.primary.withValues(alpha: 0.2) : Colors.transparent,
         side: BorderSide(color: selected ? AppColors.primary : Colors.white24),
+        disabledForegroundColor: locked && !selected ? Colors.white24 : null,
         padding: const EdgeInsets.symmetric(vertical: 12),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
       child: Text(
         label,
         style: TextStyle(
-          color: selected ? AppColors.primary : Colors.white70,
+          color: selected ? AppColors.primary : (locked ? Colors.white24 : Colors.white70),
           fontWeight: FontWeight.w600,
         ),
       ),
@@ -774,6 +991,69 @@ class _PrayerTrackerScreenState extends State<PrayerTrackerScreen> {
                 ],
               ),
         secondary: Icon(
+          done ? Icons.check_circle_rounded : Icons.circle_outlined,
+          color: done ? AppColors.primary : Colors.white38,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDailyWirdSection() {
+    final day = _day;
+    if (day == null) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'الورد اليومي',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 16),
+        ),
+        const SizedBox(height: 12),
+        _buildWirdTile(
+          title: day.quranPage != null ? 'اقرأ صفحة رقم ${day.quranPage} من القرآن' : 'قراءة صفحة من القرآن',
+          subtitle: 'صفحة اليوم، تتغير كل يوم — 10 نقاط',
+          done: day.quranDone,
+          icon: Icons.menu_book_rounded,
+          onTap: _markQuranDone,
+        ),
+        _buildWirdTile(
+          title: 'أذكار الصباح',
+          subtitle: '10 نقاط',
+          done: day.sabahDone,
+          icon: Icons.wb_sunny_rounded,
+          onTap: _markSabahDone,
+        ),
+        _buildWirdTile(
+          title: 'أذكار المساء',
+          subtitle: '10 نقاط',
+          done: day.masaaDone,
+          icon: Icons.nights_stay_rounded,
+          onTap: _markMasaaDone,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildWirdTile({
+    required String title,
+    required String subtitle,
+    required bool done,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: done ? AppColors.primary : Colors.white12),
+      ),
+      child: ListTile(
+        onTap: done ? null : onTap,
+        leading: Icon(icon, color: done ? AppColors.primary : Colors.white54),
+        title: Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+        subtitle: Text(subtitle, style: const TextStyle(color: Colors.white38, fontSize: 12)),
+        trailing: Icon(
           done ? Icons.check_circle_rounded : Icons.circle_outlined,
           color: done ? AppColors.primary : Colors.white38,
         ),

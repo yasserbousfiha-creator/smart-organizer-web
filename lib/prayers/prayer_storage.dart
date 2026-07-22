@@ -10,20 +10,50 @@ const int kChallengeGoalPoints = 1000;
 const int kChallengeLengthDays = 15;
 
 class PrayerDay {
-  PrayerDay({required this.date, required this.status, required this.points});
+  PrayerDay({
+    required this.date,
+    required this.status,
+    required this.points,
+    this.quranPage,
+    this.quranDone = false,
+    this.quranPoints = 0,
+    this.sabahDone = false,
+    this.sabahPoints = 0,
+    this.masaaDone = false,
+    this.masaaPoints = 0,
+  });
 
   final DateTime date;
   final Map<String, bool> status;
   final Map<String, int> points;
 
+  /// The page of the Quran (1-604) assigned for this day's reading — rotates
+  /// forward every day (not tied to the 15-day challenge cycle) so the whole
+  /// Mushaf gets read gradually over time.
+  final int? quranPage;
+  final bool quranDone;
+  final int quranPoints;
+  final bool sabahDone;
+  final int sabahPoints;
+  final bool masaaDone;
+  final int masaaPoints;
+
   bool get allDone => kPrayerNames.every((p) => status[p] == true);
-  int get totalPoints => points.values.fold(0, (a, b) => a + b);
+  int get totalPoints =>
+      points.values.fold(0, (a, b) => a + b) + quranPoints + sabahPoints + masaaPoints;
 
   factory PrayerDay.fromRow(Map<String, dynamic> row) {
     return PrayerDay(
       date: DateTime.parse(row['prayer_date'] as String),
       status: {for (final p in kPrayerNames) p: row[p] == true},
       points: {for (final p in kPrayerNames) p: (row['${p}_points'] as int?) ?? 0},
+      quranPage: row['quran_page'] as int?,
+      quranDone: row['quran_done'] == true,
+      quranPoints: row['quran_points'] as int? ?? 0,
+      sabahDone: row['sabah_done'] == true,
+      sabahPoints: row['sabah_points'] as int? ?? 0,
+      masaaDone: row['masaa_done'] == true,
+      masaaPoints: row['masaa_points'] as int? ?? 0,
     );
   }
 
@@ -94,12 +124,25 @@ class PrayerStorage {
     return DateTime(d.year, d.month, d.day);
   }
 
+  static const _quranPageEpoch = 604;
+
+  /// A page number (1-604) that changes every calendar day, cycling through
+  /// the whole Mushaf — deterministic so it's the same for everyone reading
+  /// on the same day without needing to store any extra "which day" counter.
+  static int _quranPageFor(DateTime date) {
+    final epoch = DateTime(2024, 1, 1);
+    final daysSinceEpoch = DateTime(date.year, date.month, date.day).difference(epoch).inDays;
+    final normalized = daysSinceEpoch % _quranPageEpoch;
+    return (normalized < 0 ? normalized + _quranPageEpoch : normalized) + 1;
+  }
+
   static Future<PrayerDay> fetchToday() async {
-    final today = _todayKey();
+    final today = MoroccoTime.now();
+    final todayKey = _todayKey();
     final existing = await portalClient
         .from(table)
         .select()
-        .eq('prayer_date', today)
+        .eq('prayer_date', todayKey)
         .maybeSingle();
 
     if (existing != null) {
@@ -108,14 +151,46 @@ class PrayerStorage {
 
     final created = await portalClient
         .from(table)
-        .insert({'prayer_date': today})
+        .insert({'prayer_date': todayKey, 'quran_page': _quranPageFor(today)})
         .select()
         .single();
     return PrayerDay.fromRow(created);
   }
 
-  static Future<PrayerDay> setPrayer(String prayerName, bool value, {int points = 0}) async {
-    final today = _todayKey();
+  /// Fetches (or creates) the prayer row for an arbitrary date — used by the
+  /// hidden parent panel's "yesterday" tab so a prayer forgotten right before
+  /// midnight can still be logged after the day has rolled over.
+  static Future<PrayerDay> fetchForDate(DateTime date) async {
+    final key = _dateOnly(date);
+    final existing = await portalClient
+        .from(table)
+        .select()
+        .eq('prayer_date', key)
+        .maybeSingle();
+
+    if (existing != null) {
+      return PrayerDay.fromRow(existing);
+    }
+
+    final created = await portalClient
+        .from(table)
+        .insert({'prayer_date': key, 'quran_page': _quranPageFor(date)})
+        .select()
+        .single();
+    return PrayerDay.fromRow(created);
+  }
+
+  static Future<PrayerDay> setPrayer(String prayerName, bool value, {int points = 0}) {
+    return setPrayerForDate(MoroccoTime.now(), prayerName, value, points: points);
+  }
+
+  static Future<PrayerDay> setPrayerForDate(
+    DateTime date,
+    String prayerName,
+    bool value, {
+    int points = 0,
+  }) async {
+    final key = _dateOnly(date);
     final updated = await portalClient
         .from(table)
         .update({
@@ -123,10 +198,68 @@ class PrayerStorage {
           '${prayerName}_points': value ? points : 0,
           'updated_at': DateTime.now().toIso8601String(),
         })
+        .eq('prayer_date', key)
+        .select()
+        .single();
+    return PrayerDay.fromRow(updated);
+  }
+
+  static Future<PrayerDay> setQuranDone() async {
+    final today = _todayKey();
+    final updated = await portalClient
+        .from(table)
+        .update({
+          'quran_done': true,
+          'quran_points': 10,
+          'updated_at': DateTime.now().toIso8601String(),
+        })
         .eq('prayer_date', today)
         .select()
         .single();
     return PrayerDay.fromRow(updated);
+  }
+
+  static Future<PrayerDay> setSabahDone() async {
+    final today = _todayKey();
+    final updated = await portalClient
+        .from(table)
+        .update({
+          'sabah_done': true,
+          'sabah_points': 10,
+          'updated_at': DateTime.now().toIso8601String(),
+        })
+        .eq('prayer_date', today)
+        .select()
+        .single();
+    return PrayerDay.fromRow(updated);
+  }
+
+  static Future<PrayerDay> setMasaaDone() async {
+    final today = _todayKey();
+    final updated = await portalClient
+        .from(table)
+        .update({
+          'masaa_done': true,
+          'masaa_points': 10,
+          'updated_at': DateTime.now().toIso8601String(),
+        })
+        .eq('prayer_date', today)
+        .select()
+        .single();
+    return PrayerDay.fromRow(updated);
+  }
+
+  static const bonusTable = 'prayer_bonus_points';
+
+  /// Free-form points a parent can grant for something outside the prayer
+  /// checklist (e.g. a good deed that day) — kept as a ledger, separate from
+  /// per-prayer points, so multiple bonuses can stack in the same day.
+  static Future<void> addBonusPoints(int amount, String? note) async {
+    await portalClient.from(bonusTable).insert({
+      'bonus_date': _todayKey(),
+      'amount': amount,
+      'note': note,
+    });
   }
 
   static RealtimeChannel subscribeToday(void Function(PrayerDay day) onChange) {
@@ -190,7 +323,10 @@ class PrayerStorage {
   static Future<int> _sumPointsBetween(DateTime start, DateTime end) async {
     final rows = await portalClient
         .from(table)
-        .select('fajr_points,dhuhr_points,asr_points,maghrib_points,isha_points')
+        .select(
+          'fajr_points,dhuhr_points,asr_points,maghrib_points,isha_points,'
+          'quran_points,sabah_points,masaa_points',
+        )
         .gte('prayer_date', _dateOnly(start))
         .lte('prayer_date', _dateOnly(end));
     var total = 0;
@@ -198,6 +334,9 @@ class PrayerStorage {
       for (final p in kPrayerNames) {
         total += (row['${p}_points'] as int?) ?? 0;
       }
+      total += (row['quran_points'] as int?) ?? 0;
+      total += (row['sabah_points'] as int?) ?? 0;
+      total += (row['masaa_points'] as int?) ?? 0;
     }
 
     final quizRows = await portalClient
@@ -207,6 +346,24 @@ class PrayerStorage {
         .lte('quiz_date', _dateOnly(end));
     for (final row in quizRows) {
       total += (row['points'] as int?) ?? 0;
+    }
+
+    final religiousQuizRows = await portalClient
+        .from('religious_quiz_days')
+        .select('points')
+        .gte('quiz_date', _dateOnly(start))
+        .lte('quiz_date', _dateOnly(end));
+    for (final row in religiousQuizRows) {
+      total += (row['points'] as int?) ?? 0;
+    }
+
+    final bonusRows = await portalClient
+        .from(bonusTable)
+        .select('amount')
+        .gte('bonus_date', _dateOnly(start))
+        .lte('bonus_date', _dateOnly(end));
+    for (final row in bonusRows) {
+      total += (row['amount'] as int?) ?? 0;
     }
 
     return total;
