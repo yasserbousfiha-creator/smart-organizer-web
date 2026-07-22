@@ -254,6 +254,86 @@ class _PrayerTrackerScreenState extends State<PrayerTrackerScreen> {
     }
   }
 
+  /// Read-only view of yesterday's prayers for Abdulrahman himself — just to
+  /// check what he prayed, no PIN needed. Correcting a missed prayer still
+  /// requires the parent panel behind the hidden icon.
+  void _showYesterdayDialog() {
+    final yesterday = MoroccoTime.now().subtract(const Duration(days: 1));
+    showDialog(
+      context: context,
+      builder: (ctx) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: AlertDialog(
+          backgroundColor: AppColors.surface,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Text('صلاة الأمس — ${_formatDate(yesterday)}', style: const TextStyle(color: Colors.white, fontSize: 15)),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: FutureBuilder<PrayerDay>(
+              future: PrayerStorage.fetchForDate(yesterday),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState != ConnectionState.done) {
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 24),
+                    child: Center(child: CircularProgressIndicator()),
+                  );
+                }
+                if (snapshot.hasError || !snapshot.hasData) {
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 16),
+                    child: Text('تعذر جلب صلاة الأمس', style: TextStyle(color: Colors.white70)),
+                  );
+                }
+                final day = snapshot.data!;
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ...kPrayerNames.map((name) {
+                      final done = day.status[name] == true;
+                      final points = day.points[name] ?? 0;
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Row(
+                          children: [
+                            Icon(
+                              done ? Icons.check_circle_rounded : Icons.circle_outlined,
+                              color: done ? AppColors.primary : Colors.white38,
+                              size: 18,
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(_labels[name]!, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                            ),
+                            if (done)
+                              Text('$points نقطة', style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                          ],
+                        ),
+                      );
+                    }),
+                    const Divider(color: Colors.white12, height: 24),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('مجموع نقاط الأمس', style: TextStyle(color: Colors.white70, fontSize: 13)),
+                        Text(
+                          '${day.totalPoints} نقطة',
+                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 14),
+                        ),
+                      ],
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إغلاق')),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _sendMessage() async {
     final text = _messageController.text.trim();
     if (text.isEmpty || _sendingMessage) return;
@@ -632,9 +712,20 @@ class _PrayerTrackerScreenState extends State<PrayerTrackerScreen> {
                     : ListView(
                 padding: const EdgeInsets.all(20),
                 children: [
-                  Text(
-                    _formatDate(_day!.date),
-                    style: const TextStyle(color: Colors.white54, fontSize: 14),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        _formatDate(_day!.date),
+                        style: const TextStyle(color: Colors.white54, fontSize: 14),
+                      ),
+                      TextButton.icon(
+                        onPressed: _showYesterdayDialog,
+                        icon: const Icon(Icons.history_rounded, size: 16),
+                        label: const Text('صلاة الأمس'),
+                        style: TextButton.styleFrom(foregroundColor: Colors.white54, padding: EdgeInsets.zero),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 16),
                   ...kPrayerNames.map(_buildPrayerTile),
