@@ -157,7 +157,7 @@ class _EnglishQuizScreenState extends State<EnglishQuizScreen> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'خلصتي أسئلة اليوم! رجع غدا لأسئلة جديدة.',
+                    'أكملتَ أسئلة اليوم! عُد غدًا لأسئلة جديدة.',
                     style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
                   ),
                 ),
