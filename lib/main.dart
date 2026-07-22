@@ -1011,8 +1011,6 @@ class _LandingPageState extends State<LandingPage>
           MoonCrescentButton(onTap: () => _openMoonAbaya(context)),
           const Spacer(),
           if (isMobile) ...[
-            _SiteLanguageToggleButton(isEnglish: _isEnglish, onTap: _toggleLanguage),
-            const SizedBox(width: 4),
             QuranRadioButton(compact: true, isEnglish: _isEnglish),
             const SizedBox(width: 4),
             LampPullButton(onPulled: () => _openPortal(context), isEnglish: _isEnglish),
@@ -1088,6 +1086,17 @@ class _LandingPageState extends State<LandingPage>
                   onTap: () {
                     Navigator.pop(sheetContext);
                     _scrollToSupport();
+                  },
+                ),
+                ListTile(
+                  leading: Icon(Icons.language_rounded, color: AppColors.secondary),
+                  title: Text(
+                    _isEnglish ? 'العربية' : 'English',
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                  ),
+                  onTap: () {
+                    Navigator.pop(sheetContext);
+                    _toggleLanguage();
                   },
                 ),
               ],
