@@ -1178,8 +1178,7 @@ class _LandingPageState extends State<LandingPage>
                       title: siteTr(_isEnglish, 'تحميل التطبيق'),
                       subtitle: siteTr(_isEnglish, 'تنزيل مباشر للأندرويد'),
                       gradient: kMainGradient,
-                      url:
-                          'https://raw.githubusercontent.com/yasserbousfiha-creator/smart-organizer-web/main/apk/smart-organizer.zip',
+                      url: 'https://smartorganizer.shop/apk/smart-organizer.apk',
                     ),
                     _buildOutlineButton(
                       context: context,
