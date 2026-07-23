@@ -2,7 +2,8 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 
-const String kQuranRadioStreamUrl = 'https://stream.radiojar.com/0tpy1h0kxtzuv';
+const String kQuranRadioStreamUrl =
+    'https://radio.equran.me/listen/quran_live_me/radio.mp3';
 
 class QuranRadioButton extends StatefulWidget {
   final bool compact;
