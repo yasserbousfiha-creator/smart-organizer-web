@@ -1723,7 +1723,7 @@ class _LandingPageState extends State<LandingPage>
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         backgroundColor: Colors.white.withValues(alpha: 0.05),
       ),
-      onPressed: () => _showPasscodeDialog(context, url),
+      onPressed: () => _launchURL(url),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -1754,6 +1754,7 @@ class _LandingPageState extends State<LandingPage>
       ),
     );
   }
+
 
   Future<void> _showPasscodeDialog(BuildContext context, String url) async {
     final codeController = TextEditingController();
