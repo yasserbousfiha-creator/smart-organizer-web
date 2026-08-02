@@ -1360,6 +1360,8 @@ class _LandingPageState extends State<LandingPage>
       'assets/screenshots/sc6.jpg',
       'assets/screenshots/sc7.jpg',
       'assets/screenshots/sc8.jpg',
+      'assets/screenshots/sc9.jpg',
+      'assets/screenshots/sc10.jpg',
     ];
 
     return Container(
