@@ -864,6 +864,7 @@ class _EmployeesTabState extends State<_EmployeesTab> {
   List<Map<String, dynamic>> _employees = [];
   bool _loading = true;
   String _search = '';
+  bool _showArchive = false;
 
   static const _indigo = Color(0xFF06B6D4);
   static const _surface = Color(0xFF0D2731);
@@ -973,14 +974,60 @@ class _EmployeesTabState extends State<_EmployeesTab> {
               ? Center(
                   child: Text(tr(widget.isEnglish, 'لا توجد نتائج'),
                       style: const TextStyle(color: Color(0x66FFFFFF))))
-              : ListView.separated(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 4),
-                  itemCount: _filtered.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 8),
-                  itemBuilder: (_, i) {
-                    final emp = _filtered[i];
-                    final name = emp['name'] as String? ?? '—';
+              : Builder(builder: (context) {
+                  final active = _filtered
+                      .where((e) => (e['status'] as String? ?? '') == 'نشط')
+                      .toList();
+                  final inactive = _filtered
+                      .where((e) => (e['status'] as String? ?? '') != 'نشط')
+                      .toList();
+                  final items = <Map<String, dynamic>?>[
+                    ...active,
+                    if (inactive.isNotEmpty) null, // archive toggle marker
+                    if (_showArchive) ...inactive,
+                  ];
+                  return ListView.separated(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 4),
+                    itemCount: items.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 8),
+                    itemBuilder: (_, i) {
+                      final emp = items[i];
+                      if (emp == null) {
+                        return InkWell(
+                          borderRadius: BorderRadius.circular(12),
+                          onTap: () =>
+                              setState(() => _showArchive = !_showArchive),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 14, vertical: 12),
+                            decoration: BoxDecoration(
+                              color: const Color(0x0AFFFFFF),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                  color: const Color(0x14FFFFFF)),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                    _showArchive
+                                        ? Icons.expand_less
+                                        : Icons.archive_outlined,
+                                    size: 16,
+                                    color: const Color(0x99FFFFFF)),
+                                const SizedBox(width: 8),
+                                Text(
+                                    '${tr(widget.isEnglish, 'الأرشيف')} (${inactive.length})',
+                                    style: const TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                        color: Color(0x99FFFFFF))),
+                              ],
+                            ),
+                          ),
+                        );
+                      }
+                      final name = emp['name'] as String? ?? '—';
                     final nameEn = emp['name_en'] as String?;
                     final displayName = (widget.isEnglish && nameEn != null && nameEn.isNotEmpty) ? nameEn : name;
                     final dept = emp['department'] as String? ?? '—';
@@ -1101,9 +1148,10 @@ class _EmployeesTabState extends State<_EmployeesTab> {
                                 ),
                               ],
                             ),
-                    );
-                  },
-                ),
+                      );
+                    },
+                  );
+                }),
         ),
       ],
     );
