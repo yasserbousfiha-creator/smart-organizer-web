@@ -32,3 +32,8 @@ jobs:
           publish_branch: main
           cname: smartorganizer.shop
           commit_message: Deploy Flutter Web Build
+          # main يُستبدَل بالكامل فكل نشر أصلاً (بلا keep_files) - لا فائدة من
+          # تراكم تاريخ Git لملف مُولَّد كاملاً، وكان هذا سبب تضخّم .git لعدة
+          # جيجا (كل APK يزيد +50 ميغا بلا حذف القديم). force_orphan يجعل كل
+          # نشر يبدأ سجلاً جديداً بلا تاريخ سابق.
+          force_orphan: true
