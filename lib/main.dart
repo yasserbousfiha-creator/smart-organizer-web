@@ -1187,6 +1187,17 @@ class _LandingPageState extends State<LandingPage>
                       subtitle: siteTr(_isEnglish, 'للايفون والمنصات الأخرى'),
                       url: 'https://celebrated-chimera-576e3d.netlify.app/',
                     ),
+                    _buildGradientButton(
+                      context: context,
+                      icon: Icons.school_rounded,
+                      title: 'My School',
+                      subtitle: siteTr(_isEnglish, 'وصول خاص - يتطلب رمز دخول'),
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF3FA189), Color(0xFF1F5B4C)],
+                      ),
+                      url: 'https://smartorganizer.shop/apk/my-school.apk',
+                      correctCode: 'bennani',
+                    ),
                   ],
                 ),
               ],
@@ -1654,6 +1665,7 @@ class _LandingPageState extends State<LandingPage>
     required String subtitle,
     required LinearGradient gradient,
     required String url,
+    String correctCode = 'bousfiha',
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -1677,7 +1689,7 @@ class _LandingPageState extends State<LandingPage>
             borderRadius: BorderRadius.circular(16),
           ),
         ),
-        onPressed: () => _showPasscodeDialog(context, url),
+        onPressed: () => _showPasscodeDialog(context, url, correctCode),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -1758,9 +1770,8 @@ class _LandingPageState extends State<LandingPage>
   }
 
 
-  Future<void> _showPasscodeDialog(BuildContext context, String url) async {
+  Future<void> _showPasscodeDialog(BuildContext context, String url, [String correctCode = 'bousfiha']) async {
     final codeController = TextEditingController();
-    const correctCode = 'bousfiha';
 
     return showDialog(
       context: context,
