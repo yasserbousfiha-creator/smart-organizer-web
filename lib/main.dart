@@ -1198,6 +1198,17 @@ class _LandingPageState extends State<LandingPage>
                       url: 'https://smartorganizer.shop/apk/my-school.apk',
                       correctCode: 'bennani',
                     ),
+                    _buildGradientButton(
+                      context: context,
+                      icon: Icons.sports_soccer_rounded,
+                      title: 'Tactico',
+                      subtitle: siteTr(_isEnglish, 'وصول خاص - يتطلب رمز دخول'),
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF17A8BD), Color(0xFF0B4A56)],
+                      ),
+                      url: 'https://smartorganizer.shop/apk/tactico.apk',
+                      correctCode: 'yasser',
+                    ),
                   ],
                 ),
               ],
