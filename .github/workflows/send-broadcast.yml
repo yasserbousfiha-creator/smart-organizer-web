@@ -1,0 +1,70 @@
+name: Send notification
+
+on:
+  workflow_dispatch:
+    inputs:
+      title:
+        description: "العنوان (عربي)"
+        required: true
+      body:
+        description: "النص (عربي) - استخدم {name} لإدراج اسم المستخدم تلقائياً"
+        required: true
+      fr_title:
+        description: "Titre (français، اختياري)"
+        required: false
+      fr_body:
+        description: "Texte (français، اختياري)"
+        required: false
+      en_title:
+        description: "Title (English، اختياري)"
+        required: false
+      en_body:
+        description: "Text (English، اختياري)"
+        required: false
+      time:
+        description: 'وقت الإرسال المحلي HH:mm (اختياري، فارغ = فوري)'
+        required: false
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dart-lang/setup-dart@v1
+
+      - name: Install dependencies
+        working-directory: tool
+        run: dart pub get
+
+      - name: Write service account key
+        working-directory: tool
+        run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > service-account.json
+
+      - name: Send broadcast
+        working-directory: tool
+        env:
+          TITLE: ${{ inputs.title }}
+          BODY: ${{ inputs.body }}
+          FR_TITLE: ${{ inputs.fr_title }}
+          FR_BODY: ${{ inputs.fr_body }}
+          EN_TITLE: ${{ inputs.en_title }}
+          EN_BODY: ${{ inputs.en_body }}
+          TIME: ${{ inputs.time }}
+        run: |
+          args=("$TITLE" "$BODY")
+          if [ -n "$FR_TITLE" ] && [ -n "$FR_BODY" ]; then
+            args+=(--fr-title "$FR_TITLE" --fr-body "$FR_BODY")
+          fi
+          if [ -n "$EN_TITLE" ] && [ -n "$EN_BODY" ]; then
+            args+=(--en-title "$EN_TITLE" --en-body "$EN_BODY")
+          fi
+          if [ -n "$TIME" ]; then
+            args+=(--time "$TIME")
+          fi
+          dart run send_broadcast.dart "${args[@]}"
+
+      - name: Clean up key file
+        if: always()
+        working-directory: tool
+        run: rm -f service-account.json
