@@ -12,6 +12,7 @@ import 'requests_screen.dart';
 import 'messages_screen.dart';
 import 'clinic_schedule_screen.dart';
 import 'portal_tasks_screen.dart';
+import 'portal_custody_screen.dart';
 import 'admin_screen.dart';
 import 'admin_messages_screen.dart';
 import 'portal_i18n.dart';
@@ -74,6 +75,7 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> {
   int _unreadMsgCount = 0;
   bool _hasLeaveUpdate = false;
   int _pendingTasksCount = 0;
+  int _pendingCustodyCount = 0;
   RealtimeChannel? _badgeChannel;
   bool _isEnglish = false;
 
@@ -127,6 +129,15 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> {
       if (mounted) setState(() => _pendingTasksCount = (rows as List).length);
     } catch (_) {}
 
+    try {
+      final rows = await portalClient
+          .from('portal_custody_items')
+          .select('id')
+          .eq('employee_id', empId)
+          .eq('status', 'بانتظار الاستلام');
+      if (mounted) setState(() => _pendingCustodyCount = (rows as List).length);
+    } catch (_) {}
+
     _badgeChannel = portalClient
         .channel('home-badges-$empId')
         .onPostgresChanges(
@@ -166,6 +177,21 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> {
             } catch (_) {}
           },
         )
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'portal_custody_items',
+          callback: (_) async {
+            try {
+              final rows = await portalClient
+                  .from('portal_custody_items')
+                  .select('id')
+                  .eq('employee_id', empId)
+                  .eq('status', 'بانتظار الاستلام');
+              if (mounted) setState(() => _pendingCustodyCount = (rows as List).length);
+            } catch (_) {}
+          },
+        )
         .subscribe();
   }
 
@@ -173,11 +199,13 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> {
     final msgIdx   = tabs.indexWhere((t) => t.label == 'المراسلات');
     final leaveIdx = tabs.indexWhere((t) => t.label == 'الإجازات');
     final tasksIdx = tabs.indexWhere((t) => t.label == 'المهام');
+    final custodyIdx = tabs.indexWhere((t) => t.label == 'عهدتي');
     setState(() {
       _tab = i;
       if (i == msgIdx)   _unreadMsgCount = 0;
       if (i == leaveIdx) _hasLeaveUpdate  = false;
       if (i == tasksIdx) _pendingTasksCount = 0;
+      if (i == custodyIdx) _pendingCustodyCount = 0;
     });
   }
 
@@ -308,6 +336,8 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> {
               ),
             _TabItem(icon: Icons.task_alt_outlined, label: 'المهام',
                 screen: PortalTasksScreen(employeeId: empId ?? '', isEnglish: _isEnglish)),
+            _TabItem(icon: Icons.inventory_2_outlined, label: 'عهدتي',
+                screen: PortalCustodyScreen(employeeId: empId ?? '', isEnglish: _isEnglish)),
           ];
 
     final isMobile = MediaQuery.of(context).size.width < 650;
@@ -335,7 +365,8 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> {
                       final showMsgBadge   = tabs[i].label == 'المراسلات' && _unreadMsgCount > 0;
                       final showLeaveBadge = tabs[i].label == 'الإجازات'  && _hasLeaveUpdate;
                       final showTasksBadge = tabs[i].label == 'المهام' && _pendingTasksCount > 0;
-                      final showBadge = showMsgBadge || showLeaveBadge || showTasksBadge;
+                      final showCustodyBadge = tabs[i].label == 'عهدتي' && _pendingCustodyCount > 0;
+                      final showBadge = showMsgBadge || showLeaveBadge || showTasksBadge || showCustodyBadge;
                       return GestureDetector(
                         onTap: () => _switchTab(i, tabs),
                         child: AnimatedContainer(
@@ -353,7 +384,9 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> {
                                 iconSize: 22,
                                 iconColor: active ? _indigo : const Color(0x66FFFFFF),
                                 show: showBadge,
-                                count: showMsgBadge ? _unreadMsgCount : (showTasksBadge ? _pendingTasksCount : 0),
+                                count: showMsgBadge
+                                    ? _unreadMsgCount
+                                    : (showTasksBadge ? _pendingTasksCount : (showCustodyBadge ? _pendingCustodyCount : 0)),
                               ),
                               const SizedBox(height: 3),
                               Text(tr(_isEnglish, tabs[i].label),
@@ -521,10 +554,13 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> {
                                       iconColor: active ? _indigo : const Color(0x99FFFFFF),
                                       show: (tabs[i].label == 'المراسلات' && _unreadMsgCount > 0) ||
                                             (tabs[i].label == 'الإجازات'  && _hasLeaveUpdate) ||
-                                            (tabs[i].label == 'المهام' && _pendingTasksCount > 0),
+                                            (tabs[i].label == 'المهام' && _pendingTasksCount > 0) ||
+                                            (tabs[i].label == 'عهدتي' && _pendingCustodyCount > 0),
                                       count: tabs[i].label == 'المراسلات'
                                           ? _unreadMsgCount
-                                          : (tabs[i].label == 'المهام' ? _pendingTasksCount : 0),
+                                          : (tabs[i].label == 'المهام'
+                                              ? _pendingTasksCount
+                                              : (tabs[i].label == 'عهدتي' ? _pendingCustodyCount : 0)),
                                     ),
                                     const SizedBox(width: 10),
                                     Text(tr(_isEnglish, tabs[i].label),
@@ -820,6 +856,9 @@ class _DashboardTab extends StatelessWidget {
               _ActionBtn(icon: Icons.task_alt_outlined,
                   label: tr(isEnglish, 'مهامي'), color: _indigo,
                   onTap: () => onTabSwitch(isMedical ? 8 : 7)),
+              _ActionBtn(icon: Icons.inventory_2_outlined,
+                  label: tr(isEnglish, 'عهدتي'), color: const Color(0xFF34D399),
+                  onTap: () => onTabSwitch(isMedical ? 9 : 8)),
             ],
           ),
         ],

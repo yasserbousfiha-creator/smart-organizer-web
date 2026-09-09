@@ -61,6 +61,8 @@ class _AdminScreenState extends State<AdminScreen>
         ),
         bottom: TabBar(
           controller: _tabCtrl,
+          isScrollable: true,
+          tabAlignment: TabAlignment.start,
           indicatorColor: _indigo,
           labelColor: Colors.white,
           unselectedLabelColor: const Color(0x66FFFFFF),

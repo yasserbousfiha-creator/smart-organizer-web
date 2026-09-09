@@ -31,7 +31,7 @@ class PortalProfileScreen extends StatelessWidget {
     final nameEn = p['name_en'] as String?;
     final displayName = (isEnglish && nameEn != null && nameEn.isNotEmpty) ? nameEn : name;
     final isMobile = MediaQuery.of(context).size.width < 700;
-    return Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -94,51 +94,42 @@ class PortalProfileScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 14),
-          Expanded(
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (p['salary'] != null) ...[
-                    _SalaryCard(salary: (p['salary'] as num).toDouble(), isEnglish: isEnglish),
-                    const SizedBox(height: 20),
-                  ],
+          if (p['salary'] != null) ...[
+            _SalaryCard(salary: (p['salary'] as num).toDouble(), isEnglish: isEnglish),
+            const SizedBox(height: 20),
+          ],
 
-                  if (p['clinic_number'] != null) ...[
-                    _ClinicCard(
-                      clinicNumber: p['clinic_number'].toString(),
-                      shift: p['shift'] as String? ?? '—',
-                      department: p['department'] as String? ?? '',
-                      isEnglish: isEnglish,
-                    ),
-                    const SizedBox(height: 20),
-                  ],
-
-                  Wrap(
-                    spacing: 16,
-                    runSpacing: 16,
-                    children: [
-                      _InfoCard(label: tr(isEnglish, 'القسم'), value: tr(isEnglish, p['department'] as String? ?? '—'), icon: Icons.business_center_outlined),
-                      _InfoCard(label: tr(isEnglish, 'الدوام'), value: tr(isEnglish, p['shift'] as String? ?? '—'), icon: Icons.access_time_outlined),
-                      _InfoCard(label: tr(isEnglish, 'الجنسية'), value: tr(isEnglish, p['nationality'] as String? ?? '—'), icon: Icons.flag_outlined),
-                      _InfoCard(label: tr(isEnglish, 'الهاتف'), value: p['phone'] ?? '—', icon: Icons.phone_outlined),
-                      _InfoCard(label: tr(isEnglish, 'البريد الإلكتروني'), value: p['email'] ?? '—', icon: Icons.email_outlined),
-                      _InfoCard(label: tr(isEnglish, 'الحالة الوظيفية'), value: tr(isEnglish, p['status'] as String? ?? '—'), icon: Icons.check_circle_outline),
-                      _InfoCard(
-                        label: tr(isEnglish, 'تاريخ بداية العقد'),
-                        value: p['contract_start_date'] ?? '—',
-                        icon: Icons.calendar_today_outlined,
-                      ),
-                      _InfoCard(
-                        label: tr(isEnglish, 'تاريخ نهاية العقد'),
-                        value: p['contract_end_date'] ?? '—',
-                        icon: Icons.event_outlined,
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+          if (p['clinic_number'] != null) ...[
+            _ClinicCard(
+              clinicNumber: p['clinic_number'].toString(),
+              shift: p['shift'] as String? ?? '—',
+              department: p['department'] as String? ?? '',
+              isEnglish: isEnglish,
             ),
+            const SizedBox(height: 20),
+          ],
+
+          Wrap(
+            spacing: 16,
+            runSpacing: 16,
+            children: [
+              _InfoCard(label: tr(isEnglish, 'القسم'), value: tr(isEnglish, p['department'] as String? ?? '—'), icon: Icons.business_center_outlined),
+              _InfoCard(label: tr(isEnglish, 'الدوام'), value: tr(isEnglish, p['shift'] as String? ?? '—'), icon: Icons.access_time_outlined),
+              _InfoCard(label: tr(isEnglish, 'الجنسية'), value: tr(isEnglish, p['nationality'] as String? ?? '—'), icon: Icons.flag_outlined),
+              _InfoCard(label: tr(isEnglish, 'الهاتف'), value: p['phone'] ?? '—', icon: Icons.phone_outlined),
+              _InfoCard(label: tr(isEnglish, 'البريد الإلكتروني'), value: p['email'] ?? '—', icon: Icons.email_outlined),
+              _InfoCard(label: tr(isEnglish, 'الحالة الوظيفية'), value: tr(isEnglish, p['status'] as String? ?? '—'), icon: Icons.check_circle_outline),
+              _InfoCard(
+                label: tr(isEnglish, 'تاريخ بداية العقد'),
+                value: p['contract_start_date'] ?? '—',
+                icon: Icons.calendar_today_outlined,
+              ),
+              _InfoCard(
+                label: tr(isEnglish, 'تاريخ نهاية العقد'),
+                value: p['contract_end_date'] ?? '—',
+                icon: Icons.event_outlined,
+              ),
+            ],
           ),
         ],
       ),
