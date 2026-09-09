@@ -21,7 +21,7 @@ class _AdminScreenState extends State<AdminScreen>
   @override
   void initState() {
     super.initState();
-    _tabCtrl = TabController(length: 4, vsync: this);
+    _tabCtrl = TabController(length: 5, vsync: this);
   }
 
   @override
@@ -76,6 +76,8 @@ class _AdminScreenState extends State<AdminScreen>
                 text: tr(widget.isEnglish, 'الموظفون')),
             Tab(icon: const Icon(Icons.access_time_outlined, size: 18),
                 text: tr(widget.isEnglish, 'الدوامات')),
+            Tab(icon: const Icon(Icons.door_front_door_outlined, size: 18),
+                text: tr(widget.isEnglish, 'العيادات')),
           ],
         ),
       ),
@@ -86,6 +88,7 @@ class _AdminScreenState extends State<AdminScreen>
           _AdvancesTab(isEnglish: widget.isEnglish),
           _EmployeesTab(isEnglish: widget.isEnglish),
           _ShiftsTab(isEnglish: widget.isEnglish),
+          _ClinicsTab(isEnglish: widget.isEnglish),
         ],
       ),
     );
@@ -1035,6 +1038,15 @@ class _EmployeesTabState extends State<_EmployeesTab> {
                     final status = emp['status'] as String? ?? '—';
                     final phone = emp['phone'] as String? ?? '';
                     final clinicNum = emp['clinic_number'];
+                    final nationality = emp['nationality'] as String? ?? '';
+                    final employeeNumber = emp['employee_number'] as String? ?? '';
+                    final contractEndRaw = emp['contract_end_date'] as String?;
+                    String contractEndFmt = '';
+                    if (contractEndRaw != null && contractEndRaw.isNotEmpty) {
+                      try {
+                        contractEndFmt = intl.DateFormat('dd/MM/yyyy').format(DateTime.parse(contractEndRaw));
+                      } catch (_) {}
+                    }
 
                     final avatar = Container(
                       width: 42,
@@ -1071,6 +1083,24 @@ class _EmployeesTabState extends State<_EmployeesTab> {
                               style: const TextStyle(
                                   color: Color(0x66FFFFFF),
                                   fontSize: 11)),
+                        if (nationality.isNotEmpty || employeeNumber.isNotEmpty || contractEndFmt.isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 2,
+                            children: [
+                              if (employeeNumber.isNotEmpty)
+                                Text('#$employeeNumber',
+                                    style: const TextStyle(color: Color(0x55FFFFFF), fontSize: 10)),
+                              if (nationality.isNotEmpty)
+                                Text(tr(widget.isEnglish, nationality),
+                                    style: const TextStyle(color: Color(0x55FFFFFF), fontSize: 10)),
+                              if (contractEndFmt.isNotEmpty)
+                                Text('${tr(widget.isEnglish, 'نهاية العقد')}: $contractEndFmt',
+                                    style: const TextStyle(color: Color(0x55FFFFFF), fontSize: 10)),
+                            ],
+                          ),
+                        ],
                       ],
                     );
                     final statusBadge = Container(
@@ -1540,6 +1570,194 @@ class _ShiftsTabState extends State<_ShiftsTab> {
                 ),
         ),
       ],
+    );
+  }
+}
+
+// ── Clinics Tab ─────────────────────────────────────────────────
+class _ClinicsTab extends StatefulWidget {
+  final bool isEnglish;
+  const _ClinicsTab({this.isEnglish = false});
+  @override
+  State<_ClinicsTab> createState() => _ClinicsTabState();
+}
+
+class _ClinicsTabState extends State<_ClinicsTab> {
+  List<Map<String, dynamic>> _rows = [];
+  Map<String, String> _empNames = {};
+  bool _loading = true;
+  late final RealtimeChannel _channel;
+
+  static const _indigo = Color(0xFF06B6D4);
+  static const _surface = Color(0xFF0D2731);
+
+  static const _dayNames = {
+    7: 'الأحد',
+    1: 'الاثنين',
+    2: 'الثلاثاء',
+    3: 'الأربعاء',
+    4: 'الخميس',
+    5: 'الجمعة',
+    6: 'السبت',
+  };
+  static const _weekOrder = [6, 7, 1, 2, 3, 4, 5];
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+    _channel = portalClient
+        .channel('admin-clinics-tab')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'clinic_schedules',
+          callback: (_) { if (mounted) _load(); },
+        )
+        .subscribe();
+  }
+
+  @override
+  void dispose() {
+    portalClient.removeChannel(_channel);
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    setState(() => _loading = true);
+    try {
+      final results = await Future.wait([
+        portalClient.from('clinic_schedules').select(),
+        portalClient.from('employee_profiles').select('id, name'),
+      ]);
+      final rows = List<Map<String, dynamic>>.from(results[0] as List);
+      final emps = List<Map<String, dynamic>>.from(results[1] as List);
+      final empNames = <String, String>{
+        for (final e in emps) e['id'].toString(): e['name'] as String? ?? '',
+      };
+      if (mounted) {
+        setState(() {
+          _rows = rows;
+          _empNames = empNames;
+          _loading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  // clinic → weekday → [employee labels]
+  Map<int, Map<int, List<String>>> _buildBoard() {
+    final board = <int, Map<int, List<String>>>{};
+    for (final row in _rows) {
+      final clinic = (row['clinic_number'] as num?)?.toInt();
+      if (clinic == null) continue;
+      final shift = row['shift'] as String? ?? '';
+      final empId = row['employee_id']?.toString() ?? '';
+      final empName = _empNames[empId] ?? empId;
+      final label = shift.isNotEmpty ? '$empName ($shift)' : empName;
+      final daysStr = row['days'] as String? ?? '';
+      for (final part in daysStr.split(',')) {
+        final d = int.tryParse(part.trim());
+        if (d == null) continue;
+        board.putIfAbsent(clinic, () => {});
+        board[clinic]!.putIfAbsent(d, () => []);
+        board[clinic]![d]!.add(label);
+      }
+    }
+    return board;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator(color: _indigo));
+    }
+
+    final board = _buildBoard();
+    final clinics = board.keys.toList()..sort();
+    final todayFw = DateTime.now().weekday == 7 ? 7 : DateTime.now().weekday;
+
+    if (clinics.isEmpty) {
+      return Center(
+        child: Text(tr(widget.isEnglish, 'لا توجد جداول عيادات بعد'),
+            style: const TextStyle(color: Color(0x66FFFFFF))),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: clinics.length,
+      itemBuilder: (_, i) {
+        final clinic = clinics[i];
+        final days = board[clinic]!;
+        return Container(
+          margin: const EdgeInsets.only(bottom: 14),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: _surface,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0x14FFFFFF)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.door_front_door_outlined, color: _indigo, size: 18),
+                  const SizedBox(width: 8),
+                  Text('${tr(widget.isEnglish, 'عيادة')} $clinic',
+                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white)),
+                ],
+              ),
+              const SizedBox(height: 12),
+              ..._weekOrder.map((fw) {
+                final names = days[fw];
+                final isOff = names == null || names.isEmpty;
+                final isToday = fw == todayFw;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(
+                        width: 90,
+                        child: Text(
+                          tr(widget.isEnglish, _dayNames[fw] ?? ''),
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: isToday ? FontWeight.w700 : FontWeight.w500,
+                            color: isToday ? _indigo : (isOff ? const Color(0x44FFFFFF) : Colors.white),
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: isOff
+                            ? Text(tr(widget.isEnglish, 'إجازة'),
+                                style: const TextStyle(fontSize: 12, color: Color(0x44FFFFFF)))
+                            : Wrap(
+                                spacing: 6,
+                                runSpacing: 6,
+                                children: names.map((n) => Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: _indigo.withValues(alpha: 0.12),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: _indigo.withValues(alpha: 0.3)),
+                                  ),
+                                  child: Text(n, style: const TextStyle(fontSize: 11, color: _indigo, fontWeight: FontWeight.w600)),
+                                )).toList(),
+                              ),
+                      ),
+                    ],
+                  ),
+                );
+              }),
+            ],
+          ),
+        );
+      },
     );
   }
 }

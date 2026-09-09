@@ -11,6 +11,7 @@ import 'payslip_screen.dart';
 import 'requests_screen.dart';
 import 'messages_screen.dart';
 import 'clinic_schedule_screen.dart';
+import 'portal_tasks_screen.dart';
 import 'admin_screen.dart';
 import 'admin_messages_screen.dart';
 import 'portal_i18n.dart';
@@ -72,6 +73,7 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> {
   bool _loading = true;
   int _unreadMsgCount = 0;
   bool _hasLeaveUpdate = false;
+  int _pendingTasksCount = 0;
   RealtimeChannel? _badgeChannel;
   bool _isEnglish = false;
 
@@ -116,6 +118,15 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> {
       if (mounted) setState(() => _unreadMsgCount = (rows as List).length);
     } catch (_) {}
 
+    try {
+      final rows = await portalClient
+          .from('portal_tasks')
+          .select('id')
+          .eq('employee_id', empId)
+          .eq('status', 'قيد الانتظار');
+      if (mounted) setState(() => _pendingTasksCount = (rows as List).length);
+    } catch (_) {}
+
     _badgeChannel = portalClient
         .channel('home-badges-$empId')
         .onPostgresChanges(
@@ -140,16 +151,33 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> {
           table: 'leave_requests',
           callback: (_) { if (mounted) setState(() => _hasLeaveUpdate = true); },
         )
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'portal_tasks',
+          callback: (_) async {
+            try {
+              final rows = await portalClient
+                  .from('portal_tasks')
+                  .select('id')
+                  .eq('employee_id', empId)
+                  .eq('status', 'قيد الانتظار');
+              if (mounted) setState(() => _pendingTasksCount = (rows as List).length);
+            } catch (_) {}
+          },
+        )
         .subscribe();
   }
 
   void _switchTab(int i, List<_TabItem> tabs) {
     final msgIdx   = tabs.indexWhere((t) => t.label == 'المراسلات');
     final leaveIdx = tabs.indexWhere((t) => t.label == 'الإجازات');
+    final tasksIdx = tabs.indexWhere((t) => t.label == 'المهام');
     setState(() {
       _tab = i;
       if (i == msgIdx)   _unreadMsgCount = 0;
       if (i == leaveIdx) _hasLeaveUpdate  = false;
+      if (i == tasksIdx) _pendingTasksCount = 0;
     });
   }
 
@@ -278,6 +306,8 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> {
                   isEnglish: _isEnglish,
                 ),
               ),
+            _TabItem(icon: Icons.task_alt_outlined, label: 'المهام',
+                screen: PortalTasksScreen(employeeId: empId ?? '', isEnglish: _isEnglish)),
           ];
 
     final isMobile = MediaQuery.of(context).size.width < 650;
@@ -304,7 +334,8 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> {
                       final active = _tab == i;
                       final showMsgBadge   = tabs[i].label == 'المراسلات' && _unreadMsgCount > 0;
                       final showLeaveBadge = tabs[i].label == 'الإجازات'  && _hasLeaveUpdate;
-                      final showBadge = showMsgBadge || showLeaveBadge;
+                      final showTasksBadge = tabs[i].label == 'المهام' && _pendingTasksCount > 0;
+                      final showBadge = showMsgBadge || showLeaveBadge || showTasksBadge;
                       return GestureDetector(
                         onTap: () => _switchTab(i, tabs),
                         child: AnimatedContainer(
@@ -322,7 +353,7 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> {
                                 iconSize: 22,
                                 iconColor: active ? _indigo : const Color(0x66FFFFFF),
                                 show: showBadge,
-                                count: showMsgBadge ? _unreadMsgCount : 0,
+                                count: showMsgBadge ? _unreadMsgCount : (showTasksBadge ? _pendingTasksCount : 0),
                               ),
                               const SizedBox(height: 3),
                               Text(tr(_isEnglish, tabs[i].label),
@@ -489,8 +520,11 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> {
                                       iconSize: 18,
                                       iconColor: active ? _indigo : const Color(0x99FFFFFF),
                                       show: (tabs[i].label == 'المراسلات' && _unreadMsgCount > 0) ||
-                                            (tabs[i].label == 'الإجازات'  && _hasLeaveUpdate),
-                                      count: tabs[i].label == 'المراسلات' ? _unreadMsgCount : 0,
+                                            (tabs[i].label == 'الإجازات'  && _hasLeaveUpdate) ||
+                                            (tabs[i].label == 'المهام' && _pendingTasksCount > 0),
+                                      count: tabs[i].label == 'المراسلات'
+                                          ? _unreadMsgCount
+                                          : (tabs[i].label == 'المهام' ? _pendingTasksCount : 0),
                                     ),
                                     const SizedBox(width: 10),
                                     Text(tr(_isEnglish, tabs[i].label),
@@ -783,6 +817,9 @@ class _DashboardTab extends StatelessWidget {
                 _ActionBtn(icon: Icons.mood_outlined,
                     label: tr(isEnglish, 'جدول العيادات'), color: const Color(0xFF06B6D4),
                     onTap: () => onTabSwitch(7)),
+              _ActionBtn(icon: Icons.task_alt_outlined,
+                  label: tr(isEnglish, 'مهامي'), color: _indigo,
+                  onTap: () => onTabSwitch(isMedical ? 8 : 7)),
             ],
           ),
         ],
