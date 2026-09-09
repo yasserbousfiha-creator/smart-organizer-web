@@ -887,7 +887,9 @@ class _EmployeesTabState extends State<_EmployeesTab> {
           .order('name');
       if (mounted) {
         setState(() {
-          _employees = List<Map<String, dynamic>>.from(data);
+          _employees = List<Map<String, dynamic>>.from(data)
+              .where((e) => e['is_admin'] != true)
+              .toList();
           _loading = false;
         });
       }
