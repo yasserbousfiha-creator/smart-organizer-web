@@ -1797,6 +1797,7 @@ class _TasksCustodyTabState extends State<_TasksCustodyTab> {
   bool _loading = true;
   bool _sending = false;
   String? _selectedEmpId;
+  String? _filterEmpId;
   final _titleCtrl = TextEditingController();
   final _detailsCtrl = TextEditingController();
   final _equipmentCtrl = TextEditingController();
@@ -1806,8 +1807,33 @@ class _TasksCustodyTabState extends State<_TasksCustodyTab> {
   static const _indigo = Color(0xFF06B6D4);
   static const _green = Color(0xFF34D399);
   static const _amber = Color(0xFFF59E0B);
+  static const _blue = Color(0xFF0EA5E9);
+  static const _grey = Color(0xFF9CA3AF);
   static const _purple = Color(0xFF8B5CF6);
   static const _surface = Color(0xFF0D2731);
+
+  Color _custodyColor(String status) {
+    switch (status) {
+      case 'مستلم':
+        return _green;
+      case 'قيد الإعادة':
+        return _blue;
+      case 'أعيدت للإدارة':
+        return _grey;
+      default:
+        return _amber;
+    }
+  }
+
+  Future<void> _confirmReturnedToAdmin(String id) async {
+    try {
+      await portalClient.from('portal_custody_items').update({
+        'status': 'أعيدت للإدارة',
+        'returned_to_admin_at': DateTime.now().toIso8601String(),
+      }).eq('id', id);
+      await _load();
+    } catch (_) {}
+  }
 
   @override
   void initState() {
@@ -1920,7 +1946,10 @@ class _TasksCustodyTabState extends State<_TasksCustodyTab> {
     }
 
     final isMobile = MediaQuery.of(context).size.width < 700;
-    final items = _mode == 0 ? _tasks : _custodyItems;
+    final allItems = _mode == 0 ? _tasks : _custodyItems;
+    final items = _filterEmpId == null
+        ? allItems
+        : allItems.where((it) => it['employee_id']?.toString() == _filterEmpId).toList();
     final pendingStatus = _mode == 0 ? 'قيد الانتظار' : 'بانتظار الاستلام';
 
     return SingleChildScrollView(
@@ -2041,9 +2070,51 @@ class _TasksCustodyTabState extends State<_TasksCustodyTab> {
           ),
           const SizedBox(height: 20),
 
-          Text(
-              _mode == 0 ? tr(widget.isEnglish, 'المهام المُرسلة') : tr(widget.isEnglish, 'العهد المُرسلة'),
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xCCFFFFFF))),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                    _mode == 0 ? tr(widget.isEnglish, 'المهام المُرسلة') : tr(widget.isEnglish, 'العهد المُرسلة'),
+                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xCCFFFFFF))),
+              ),
+              SizedBox(
+                width: 180,
+                child: DropdownButtonFormField<String?>(
+                  initialValue: _filterEmpId,
+                  isDense: true,
+                  dropdownColor: _surface,
+                  style: const TextStyle(color: Colors.white, fontSize: 12),
+                  decoration: InputDecoration(
+                    hintText: tr(widget.isEnglish, 'كل الموظفين'),
+                    hintStyle: const TextStyle(color: Color(0x66FFFFFF), fontSize: 12),
+                    isDense: true,
+                    filled: true,
+                    fillColor: const Color(0x0AFFFFFF),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: const BorderSide(color: Color(0x1AFFFFFF))),
+                    enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: const BorderSide(color: Color(0x1AFFFFFF))),
+                  ),
+                  items: [
+                    DropdownMenuItem<String?>(
+                      value: null,
+                      child: Text(tr(widget.isEnglish, 'كل الموظفين'),
+                          style: const TextStyle(color: Colors.white, fontSize: 12)),
+                    ),
+                    ..._employees.map((e) => DropdownMenuItem<String?>(
+                          value: e['id'].toString(),
+                          child: Text(e['name'] as String? ?? '',
+                              style: const TextStyle(color: Colors.white, fontSize: 12)),
+                        )),
+                  ],
+                  onChanged: (v) => setState(() => _filterEmpId = v),
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 10),
 
           if (items.isEmpty)
@@ -2060,12 +2131,14 @@ class _TasksCustodyTabState extends State<_TasksCustodyTab> {
               final empId = it['employee_id']?.toString() ?? '';
               final empName = _empNames[empId] ?? empId;
               final status = it['status'] as String? ?? pendingStatus;
-              final done = status != pendingStatus;
-              final color = done ? _green : _amber;
+              final color = _mode == 0
+                  ? (status != pendingStatus ? _green : _amber)
+                  : _custodyColor(status);
               final title = _mode == 0
                   ? (it['title'] as String? ?? '')
                   : (it['equipment_name'] as String? ?? '');
               final sub = _mode == 0 ? it['details'] as String? : it['notes'] as String?;
+              final canConfirmReturn = _mode == 1 && status == 'قيد الإعادة';
               return Container(
                 margin: const EdgeInsets.only(bottom: 8),
                 padding: const EdgeInsets.all(12),
@@ -2074,46 +2147,69 @@ class _TasksCustodyTabState extends State<_TasksCustodyTab> {
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: color.withValues(alpha: 0.25)),
                 ),
-                child: Row(
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      width: 36, height: 36,
-                      decoration: BoxDecoration(
-                        color: _indigo.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Icon(
-                          _mode == 0 ? Icons.task_alt_outlined : Icons.inventory_2_outlined,
-                          color: _indigo, size: 17),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: 36, height: 36,
+                          decoration: BoxDecoration(
+                            color: _indigo.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Icon(
+                              _mode == 0 ? Icons.task_alt_outlined : Icons.inventory_2_outlined,
+                              color: _indigo, size: 17),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(title,
+                                  style: const TextStyle(
+                                      fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white)),
+                              const SizedBox(height: 2),
+                              Text(empName,
+                                  style: const TextStyle(fontSize: 11, color: Color(0x99FFFFFF))),
+                              if (sub != null && sub.isNotEmpty) ...[
+                                const SizedBox(height: 4),
+                                Text(sub, style: const TextStyle(fontSize: 11, color: Color(0x66FFFFFF))),
+                              ],
+                            ],
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: color.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(tr(widget.isEnglish, status),
+                              style: TextStyle(fontSize: 10, color: color, fontWeight: FontWeight.w600)),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(title,
-                              style: const TextStyle(
-                                  fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white)),
-                          const SizedBox(height: 2),
-                          Text(empName,
-                              style: const TextStyle(fontSize: 11, color: Color(0x99FFFFFF))),
-                          if (sub != null && sub.isNotEmpty) ...[
-                            const SizedBox(height: 4),
-                            Text(sub, style: const TextStyle(fontSize: 11, color: Color(0x66FFFFFF))),
-                          ],
-                        ],
+                    if (canConfirmReturn) ...[
+                      const SizedBox(height: 10),
+                      Align(
+                        alignment: AlignmentDirectional.centerEnd,
+                        child: FilledButton.icon(
+                          onPressed: () => _confirmReturnedToAdmin(it['id'] as String),
+                          icon: const Icon(Icons.check_circle_outline, size: 15),
+                          label: Text(tr(widget.isEnglish, 'تم استلامها من الإدارة'),
+                              style: const TextStyle(fontSize: 12)),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: _blue,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          ),
+                        ),
                       ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: color.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(tr(widget.isEnglish, status),
-                          style: TextStyle(fontSize: 10, color: color, fontWeight: FontWeight.w600)),
-                    ),
+                    ],
                   ],
                 ),
               );

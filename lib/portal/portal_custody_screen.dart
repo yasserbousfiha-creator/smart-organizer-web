@@ -20,6 +20,8 @@ class _PortalCustodyScreenState extends State<PortalCustodyScreen> {
   static const _indigo = Color(0xFF06B6D4);
   static const _green = Color(0xFF34D399);
   static const _amber = Color(0xFFF59E0B);
+  static const _blue = Color(0xFF0EA5E9);
+  static const _grey = Color(0xFF9CA3AF);
 
   @override
   void initState() {
@@ -70,6 +72,29 @@ class _PortalCustodyScreenState extends State<PortalCustodyScreen> {
     } catch (_) {}
   }
 
+  Future<void> _initiateReturn(String id) async {
+    try {
+      await portalClient.from('portal_custody_items').update({
+        'status': 'قيد الإعادة',
+        'return_initiated_at': DateTime.now().toIso8601String(),
+      }).eq('id', id);
+      await _load();
+    } catch (_) {}
+  }
+
+  Color _colorForStatus(String status) {
+    switch (status) {
+      case 'مستلم':
+        return _green;
+      case 'قيد الإعادة':
+        return _blue;
+      case 'أعيدت للإدارة':
+        return _grey;
+      default:
+        return _amber;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final pending = _items.where((t) => t['status'] == 'بانتظار الاستلام').length;
@@ -99,8 +124,7 @@ class _PortalCustodyScreenState extends State<PortalCustodyScreen> {
                         itemBuilder: (_, i) {
                           final it = _items[i];
                           final status = it['status'] as String? ?? 'بانتظار الاستلام';
-                          final received = status != 'بانتظار الاستلام';
-                          final color = received ? _green : _amber;
+                          final color = _colorForStatus(status);
                           final name = it['equipment_name'] as String? ?? '';
                           final notes = it['notes'] as String?;
                           return Container(
@@ -150,7 +174,7 @@ class _PortalCustodyScreenState extends State<PortalCustodyScreen> {
                                     ),
                                   ],
                                 ),
-                                if (!received) ...[
+                                if (status == 'بانتظار الاستلام') ...[
                                   const SizedBox(height: 12),
                                   Align(
                                     alignment: AlignmentDirectional.centerEnd,
@@ -161,6 +185,22 @@ class _PortalCustodyScreenState extends State<PortalCustodyScreen> {
                                       style: FilledButton.styleFrom(
                                         backgroundColor: _green,
                                         foregroundColor: Colors.black,
+                                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                      ),
+                                    ),
+                                  ),
+                                ] else if (status == 'مستلم') ...[
+                                  const SizedBox(height: 12),
+                                  Align(
+                                    alignment: AlignmentDirectional.centerEnd,
+                                    child: OutlinedButton.icon(
+                                      onPressed: () => _initiateReturn(it['id'] as String),
+                                      icon: const Icon(Icons.assignment_return_outlined, size: 16),
+                                      label: Text(tr(widget.isEnglish, 'إعادة العهدة للإدارة'), style: const TextStyle(fontSize: 13)),
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: _blue,
+                                        side: BorderSide(color: _blue.withValues(alpha: 0.5)),
                                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                                       ),

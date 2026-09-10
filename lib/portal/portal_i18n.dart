@@ -28,6 +28,10 @@ const Map<String, String> portalArToEn = {
   'لا توجد عهد': 'No custody items',
   'بانتظار الاستلام': 'Awaiting receipt',
   'مستلم': 'Received',
+  'إعادة العهدة للإدارة': 'Return to management',
+  'قيد الإعادة': 'Being returned',
+  'أعيدت للإدارة': 'Returned to management',
+  'تم استلامها من الإدارة': 'Confirm returned item',
   'عيادة': 'Clinic',
   'نهاية العقد': 'Contract end',
   'لا توجد جداول عيادات بعد': 'No clinic schedules yet',
@@ -262,6 +266,7 @@ const Map<String, String> portalArToEn = {
   'المهام المُرسلة': 'Sent tasks',
   'العهد المُرسلة': 'Sent custody items',
   'تم الإرسال': 'Sent',
+  'كل الموظفين': 'All employees',
 };
 
 String tr(bool isEnglish, String ar) => isEnglish ? (portalArToEn[ar] ?? ar) : ar;
