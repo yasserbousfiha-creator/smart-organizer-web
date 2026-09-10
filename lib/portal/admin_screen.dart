@@ -1237,11 +1237,13 @@ class _ShiftsTabState extends State<_ShiftsTab> {
     try {
       final data = await portalClient
           .from('employee_profiles')
-          .select('id, name, department, shift, status')
+          .select('id, name, department, shift, status, is_admin')
           .order('name');
       if (mounted) {
         setState(() {
-          _employees = List<Map<String, dynamic>>.from(data);
+          _employees = List<Map<String, dynamic>>.from(data)
+              .where((e) => e['is_admin'] != true)
+              .toList();
           _loading = false;
         });
       }
