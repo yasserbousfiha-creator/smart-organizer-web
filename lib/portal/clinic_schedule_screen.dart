@@ -274,12 +274,28 @@ class _DayRow extends StatelessWidget {
   static const _amber  = Color(0xFFF59E0B);
   static const _purple = Color(0xFF0EA5E9);
 
+  // Most Arabic day names start with the definite article "ال" (السبت،
+  // الأحد، الاثنين...), so a blind substring(0, 2) on the full name shows
+  // "ال" for nearly every day — this gives each one a distinct short label.
+  static const _shortNamesAr = {
+    'السبت': 'سبت',
+    'الأحد': 'أحد',
+    'الاثنين': 'إثن',
+    'الثلاثاء': 'ثلا',
+    'الأربعاء': 'أرب',
+    'الخميس': 'خمي',
+    'الجمعة': 'جمعة',
+  };
+
   bool get _isMorning => (shift ?? '').contains('صباح');
 
   @override
   Widget build(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < 700;
     final displayDayName = tr(isEnglish, dayName);
+    final shortDayName = isEnglish
+        ? (displayDayName.length >= 2 ? displayDayName.substring(0, 2) : displayDayName)
+        : (_shortNamesAr[dayName] ?? displayDayName);
 
     final circleAvatar = Container(
       width: 42, height: 42,
@@ -296,7 +312,7 @@ class _DayRow extends StatelessWidget {
       ),
       child: Center(
         child: Text(
-          displayDayName.length >= 2 ? displayDayName.substring(0, 2) : displayDayName,
+          shortDayName,
           style: TextStyle(
             fontSize: 11, fontWeight: FontWeight.w700,
             color: isToday ? _indigo : isOff
