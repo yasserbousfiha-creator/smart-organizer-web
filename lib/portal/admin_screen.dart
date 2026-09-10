@@ -6,7 +6,8 @@ import 'portal_i18n.dart';
 
 class AdminScreen extends StatefulWidget {
   final bool isEnglish;
-  const AdminScreen({super.key, this.isEnglish = false});
+  final int initialTabIndex;
+  const AdminScreen({super.key, this.isEnglish = false, this.initialTabIndex = 0});
   @override
   State<AdminScreen> createState() => _AdminScreenState();
 }
@@ -21,7 +22,11 @@ class _AdminScreenState extends State<AdminScreen>
   @override
   void initState() {
     super.initState();
-    _tabCtrl = TabController(length: 5, vsync: this);
+    _tabCtrl = TabController(
+      length: 6,
+      initialIndex: widget.initialTabIndex.clamp(0, 5),
+      vsync: this,
+    );
   }
 
   @override
@@ -80,6 +85,8 @@ class _AdminScreenState extends State<AdminScreen>
                 text: tr(widget.isEnglish, 'الدوامات')),
             Tab(icon: const Icon(Icons.door_front_door_outlined, size: 18),
                 text: tr(widget.isEnglish, 'العيادات')),
+            Tab(icon: const Icon(Icons.task_alt_outlined, size: 18),
+                text: tr(widget.isEnglish, 'المهام والعهد')),
           ],
         ),
       ),
@@ -91,6 +98,7 @@ class _AdminScreenState extends State<AdminScreen>
           _EmployeesTab(isEnglish: widget.isEnglish),
           _ShiftsTab(isEnglish: widget.isEnglish),
           _ClinicsTab(isEnglish: widget.isEnglish),
+          _TasksCustodyTab(isEnglish: widget.isEnglish),
         ],
       ),
     );
@@ -1762,6 +1770,378 @@ class _ClinicsTabState extends State<_ClinicsTab> {
           ),
         );
       },
+    );
+  }
+}
+
+// ── Tasks & Custody Tab ──────────────────────────────────────────
+// Lets the admin send a task or a custody item to an employee directly
+// from the portal, and lists everything sent from either the portal or
+// the desktop app (they share the same portal_tasks/portal_custody_items
+// tables, so both sides always show the same data).
+class _TasksCustodyTab extends StatefulWidget {
+  final bool isEnglish;
+  const _TasksCustodyTab({this.isEnglish = false});
+  @override
+  State<_TasksCustodyTab> createState() => _TasksCustodyTabState();
+}
+
+class _TasksCustodyTabState extends State<_TasksCustodyTab> {
+  int _mode = 0; // 0 = tasks, 1 = custody
+  List<Map<String, dynamic>> _employees = [];
+  List<Map<String, dynamic>> _tasks = [];
+  List<Map<String, dynamic>> _custodyItems = [];
+  Map<String, String> _empNames = {};
+  bool _loading = true;
+  bool _sending = false;
+  String? _selectedEmpId;
+  final _titleCtrl = TextEditingController();
+  final _detailsCtrl = TextEditingController();
+  final _equipmentCtrl = TextEditingController();
+  final _notesCtrl = TextEditingController();
+  late final RealtimeChannel _channel;
+
+  static const _indigo = Color(0xFF06B6D4);
+  static const _green = Color(0xFF34D399);
+  static const _amber = Color(0xFFF59E0B);
+  static const _purple = Color(0xFF8B5CF6);
+  static const _surface = Color(0xFF0D2731);
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+    _channel = portalClient
+        .channel('admin-tasks-custody-tab')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'portal_tasks',
+          callback: (_) { if (mounted) _load(); },
+        )
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'portal_custody_items',
+          callback: (_) { if (mounted) _load(); },
+        )
+        .subscribe();
+  }
+
+  @override
+  void dispose() {
+    portalClient.removeChannel(_channel);
+    _titleCtrl.dispose();
+    _detailsCtrl.dispose();
+    _equipmentCtrl.dispose();
+    _notesCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    setState(() => _loading = true);
+    try {
+      final results = await Future.wait([
+        portalClient.from('employee_profiles').select('id, name').order('name'),
+        portalClient.from('portal_tasks').select().order('created_at', ascending: false),
+        portalClient.from('portal_custody_items').select().order('created_at', ascending: false),
+      ]);
+      final emps = List<Map<String, dynamic>>.from(results[0] as List)
+          .where((e) => e['is_admin'] != true)
+          .toList();
+      if (mounted) {
+        setState(() {
+          _employees = emps;
+          _empNames = {for (final e in emps) e['id'].toString(): e['name'] as String? ?? ''};
+          _tasks = List<Map<String, dynamic>>.from(results[1] as List);
+          _custodyItems = List<Map<String, dynamic>>.from(results[2] as List);
+          _loading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  void _snack(String msg, Color color) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(msg),
+      backgroundColor: color,
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+    ));
+  }
+
+  Future<void> _send() async {
+    if (_selectedEmpId == null) return;
+    if (_mode == 0 && _titleCtrl.text.trim().isEmpty) return;
+    if (_mode == 1 && _equipmentCtrl.text.trim().isEmpty) return;
+    setState(() => _sending = true);
+    try {
+      if (_mode == 0) {
+        await portalClient.from('portal_tasks').insert({
+          'employee_id': _selectedEmpId,
+          'title': _titleCtrl.text.trim(),
+          'details': _detailsCtrl.text.trim().isEmpty ? null : _detailsCtrl.text.trim(),
+          'status': 'قيد الانتظار',
+          'created_by': 'admin',
+        });
+        _titleCtrl.clear();
+        _detailsCtrl.clear();
+      } else {
+        await portalClient.from('portal_custody_items').insert({
+          'employee_id': _selectedEmpId,
+          'equipment_name': _equipmentCtrl.text.trim(),
+          'notes': _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
+          'status': 'بانتظار الاستلام',
+          'created_by': 'admin',
+        });
+        _equipmentCtrl.clear();
+        _notesCtrl.clear();
+      }
+      if (mounted) {
+        setState(() => _selectedEmpId = null);
+        _snack(tr(widget.isEnglish, 'تم الإرسال'), _green);
+      }
+      await _load();
+    } catch (e) {
+      if (mounted) _snack(widget.isEnglish ? 'Error: $e' : 'خطأ: $e', const Color(0xFFF87171));
+    } finally {
+      if (mounted) setState(() => _sending = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator(color: _indigo));
+    }
+
+    final isMobile = MediaQuery.of(context).size.width < 700;
+    final items = _mode == 0 ? _tasks : _custodyItems;
+    final pendingStatus = _mode == 0 ? 'قيد الانتظار' : 'بانتظار الاستلام';
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Mode toggle
+          Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: const Color(0x0AFFFFFF),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              children: [
+                for (final (label, val) in [(tr(widget.isEnglish, 'المهام'), 0), (tr(widget.isEnglish, 'العهد'), 1)])
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => setState(() => _mode = val),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 9),
+                        decoration: BoxDecoration(
+                          color: _mode == val ? _purple.withValues(alpha: 0.18) : Colors.transparent,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                              color: _mode == val ? _purple.withValues(alpha: 0.4) : Colors.transparent),
+                        ),
+                        child: Text(label,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: _mode == val ? FontWeight.w700 : FontWeight.normal,
+                                color: _mode == val ? Colors.white : const Color(0x99FFFFFF))),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Compose form
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: _surface,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0x14FFFFFF)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                    _mode == 0
+                        ? tr(widget.isEnglish, 'إرسال مهمة جديدة')
+                        : tr(widget.isEnglish, 'تسليم عهدة لموظف'),
+                    style: const TextStyle(
+                        fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white)),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  initialValue: _selectedEmpId,
+                  dropdownColor: _surface,
+                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                  decoration: InputDecoration(
+                    labelText: tr(widget.isEnglish, 'الموظف'),
+                    labelStyle: const TextStyle(color: Color(0x66FFFFFF), fontSize: 12),
+                    filled: true,
+                    fillColor: const Color(0x0AFFFFFF),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(color: Color(0x1AFFFFFF))),
+                    enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(color: Color(0x1AFFFFFF))),
+                  ),
+                  items: _employees
+                      .map((e) => DropdownMenuItem(
+                            value: e['id'].toString(),
+                            child: Text(e['name'] as String? ?? '',
+                                style: const TextStyle(color: Colors.white, fontSize: 13)),
+                          ))
+                      .toList(),
+                  onChanged: (v) => setState(() => _selectedEmpId = v),
+                ),
+                const SizedBox(height: 10),
+                if (_mode == 0) ...[
+                  _field(_titleCtrl, tr(widget.isEnglish, 'عنوان المهمة')),
+                  const SizedBox(height: 10),
+                  _field(_detailsCtrl, tr(widget.isEnglish, 'تفاصيل (اختياري)'), maxLines: 3),
+                ] else ...[
+                  _field(_equipmentCtrl, tr(widget.isEnglish, 'اسم الجهاز/العهدة')),
+                  const SizedBox(height: 10),
+                  _field(_notesCtrl, tr(widget.isEnglish, 'ملاحظات (اختياري)'), maxLines: 3),
+                ],
+                const SizedBox(height: 14),
+                SizedBox(
+                  width: isMobile ? double.infinity : 180,
+                  child: ElevatedButton.icon(
+                    onPressed: _sending ? null : _send,
+                    icon: _sending
+                        ? const SizedBox(
+                            width: 14, height: 14,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        : const Icon(Icons.send_rounded, size: 16),
+                    label: Text(tr(widget.isEnglish, 'إرسال')),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _purple,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          Text(
+              _mode == 0 ? tr(widget.isEnglish, 'المهام المُرسلة') : tr(widget.isEnglish, 'العهد المُرسلة'),
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xCCFFFFFF))),
+          const SizedBox(height: 10),
+
+          if (items.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              child: Center(
+                child: Text(
+                    _mode == 0 ? tr(widget.isEnglish, 'لا توجد مهام') : tr(widget.isEnglish, 'لا توجد عهد'),
+                    style: const TextStyle(color: Color(0x66FFFFFF))),
+              ),
+            )
+          else
+            ...items.map((it) {
+              final empId = it['employee_id']?.toString() ?? '';
+              final empName = _empNames[empId] ?? empId;
+              final status = it['status'] as String? ?? pendingStatus;
+              final done = status != pendingStatus;
+              final color = done ? _green : _amber;
+              final title = _mode == 0
+                  ? (it['title'] as String? ?? '')
+                  : (it['equipment_name'] as String? ?? '');
+              final sub = _mode == 0 ? it['details'] as String? : it['notes'] as String?;
+              return Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: _surface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: color.withValues(alpha: 0.25)),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 36, height: 36,
+                      decoration: BoxDecoration(
+                        color: _indigo.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(
+                          _mode == 0 ? Icons.task_alt_outlined : Icons.inventory_2_outlined,
+                          color: _indigo, size: 17),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(title,
+                              style: const TextStyle(
+                                  fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white)),
+                          const SizedBox(height: 2),
+                          Text(empName,
+                              style: const TextStyle(fontSize: 11, color: Color(0x99FFFFFF))),
+                          if (sub != null && sub.isNotEmpty) ...[
+                            const SizedBox(height: 4),
+                            Text(sub, style: const TextStyle(fontSize: 11, color: Color(0x66FFFFFF))),
+                          ],
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: color.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(tr(widget.isEnglish, status),
+                          style: TextStyle(fontSize: 10, color: color, fontWeight: FontWeight.w600)),
+                    ),
+                  ],
+                ),
+              );
+            }),
+        ],
+      ),
+    );
+  }
+
+  Widget _field(TextEditingController ctrl, String label, {int maxLines = 1}) {
+    return TextField(
+      controller: ctrl,
+      maxLines: maxLines,
+      style: const TextStyle(color: Colors.white, fontSize: 13),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: const TextStyle(color: Color(0x66FFFFFF), fontSize: 12),
+        filled: true,
+        fillColor: const Color(0x0AFFFFFF),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: Color(0x1AFFFFFF))),
+        enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: Color(0x1AFFFFFF))),
+        focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: _indigo, width: 1.5)),
+      ),
     );
   }
 }

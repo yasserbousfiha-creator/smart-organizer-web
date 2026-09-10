@@ -249,6 +249,19 @@ const Map<String, String> portalArToEn = {
   'طلب سلفة': 'Request Advance',
   'طلباتي': 'My Requests',
   'مراسلة الإدارة': 'Message Admin',
+
+  // Admin: Tasks & Custody tab
+  'المهام والعهد': 'Tasks & Custody',
+  'إرسال ومتابعة': 'Send & track',
+  'إرسال مهمة جديدة': 'Send new task',
+  'تسليم عهدة لموظف': 'Hand over custody item',
+  'عنوان المهمة': 'Task title',
+  'تفاصيل (اختياري)': 'Details (optional)',
+  'اسم الجهاز/العهدة': 'Item name',
+  'ملاحظات (اختياري)': 'Notes (optional)',
+  'المهام المُرسلة': 'Sent tasks',
+  'العهد المُرسلة': 'Sent custody items',
+  'تم الإرسال': 'Sent',
 };
 
 String tr(bool isEnglish, String ar) => isEnglish ? (portalArToEn[ar] ?? ar) : ar;

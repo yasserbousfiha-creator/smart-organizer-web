@@ -70,6 +70,7 @@ class PortalHomeScreen extends StatefulWidget {
 
 class _PortalHomeScreenState extends State<PortalHomeScreen> {
   int _tab = 0;
+  int _adminSubTab = 0;
   Map<String, dynamic>? _profile;
   bool _loading = true;
   int _unreadMsgCount = 0;
@@ -81,6 +82,7 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> {
 
   static const _bgColor = Color(0xFF061A22);
   static const _indigo = Color(0xFF06B6D4);
+  static const _amber = Color(0xFFF59E0B);
 
   @override
   void initState() {
@@ -293,7 +295,14 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> {
             _TabItem(
               icon: Icons.home_rounded,
               label: 'الرئيسية',
-              screen: _AdminHomeTab(name: displayName, isEnglish: _isEnglish),
+              screen: _AdminHomeTab(
+                name: displayName,
+                isEnglish: _isEnglish,
+                onCardTap: (homeTab, {int adminSubTab = 0}) => setState(() {
+                  _tab = homeTab;
+                  _adminSubTab = adminSubTab;
+                }),
+              ),
             ),
             _TabItem(
               icon: Icons.chat_outlined,
@@ -303,13 +312,15 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> {
             _TabItem(
               icon: Icons.admin_panel_settings_outlined,
               label: 'الإدارة',
-              screen: AdminScreen(isEnglish: _isEnglish),
+              screen: AdminScreen(isEnglish: _isEnglish, initialTabIndex: _adminSubTab),
             ),
           ]
         : [
             _TabItem(icon: Icons.home_rounded, label: 'الرئيسية',
                 screen: _DashboardTab(profile: _profile, isMedical: isMedical,
                     isEnglish: _isEnglish,
+                    pendingTasks: _pendingTasksCount,
+                    pendingCustody: _pendingCustodyCount,
                     onTabSwitch: (i) => setState(() => _tab = i))),
             _TabItem(icon: Icons.person_outline, label: 'ملفي',
                 screen: PortalProfileScreen(profile: _profile, isEnglish: _isEnglish)),
@@ -387,6 +398,7 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> {
                                 count: showMsgBadge
                                     ? _unreadMsgCount
                                     : (showTasksBadge ? _pendingTasksCount : (showCustodyBadge ? _pendingCustodyCount : 0)),
+                                badgeColor: (showTasksBadge || showCustodyBadge) ? _amber : Colors.red,
                               ),
                               const SizedBox(height: 3),
                               Text(tr(_isEnglish, tabs[i].label),
@@ -561,6 +573,9 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> {
                                           : (tabs[i].label == 'المهام'
                                               ? _pendingTasksCount
                                               : (tabs[i].label == 'عهدتي' ? _pendingCustodyCount : 0)),
+                                      badgeColor: (tabs[i].label == 'المهام' || tabs[i].label == 'عهدتي')
+                                          ? _amber
+                                          : Colors.red,
                                     ),
                                     const SizedBox(width: 10),
                                     Text(tr(_isEnglish, tabs[i].label),
@@ -619,7 +634,8 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> {
 class _AdminHomeTab extends StatelessWidget {
   final String name;
   final bool isEnglish;
-  const _AdminHomeTab({required this.name, required this.isEnglish});
+  final void Function(int homeTab, {int adminSubTab}) onCardTap;
+  const _AdminHomeTab({required this.name, required this.isEnglish, required this.onCardTap});
 
   static const _indigo = Color(0xFF06B6D4);
 
@@ -646,28 +662,35 @@ class _AdminHomeTab extends StatelessWidget {
                 label: tr(isEnglish, 'المراسلات'),
                 desc: tr(isEnglish, 'محادثات الموظفين'),
                 color: _indigo,
-                onTap: () {},
+                onTap: () => onCardTap(1),
               ),
               _AdminCard(
                 icon: Icons.beach_access_outlined,
                 label: tr(isEnglish, 'الإجازات'),
                 desc: tr(isEnglish, 'مراجعة الطلبات'),
                 color: const Color(0xFF34D399),
-                onTap: () {},
+                onTap: () => onCardTap(2, adminSubTab: 0),
               ),
               _AdminCard(
                 icon: Icons.people_outline,
                 label: tr(isEnglish, 'الموظفون'),
                 desc: tr(isEnglish, 'عرض البيانات'),
                 color: const Color(0xFF0EA5E9),
-                onTap: () {},
+                onTap: () => onCardTap(2, adminSubTab: 2),
               ),
               _AdminCard(
                 icon: Icons.access_time_outlined,
                 label: tr(isEnglish, 'الدوامات'),
                 desc: tr(isEnglish, 'تعديل الجداول'),
                 color: const Color(0xFFF59E0B),
-                onTap: () {},
+                onTap: () => onCardTap(2, adminSubTab: 3),
+              ),
+              _AdminCard(
+                icon: Icons.task_alt_outlined,
+                label: tr(isEnglish, 'المهام والعهد'),
+                desc: tr(isEnglish, 'إرسال ومتابعة'),
+                color: const Color(0xFF8B5CF6),
+                onTap: () => onCardTap(2, adminSubTab: 5),
               ),
             ],
           ),
@@ -735,12 +758,14 @@ class _NavBadge extends StatelessWidget {
   final Color iconColor;
   final bool show;
   final int count;
+  final Color badgeColor;
   const _NavBadge({
     required this.icon,
     required this.iconSize,
     required this.iconColor,
     required this.show,
     this.count = 0,
+    this.badgeColor = Colors.red,
   });
 
   @override
@@ -759,7 +784,7 @@ class _NavBadge extends StatelessWidget {
               minHeight: count > 0 ? 16 : 8,
             ),
             decoration: BoxDecoration(
-              color: Colors.red,
+              color: badgeColor,
               shape: count > 0 ? BoxShape.rectangle : BoxShape.circle,
               borderRadius: count > 0 ? BorderRadius.circular(8) : null,
             ),
@@ -786,9 +811,12 @@ class _DashboardTab extends StatelessWidget {
   final Map<String, dynamic>? profile;
   final bool isMedical;
   final bool isEnglish;
+  final int pendingTasks;
+  final int pendingCustody;
   final void Function(int) onTabSwitch;
   const _DashboardTab({this.profile, required this.isMedical,
-      required this.isEnglish, required this.onTabSwitch});
+      required this.isEnglish, this.pendingTasks = 0, this.pendingCustody = 0,
+      required this.onTabSwitch});
 
   static const _indigo = Color(0xFF06B6D4);
 
@@ -855,9 +883,11 @@ class _DashboardTab extends StatelessWidget {
                     onTap: () => onTabSwitch(7)),
               _ActionBtn(icon: Icons.task_alt_outlined,
                   label: tr(isEnglish, 'مهامي'), color: _indigo,
+                  showDot: pendingTasks > 0,
                   onTap: () => onTabSwitch(isMedical ? 8 : 7)),
               _ActionBtn(icon: Icons.inventory_2_outlined,
                   label: tr(isEnglish, 'عهدتي'), color: const Color(0xFF34D399),
+                  showDot: pendingCustody > 0,
                   onTap: () => onTabSwitch(isMedical ? 9 : 8)),
             ],
           ),
@@ -920,29 +950,50 @@ class _ActionBtn extends StatelessWidget {
   final String label;
   final Color color;
   final VoidCallback onTap;
+  final bool showDot;
   const _ActionBtn({required this.icon, required this.label,
-      required this.color, required this.onTap});
+      required this.color, required this.onTap, this.showDot = false});
+
+  static const _amber = Color(0xFFF59E0B);
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        width: 140, height: 72,
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withValues(alpha: 0.25)),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: color, size: 24),
-            const SizedBox(height: 5),
-            Text(label, style: TextStyle(color: color, fontSize: 12,
-                fontWeight: FontWeight.w600)),
-          ],
-        ),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            width: 140, height: 72,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: color.withValues(alpha: 0.25)),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, color: color, size: 24),
+                const SizedBox(height: 5),
+                Text(label, style: TextStyle(color: color, fontSize: 12,
+                    fontWeight: FontWeight.w600)),
+              ],
+            ),
+          ),
+          if (showDot)
+            Positioned(
+              top: -4,
+              left: -4,
+              child: Container(
+                width: 12, height: 12,
+                decoration: BoxDecoration(
+                  color: _amber,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: const Color(0xFF061A22), width: 2),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
