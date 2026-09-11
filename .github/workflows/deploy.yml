@@ -1,8 +1,3 @@
-# تصحيح 2026-09-11: هذا المشروع كان يستخدم بالخطأ remote ونطاق (cname)
-# مشروع آخر منفصل تماماً (smart-organizer-web / smartorganizer.shop)، فكانت
-# كل دفعة هنا تمحو موقع ذلك المشروع. المستودع الآن مستقل بالكامل
-# (yasserbousfiha-creator/hr-portal) وينشر لرابط GitHub Pages الافتراضي
-# الخاص به فقط (لا cname مخصص حتى يُضاف نطاق خاص بالبوابة لاحقاً).
 name: Deploy web to GitHub Pages
 
 on:
@@ -24,7 +19,7 @@ jobs:
           channel: stable
 
       - run: flutter pub get
-      - run: flutter build web --release --base-href /hr-portal/
+      - run: flutter build web --release --base-href /
 
       - name: Add SPA fallback for direct-URL routes
         run: cp build/web/index.html build/web/404.html
@@ -35,6 +30,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./build/web
           publish_branch: main
+          cname: smartorganizer.shop
           commit_message: Deploy Flutter Web Build
           # main يُستبدَل بالكامل فكل نشر أصلاً (بلا keep_files) - لا فائدة من
           # تراكم تاريخ Git لملف مُولَّد كاملاً، وكان هذا سبب تضخّم .git لعدة
