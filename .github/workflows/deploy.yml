@@ -1,15 +1,13 @@
-# طلب صريح: عُطِّل التشغيل التلقائي (on: push) لأن remote الأصلي لهذا
-# المشروع (origin) وسطر cname أدناه كلاهما يشير بالخطأ لمستودع/نطاق
-# smart-organizer-web (مشروع منظّمك الذكي، لا علاقة له بهذا المشروع) - كل
-# دفعة (push) لفرع source هنا كانت تمحو موقع smartorganizer.shop الحقيقي
-# بالكامل (نُشر لديهم بأثر رجعي مرتين، 2026-09-11). الإصلاح الحقيقي (origin
-# repo مستقل + نطاق/cname خاص بهذا المشروع) لم يُنجَز بعد - يحتاج مستودع
-# GitHub جديد مخصَّص (gh CLI غير مثبَّت على هذا الجهاز، فلم يُتَح إنشاؤه
-# آلياً) قبل إعادة تفعيل هذا الزناد. حتى ذلك، لا يعمل هذا النشر إلا يدوياً
-# (workflow_dispatch من واجهة GitHub) - لا مخاطرة عرضية بعد الآن.
+# تصحيح 2026-09-11: هذا المشروع كان يستخدم بالخطأ remote ونطاق (cname)
+# مشروع آخر منفصل تماماً (smart-organizer-web / smartorganizer.shop)، فكانت
+# كل دفعة هنا تمحو موقع ذلك المشروع. المستودع الآن مستقل بالكامل
+# (yasserbousfiha-creator/hr-portal) وينشر لرابط GitHub Pages الافتراضي
+# الخاص به فقط (لا cname مخصص حتى يُضاف نطاق خاص بالبوابة لاحقاً).
 name: Deploy web to GitHub Pages
 
 on:
+  push:
+    branches: [source]
   workflow_dispatch:
 
 permissions:
@@ -26,7 +24,7 @@ jobs:
           channel: stable
 
       - run: flutter pub get
-      - run: flutter build web --release --base-href /
+      - run: flutter build web --release --base-href /hr-portal/
 
       - name: Add SPA fallback for direct-URL routes
         run: cp build/web/index.html build/web/404.html
@@ -37,7 +35,6 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./build/web
           publish_branch: main
-          cname: smartorganizer.shop
           commit_message: Deploy Flutter Web Build
           # main يُستبدَل بالكامل فكل نشر أصلاً (بلا keep_files) - لا فائدة من
           # تراكم تاريخ Git لملف مُولَّد كاملاً، وكان هذا سبب تضخّم .git لعدة
