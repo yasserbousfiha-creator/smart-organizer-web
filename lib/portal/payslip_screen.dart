@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'portal_client.dart';
 import 'portal_i18n.dart';
 
@@ -16,6 +17,8 @@ class _PortalPayslipScreenState extends State<PortalPayslipScreen> {
   bool _loading = true;
   int? _selectedIdx;
   bool _showDetail = false;
+  bool _acknowledging = false;
+  late final RealtimeChannel _channel;
 
   static const _indigo = Color(0xFF06B6D4);
   static const _months = [
@@ -27,6 +30,21 @@ class _PortalPayslipScreenState extends State<PortalPayslipScreen> {
   void initState() {
     super.initState();
     _load();
+    _channel = portalClient
+        .channel('emp-payslip-${widget.employeeId}')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'payroll_records',
+          callback: (_) { if (mounted) _load(); },
+        )
+        .subscribe();
+  }
+
+  @override
+  void dispose() {
+    portalClient.removeChannel(_channel);
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -42,11 +60,27 @@ class _PortalPayslipScreenState extends State<PortalPayslipScreen> {
         setState(() {
           _records = List<Map<String, dynamic>>.from(data as List);
           _loading = false;
-          if (_records.isNotEmpty) { _selectedIdx = 0; }
+          if (_selectedIdx == null || _selectedIdx! >= _records.length) {
+            _selectedIdx = _records.isNotEmpty ? 0 : null;
+          }
         });
       }
     } catch (_) {
       if (mounted) { setState(() => _loading = false); }
+    }
+  }
+
+  Future<void> _acknowledge(String id) async {
+    setState(() => _acknowledging = true);
+    try {
+      await portalClient.from('payroll_records').update({
+        'status': 'تم الاستلام',
+        'acknowledged_at': DateTime.now().toIso8601String(),
+      }).eq('id', id);
+      await _load();
+    } catch (_) {
+    } finally {
+      if (mounted) setState(() => _acknowledging = false);
     }
   }
 
@@ -108,7 +142,12 @@ class _PortalPayslipScreenState extends State<PortalPayslipScreen> {
             Expanded(
               child: _showDetail && _selectedIdx != null
                   ? SingleChildScrollView(
-                      child: _PayslipDetail(record: _records[_selectedIdx!], isEnglish: widget.isEnglish))
+                      child: _PayslipDetail(
+                        record: _records[_selectedIdx!],
+                        isEnglish: widget.isEnglish,
+                        acknowledging: _acknowledging,
+                        onAcknowledge: () => _acknowledge(_records[_selectedIdx!]['id'] as String),
+                      ))
                   : ListView.separated(
                       itemCount: _records.length,
                       separatorBuilder: (context, idx) => const SizedBox(height: 8),
@@ -234,7 +273,12 @@ class _PortalPayslipScreenState extends State<PortalPayslipScreen> {
                   Expanded(
                     child: _selectedIdx != null
                         ? SingleChildScrollView(
-                            child: _PayslipDetail(record: _records[_selectedIdx!], isEnglish: widget.isEnglish))
+                            child: _PayslipDetail(
+                              record: _records[_selectedIdx!],
+                              isEnglish: widget.isEnglish,
+                              acknowledging: _acknowledging,
+                              onAcknowledge: () => _acknowledge(_records[_selectedIdx!]['id'] as String),
+                            ))
                         : const SizedBox(),
                   ),
                 ],
@@ -249,7 +293,14 @@ class _PortalPayslipScreenState extends State<PortalPayslipScreen> {
 class _PayslipDetail extends StatelessWidget {
   final Map<String, dynamic> record;
   final bool isEnglish;
-  const _PayslipDetail({required this.record, this.isEnglish = false});
+  final bool acknowledging;
+  final VoidCallback? onAcknowledge;
+  const _PayslipDetail({
+    required this.record,
+    this.isEnglish = false,
+    this.acknowledging = false,
+    this.onAcknowledge,
+  });
 
   static const _months = [
     '', 'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
@@ -336,7 +387,52 @@ class _PayslipDetail extends StatelessWidget {
               ],
             ),
           ),
+          const SizedBox(height: 16),
+          _acknowledgeSection(),
         ],
+      ),
+    );
+  }
+
+  Widget _acknowledgeSection() {
+    final status = record['status'] as String? ?? 'لم يُستلم';
+    final acknowledged = status == 'تم الاستلام';
+    if (acknowledged) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: _green.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: _green.withValues(alpha: 0.3)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.check_circle_outline, color: _green, size: 16),
+            const SizedBox(width: 8),
+            Text(tr(isEnglish, 'تم الاستلام'),
+                style: const TextStyle(color: _green, fontSize: 13, fontWeight: FontWeight.w600)),
+          ],
+        ),
+      );
+    }
+    return SizedBox(
+      width: double.infinity,
+      child: FilledButton.icon(
+        onPressed: acknowledging ? null : onAcknowledge,
+        icon: acknowledging
+            ? const SizedBox(
+                width: 14, height: 14,
+                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+            : const Icon(Icons.check_circle_outline, size: 16),
+        label: Text(tr(isEnglish, 'تم الاستلام'), style: const TextStyle(fontSize: 13)),
+        style: FilledButton.styleFrom(
+          backgroundColor: _green,
+          foregroundColor: Colors.black,
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
       ),
     );
   }
