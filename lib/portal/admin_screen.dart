@@ -1976,7 +1976,7 @@ class _TasksCustodyTabState extends State<_TasksCustodyTab> {
     setState(() => _loading = true);
     try {
       final results = await Future.wait([
-        portalClient.from('employee_profiles').select('id, name').order('name'),
+        portalClient.from('employee_profiles').select('id, name, is_admin').order('name'),
         portalClient.from('portal_tasks').select().order('created_at', ascending: false),
         portalClient.from('portal_custody_items').select().order('created_at', ascending: false),
       ]);
