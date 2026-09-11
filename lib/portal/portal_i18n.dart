@@ -179,7 +179,9 @@ const Map<String, String> portalArToEn = {
   'العمولات': 'Commissions',
   'الاستقطاعات': 'Deductions',
   'استقطاع السلفة': 'Advance Deduction',
+  'سبب الخصم': 'Deduction Reason',
   'صافي الراتب': 'Net Salary',
+  'يرجى تأكيد استلام الراتب في أقرب وقت': 'Please confirm receipt of your payslip soon',
 
   // Requests screen
   'الطلبات': 'Requests',
@@ -267,6 +269,17 @@ const Map<String, String> portalArToEn = {
   'العهد المُرسلة': 'Sent custody items',
   'تم الإرسال': 'Sent',
   'كل الموظفين': 'All employees',
+
+  // Custody return flow — dates, warehouse, notes
+  'المستودع': 'Warehouse',
+  'ملاحظات حالة الجهاز (اختياري)': 'Item Condition Notes (optional)',
+  'تفاصيل (اختياري) — مثال: لم أعد بحاجته، أو به عطل...':
+      'Details (optional) — e.g. No longer needed, or it has a fault...',
+  'تاريخ التسليم': 'Handover Date',
+  'تاريخ بدء الإعادة': 'Return Started Date',
+  'ملاحظة الموظف': "Employee's Note",
+  'تاريخ استلام الإدارة': 'Received by Management Date',
+  'ملاحظة الإدارة': "Management's Note",
 };
 
 String tr(bool isEnglish, String ar) => isEnglish ? (portalArToEn[ar] ?? ar) : ar;

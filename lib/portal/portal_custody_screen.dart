@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart' as intl;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'portal_client.dart';
 import 'portal_i18n.dart';
@@ -73,13 +74,82 @@ class _PortalCustodyScreenState extends State<PortalCustodyScreen> {
   }
 
   Future<void> _initiateReturn(String id) async {
+    final notesCtrl = TextEditingController();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF0D2731),
+        title: Text(tr(widget.isEnglish, 'إعادة العهدة للإدارة'),
+            style: const TextStyle(color: Colors.white, fontSize: 16)),
+        content: SizedBox(
+          width: 340,
+          child: TextField(
+            controller: notesCtrl,
+            maxLines: 3,
+            style: const TextStyle(color: Colors.white, fontSize: 13),
+            decoration: InputDecoration(
+              hintText: tr(widget.isEnglish, 'تفاصيل (اختياري) — مثال: لم أعد بحاجته، أو به عطل...'),
+              hintStyle: const TextStyle(color: Color(0x66FFFFFF), fontSize: 12),
+              filled: true,
+              fillColor: const Color(0x0AFFFFFF),
+              border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: const BorderSide(color: Color(0x1AFFFFFF))),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(tr(widget.isEnglish, 'إلغاء'), style: const TextStyle(color: Color(0x99FFFFFF))),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(backgroundColor: _blue),
+            child: Text(tr(widget.isEnglish, 'تأكيد')),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
     try {
       await portalClient.from('portal_custody_items').update({
         'status': 'قيد الإعادة',
         'return_initiated_at': DateTime.now().toIso8601String(),
+        'return_notes': notesCtrl.text.trim().isEmpty ? null : notesCtrl.text.trim(),
       }).eq('id', id);
       await _load();
     } catch (_) {}
+  }
+
+  String _fmtDate(String? iso) {
+    if (iso == null) return '';
+    try {
+      return intl.DateFormat('dd/MM/yyyy — HH:mm').format(DateTime.parse(iso).toLocal());
+    } catch (_) {
+      return '';
+    }
+  }
+
+  List<Widget> _detailLines(Map<String, dynamic> item) {
+    Widget line(String label, String value) => Padding(
+          padding: const EdgeInsets.only(top: 3),
+          child: Text('$label: $value',
+              style: const TextStyle(fontSize: 11, color: Color(0x77FFFFFF))),
+        );
+    final lines = <Widget>[
+      line(tr(widget.isEnglish, 'تاريخ التسليم'), _fmtDate(item['created_at'] as String?)),
+    ];
+    if (item['received_at'] != null) {
+      lines.add(line(tr(widget.isEnglish, 'تاريخ الاستلام'), _fmtDate(item['received_at'] as String?)));
+    }
+    if (item['return_initiated_at'] != null) {
+      lines.add(line(tr(widget.isEnglish, 'تاريخ بدء الإعادة'), _fmtDate(item['return_initiated_at'] as String?)));
+    }
+    if (item['returned_to_admin_at'] != null) {
+      lines.add(line(tr(widget.isEnglish, 'تاريخ استلام الإدارة'), _fmtDate(item['returned_to_admin_at'] as String?)));
+    }
+    return lines;
   }
 
   Color _colorForStatus(String status) {
@@ -174,6 +244,7 @@ class _PortalCustodyScreenState extends State<PortalCustodyScreen> {
                                     ),
                                   ],
                                 ),
+                                ..._detailLines(it),
                                 if (status == 'بانتظار الاستلام') ...[
                                   const SizedBox(height: 12),
                                   Align(

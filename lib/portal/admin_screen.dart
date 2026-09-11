@@ -1826,13 +1826,117 @@ class _TasksCustodyTabState extends State<_TasksCustodyTab> {
   }
 
   Future<void> _confirmReturnedToAdmin(String id) async {
+    final warehouseCtrl = TextEditingController();
+    final notesCtrl = TextEditingController();
+    final knownWarehouses = _custodyItems
+        .map((it) => it['warehouse'] as String?)
+        .where((w) => w != null && w.isNotEmpty)
+        .cast<String>()
+        .toSet()
+        .toList();
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setInner) => AlertDialog(
+          backgroundColor: _surface,
+          title: Text(tr(widget.isEnglish, 'تم استلامها من الإدارة'),
+              style: const TextStyle(color: Colors.white, fontSize: 16)),
+          content: SizedBox(
+            width: 360,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _field(warehouseCtrl, tr(widget.isEnglish, 'المستودع')),
+                if (knownWarehouses.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: knownWarehouses.map((w) {
+                      return GestureDetector(
+                        onTap: () => setInner(() => warehouseCtrl.text = w),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: _indigo.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(w, style: const TextStyle(fontSize: 11, color: _indigo)),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ],
+                const SizedBox(height: 12),
+                _field(notesCtrl, tr(widget.isEnglish, 'ملاحظات حالة الجهاز (اختياري)'), maxLines: 3),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(tr(widget.isEnglish, 'إلغاء'), style: const TextStyle(color: Color(0x99FFFFFF))),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: FilledButton.styleFrom(backgroundColor: _blue),
+              child: Text(tr(widget.isEnglish, 'تأكيد')),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (confirmed != true) return;
     try {
       await portalClient.from('portal_custody_items').update({
         'status': 'أعيدت للإدارة',
         'returned_to_admin_at': DateTime.now().toIso8601String(),
+        'warehouse': warehouseCtrl.text.trim().isEmpty ? null : warehouseCtrl.text.trim(),
+        'admin_return_notes': notesCtrl.text.trim().isEmpty ? null : notesCtrl.text.trim(),
       }).eq('id', id);
       await _load();
     } catch (_) {}
+  }
+
+  String _fmtDate(String? iso) {
+    if (iso == null) return '';
+    try {
+      return intl.DateFormat('dd/MM/yyyy — HH:mm').format(DateTime.parse(iso).toLocal());
+    } catch (_) {
+      return '';
+    }
+  }
+
+  List<Widget> _custodyDetailLines(Map<String, dynamic> item) {
+    Widget line(String label, String value) => Padding(
+          padding: const EdgeInsets.only(top: 3),
+          child: Text('$label: $value',
+              style: const TextStyle(fontSize: 11, color: Color(0x77FFFFFF))),
+        );
+    final lines = <Widget>[
+      line(tr(widget.isEnglish, 'تاريخ التسليم'), _fmtDate(item['created_at'] as String?)),
+    ];
+    if (item['received_at'] != null) {
+      lines.add(line(tr(widget.isEnglish, 'تاريخ الاستلام'), _fmtDate(item['received_at'] as String?)));
+    }
+    if (item['return_initiated_at'] != null) {
+      lines.add(line(tr(widget.isEnglish, 'تاريخ بدء الإعادة'), _fmtDate(item['return_initiated_at'] as String?)));
+    }
+    if (item['return_notes'] != null && (item['return_notes'] as String).isNotEmpty) {
+      lines.add(line(tr(widget.isEnglish, 'ملاحظة الموظف'), item['return_notes'] as String));
+    }
+    if (item['returned_to_admin_at'] != null) {
+      lines.add(line(tr(widget.isEnglish, 'تاريخ استلام الإدارة'), _fmtDate(item['returned_to_admin_at'] as String?)));
+    }
+    if (item['warehouse'] != null && (item['warehouse'] as String).isNotEmpty) {
+      lines.add(line(tr(widget.isEnglish, 'المستودع'), item['warehouse'] as String));
+    }
+    if (item['admin_return_notes'] != null && (item['admin_return_notes'] as String).isNotEmpty) {
+      lines.add(line(tr(widget.isEnglish, 'ملاحظة الإدارة'), item['admin_return_notes'] as String));
+    }
+    return lines;
   }
 
   @override
@@ -2192,6 +2296,7 @@ class _TasksCustodyTabState extends State<_TasksCustodyTab> {
                         ),
                       ],
                     ),
+                    if (_mode == 1) ..._custodyDetailLines(it),
                     if (canConfirmReturn) ...[
                       const SizedBox(height: 10),
                       Align(

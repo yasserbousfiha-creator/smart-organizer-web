@@ -322,6 +322,7 @@ class _PayslipDetail extends StatelessWidget {
     final deductions = _d('deductions');
     final advDeduct = _d('advance_deduction');
     final net = _d('net_salary');
+    final deductionReason = record['deduction_reason'] as String?;
     final monthName = tr(isEnglish, month > 0 && month < 13 ? _months[month] : '$month');
 
     return Container(
@@ -365,6 +366,11 @@ class _PayslipDetail extends StatelessWidget {
           _Row(label: tr(isEnglish, 'الاستقطاعات'), value: deductions, color: _red, neg: true, isEnglish: isEnglish),
           if (advDeduct > 0)
             _Row(label: tr(isEnglish, 'استقطاع السلفة'), value: advDeduct, color: _red, neg: true, isEnglish: isEnglish),
+          if (deductionReason != null && deductionReason.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text('${tr(isEnglish, 'سبب الخصم')}: $deductionReason',
+                style: TextStyle(fontSize: 11, color: _red.withValues(alpha: 0.85), height: 1.4)),
+          ],
 
           const SizedBox(height: 20),
 
@@ -417,24 +423,63 @@ class _PayslipDetail extends StatelessWidget {
         ),
       );
     }
-    return SizedBox(
-      width: double.infinity,
-      child: FilledButton.icon(
-        onPressed: acknowledging ? null : onAcknowledge,
-        icon: acknowledging
-            ? const SizedBox(
-                width: 14, height: 14,
-                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-            : const Icon(Icons.check_circle_outline, size: 16),
-        label: Text(tr(isEnglish, 'تم الاستلام'), style: const TextStyle(fontSize: 13)),
-        style: FilledButton.styleFrom(
-          backgroundColor: _green,
-          foregroundColor: Colors.black,
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+    return Column(
+      children: [
+        if (_inReminderWindow())
+          Container(
+            width: double.infinity,
+            margin: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF59E0B).withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0xFFF59E0B).withValues(alpha: 0.35)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.notifications_active_outlined, color: Color(0xFFF59E0B), size: 15),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(tr(isEnglish, 'يرجى تأكيد استلام الراتب في أقرب وقت'),
+                      style: const TextStyle(color: Color(0xFFF59E0B), fontSize: 11.5)),
+                ),
+              ],
+            ),
+          ),
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton.icon(
+            onPressed: acknowledging ? null : onAcknowledge,
+            icon: acknowledging
+                ? const SizedBox(
+                    width: 14, height: 14,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                : const Icon(Icons.check_circle_outline, size: 16),
+            label: Text(tr(isEnglish, 'تم الاستلام'), style: const TextStyle(fontSize: 13)),
+            style: FilledButton.styleFrom(
+              backgroundColor: _green,
+              foregroundColor: Colors.black,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+          ),
         ),
-      ),
+      ],
     );
+  }
+
+  // Reminder window: from the last day of the payslip's own month through
+  // the 10th of the next month (e.g. a September record reminds from
+  // Sept 30 through Oct 10) — purely a visual nudge, the button itself
+  // stays available indefinitely either way (confirmed with the user).
+  bool _inReminderWindow() {
+    final month = record['month'] as int? ?? 0;
+    final year = record['year'] as int? ?? 0;
+    if (month < 1 || month > 12) return false;
+    final lastDayOfMonth = DateTime(year, month + 1, 0);
+    final windowEnd = DateTime(year, month + 1, 10, 23, 59, 59);
+    final now = DateTime.now();
+    return !now.isBefore(lastDayOfMonth) && !now.isAfter(windowEnd);
   }
 
   static Widget _sectionHead(String label, Color color) => Row(
