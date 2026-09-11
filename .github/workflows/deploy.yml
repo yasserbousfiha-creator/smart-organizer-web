@@ -49,7 +49,12 @@ jobs:
           curl -fL -o build/web/my_school_version.json https://smartorganizer.shop/my_school_version.json
           curl -fL -o build/web/tactico_version.json https://smartorganizer.shop/tactico_version.json
           mkdir -p build/web/audio
-          curl -fL -o build/web/audio/al-kahf-qazabri.mp3 https://smartorganizer.shop/audio/al-kahf-qazabri.mp3
+          # هذا الملف تحديداً كان مرفوعاً يدوياً على الموقع مباشرة (ليس ضمن
+          # الكود هنا ولا في أي تاريخ Git)، وضاع فعلياً في عمليات محو سابقة —
+          # لا نسخة احتياطية متوفرة حالياً (تحقّقنا 2026-09-12). لا نجعل غيابه
+          # يوقف كل نشر بقية الموقع؛ يحتاج رفعاً يدوياً جديداً على الموقع متى
+          # توفّرت النسخة، وسيُلتقَط تلقائياً بعدها من هنا.
+          curl -fL -o build/web/audio/al-kahf-qazabri.mp3 https://smartorganizer.shop/audio/al-kahf-qazabri.mp3 || echo "::warning::al-kahf-qazabri.mp3 غير موجود على الموقع الحي - يحتاج رفعاً يدوياً"
 
       - name: Build employee portal
         working-directory: hr-portal
