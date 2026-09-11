@@ -32,6 +32,25 @@ jobs:
       - run: flutter pub get
       - run: flutter build web --release --base-href /
 
+      # حادثة متكررة (2026-09-11/12، 3 مرات): apk/*.apk و*_version.json هنا
+      # نسخ ثابتة داخل web/ الخاص بهذا المشروع، تُنسَخ حرفياً ضمن ناتج البناء
+      # وتُنشَر فوق smartorganizer.shop بالكامل (force_orphan يستبدل main
+      # كله). كانت تتجمَّد على آخر إصدار وُجِد وقت مزامنتها يدوياً هنا، فكل
+      # نشر لاحق من هذا المشروع كان يُعيد الموقع الحي إصداراً قديماً لتطبيقات
+      # منظّمك الذكي/مدرستي/تاكتيكو - بغضّ النظر عمّا نُشر هناك لاحقاً. الحل
+      # البنيوي: سحب أحدث نسخة مباشرة من الموقع الحي نفسه عند كل بناء، فلا
+      # يمكن أن تتجمَّد بعد الآن مهما تأخّر التزامن اليدوي.
+      - name: Sync latest published app assets (avoid deploying stale bundled copies)
+        run: |
+          curl -fL -o build/web/apk/smart-organizer.apk https://smartorganizer.shop/apk/smart-organizer.apk
+          curl -fL -o build/web/apk/my-school.apk https://smartorganizer.shop/apk/my-school.apk
+          curl -fL -o build/web/apk/tactico.apk https://smartorganizer.shop/apk/tactico.apk
+          curl -fL -o build/web/app_version.json https://smartorganizer.shop/app_version.json
+          curl -fL -o build/web/my_school_version.json https://smartorganizer.shop/my_school_version.json
+          curl -fL -o build/web/tactico_version.json https://smartorganizer.shop/tactico_version.json
+          mkdir -p build/web/audio
+          curl -fL -o build/web/audio/al-kahf-qazabri.mp3 https://smartorganizer.shop/audio/al-kahf-qazabri.mp3
+
       - name: Build employee portal
         working-directory: hr-portal
         run: |
