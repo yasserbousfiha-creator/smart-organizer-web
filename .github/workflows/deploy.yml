@@ -14,12 +14,34 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Employee portal now lives in its own repo (yasserbousfiha-creator/
+      # hr-portal) but still deploys under this same domain, at /portal/ —
+      # checked out alongside the main site and merged into its build output
+      # below, so the two codebases stay independent while the deployed
+      # site stays combined.
+      - uses: actions/checkout@v4
+        with:
+          repository: yasserbousfiha-creator/hr-portal
+          ref: source
+          path: hr-portal
+
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
 
       - run: flutter pub get
       - run: flutter build web --release --base-href /
+
+      - name: Build employee portal
+        working-directory: hr-portal
+        run: |
+          flutter pub get
+          flutter build web --release --base-href /portal/
+
+      - name: Merge portal build into site output
+        run: |
+          mkdir -p build/web/portal
+          cp -r hr-portal/build/web/. build/web/portal/
 
       - name: Add SPA fallback for direct-URL routes
         run: cp build/web/index.html build/web/404.html

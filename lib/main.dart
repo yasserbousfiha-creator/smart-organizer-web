@@ -8,7 +8,6 @@ import 'package:carousel_slider/carousel_slider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'portal/supabase_config.dart';
 import 'portal/portal_client.dart';
-import 'portal/portal_gate_screen.dart';
 import 'theme/app_colors.dart';
 import 'moon_abaya/moon_abaya_gate_screen.dart';
 import 'widgets/quran_radio_button.dart';
@@ -778,7 +777,6 @@ class SmartOrganizerApp extends StatelessWidget {
       home: const LandingPage(),
       routes: {
         '/moonabaya': (context) => const MoonAbayaGateScreen(),
-        '/portal': (context) => const PortalGateScreen(),
         '/abdulrahman': (context) => const PrayerGateScreen(),
         '/soufiane': (context) => const SystemGateScreen(),
       },
@@ -1561,7 +1559,10 @@ class _LandingPageState extends State<LandingPage>
   }
 
   void _openPortal(BuildContext context) {
-    Navigator.of(context).pushNamed('/portal');
+    // The employee portal is now a separate deployed app living under
+    // /portal/ — a hard navigation so the browser loads its own build
+    // instead of Flutter's client-side router looking for a route here.
+    html.window.location.assign('/portal/');
   }
 
   Widget _buildFooter() {
