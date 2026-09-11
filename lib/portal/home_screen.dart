@@ -631,16 +631,75 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> {
   }
 }
 
-class _AdminHomeTab extends StatelessWidget {
+class _AdminHomeTab extends StatefulWidget {
   final String name;
   final bool isEnglish;
   final void Function(int homeTab, {int adminSubTab}) onCardTap;
   const _AdminHomeTab({required this.name, required this.isEnglish, required this.onCardTap});
 
+  @override
+  State<_AdminHomeTab> createState() => _AdminHomeTabState();
+}
+
+class _AdminHomeTabState extends State<_AdminHomeTab> {
   static const _indigo = Color(0xFF06B6D4);
+
+  bool _loading = true;
+  List<Map<String, dynamic>> _idExpiring = [];
+  List<Map<String, dynamic>> _licenseExpiring = [];
+  List<Map<String, dynamic>> _contractExpiring = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAlerts();
+  }
+
+  Future<void> _loadAlerts() async {
+    try {
+      final data = await portalClient
+          .from('employee_profiles')
+          .select('id, name, status, id_expiry_date, license_expiry_date, requires_license, contract_end_date')
+          .eq('status', 'نشط');
+      final employees = List<Map<String, dynamic>>.from(data as List)
+          .where((e) => e['is_admin'] != true)
+          .toList();
+      final now = DateTime.now();
+
+      DateTime? parse(dynamic v) => v == null ? null : DateTime.tryParse(v as String);
+
+      final idExpiring = employees.where((e) {
+        final d = parse(e['id_expiry_date']);
+        return d != null && d.difference(now).inDays <= 30;
+      }).toList();
+      final licenseExpiring = employees.where((e) {
+        if (e['requires_license'] != true) return false;
+        final d = parse(e['license_expiry_date']);
+        return d != null && d.difference(now).inDays <= 30;
+      }).toList();
+      final contractExpiring = employees.where((e) {
+        final d = parse(e['contract_end_date']);
+        return d != null && d.difference(now).inDays <= 60 && d.isAfter(now);
+      }).toList();
+
+      if (mounted) {
+        setState(() {
+          _idExpiring = idExpiring;
+          _licenseExpiring = licenseExpiring;
+          _contractExpiring = contractExpiring;
+          _loading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final name = widget.name;
+    final isEnglish = widget.isEnglish;
+    final onCardTap = widget.onCardTap;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -652,7 +711,18 @@ class _AdminHomeTab extends StatelessWidget {
           const SizedBox(height: 4),
           Text(tr(isEnglish, 'لوحة تحكم مدير النظام'),
               style: const TextStyle(fontSize: 13, color: Color(0x99FFFFFF))),
-          const SizedBox(height: 28),
+          const SizedBox(height: 20),
+          if (!_loading &&
+              (_idExpiring.isNotEmpty || _licenseExpiring.isNotEmpty || _contractExpiring.isNotEmpty))
+            Padding(
+              padding: const EdgeInsets.only(bottom: 20),
+              child: _ExpiryAlertsCard(
+                isEnglish: isEnglish,
+                idExpiring: _idExpiring,
+                licenseExpiring: _licenseExpiring,
+                contractExpiring: _contractExpiring,
+              ),
+            ),
           Wrap(
             spacing: 12,
             runSpacing: 12,
@@ -696,6 +766,117 @@ class _AdminHomeTab extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _ExpiryAlertsCard extends StatefulWidget {
+  final bool isEnglish;
+  final List<Map<String, dynamic>> idExpiring;
+  final List<Map<String, dynamic>> licenseExpiring;
+  final List<Map<String, dynamic>> contractExpiring;
+  const _ExpiryAlertsCard({
+    required this.isEnglish,
+    required this.idExpiring,
+    required this.licenseExpiring,
+    required this.contractExpiring,
+  });
+
+  @override
+  State<_ExpiryAlertsCard> createState() => _ExpiryAlertsCardState();
+}
+
+class _ExpiryAlertsCardState extends State<_ExpiryAlertsCard> {
+  String? _expanded;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0D2731),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFF87171).withValues(alpha: 0.25)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 32, height: 32,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF87171).withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: const Color(0xFFF87171).withValues(alpha: 0.3)),
+                ),
+                child: const Icon(Icons.warning_amber_rounded, color: Color(0xFFF87171), size: 16),
+              ),
+              const SizedBox(width: 10),
+              Text(tr(widget.isEnglish, 'تنبيهات الصلاحية'),
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white)),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _alertRow('id', tr(widget.isEnglish, 'هويات أوشكت على الانتهاء'), widget.idExpiring,
+              const Color(0xFFF59E0B)),
+          const SizedBox(height: 8),
+          _alertRow('license', tr(widget.isEnglish, 'تراخيص طبية أوشكت على الانتهاء'), widget.licenseExpiring,
+              const Color(0xFFF87171)),
+          const SizedBox(height: 8),
+          _alertRow('contract', tr(widget.isEnglish, 'عقود عمل تنتهي خلال شهرين'), widget.contractExpiring,
+              const Color(0xFF0EA5E9)),
+        ],
+      ),
+    );
+  }
+
+  Widget _alertRow(String key, String label, List<Map<String, dynamic>> list, Color color) {
+    if (list.isEmpty) return const SizedBox.shrink();
+    final expanded = _expanded == key;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        GestureDetector(
+          onTap: () => setState(() => _expanded = expanded ? null : key),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: color.withValues(alpha: 0.25)),
+            ),
+            child: Row(
+              children: [
+                Icon(expanded ? Icons.expand_less : Icons.expand_more, size: 16, color: color),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(label, style: TextStyle(fontSize: 12, color: color, fontWeight: FontWeight.w600)),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(color: color.withValues(alpha: 0.18), borderRadius: BorderRadius.circular(20)),
+                  child: Text('${list.length}', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: color)),
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (expanded)
+          Padding(
+            padding: const EdgeInsets.only(top: 6, right: 8, left: 8),
+            child: Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: list.map((e) => Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(20)),
+                child: Text(e['name'] as String? ?? '', style: TextStyle(fontSize: 11, color: color)),
+              )).toList(),
+            ),
+          ),
+        const SizedBox(height: 2),
+      ],
     );
   }
 }
@@ -829,6 +1010,20 @@ class _DashboardTab extends StatelessWidget {
     final shift = profile?['shift'] as String? ?? '';
     final status = profile?['status'] as String? ?? '';
 
+    DateTime? parseDate(dynamic v) => v == null ? null : DateTime.tryParse(v as String);
+    final now = DateTime.now();
+    final idExpiry = parseDate(profile?['id_expiry_date']);
+    final licenseExpiry = parseDate(profile?['license_expiry_date']);
+    final requiresLicense = profile?['requires_license'] == true;
+    final contractExpiry = parseDate(profile?['contract_end_date']);
+    final personalAlerts = <String>[
+      if (idExpiry != null && idExpiry.difference(now).inDays <= 30) tr(isEnglish, 'هويتك تنتهي قريباً'),
+      if (requiresLicense && licenseExpiry != null && licenseExpiry.difference(now).inDays <= 30)
+        tr(isEnglish, 'ترخيصك الطبي ينتهي قريباً'),
+      if (contractExpiry != null && contractExpiry.difference(now).inDays <= 60 && contractExpiry.isAfter(now))
+        tr(isEnglish, 'عقدك ينتهي قريباً'),
+    ];
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -840,6 +1035,36 @@ class _DashboardTab extends StatelessWidget {
           const SizedBox(height: 4),
           Text(tr(isEnglish, 'إليك نظرة سريعة على بياناتك'),
               style: const TextStyle(fontSize: 13, color: Color(0x99FFFFFF))),
+          if (personalAlerts.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF87171).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFF87171).withValues(alpha: 0.3)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.warning_amber_rounded, color: Color(0xFFF87171), size: 16),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(personalAlerts.join(' • '),
+                            style: const TextStyle(color: Color(0xFFF87171), fontSize: 12, fontWeight: FontWeight.w600)),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(tr(isEnglish, 'يرجى مراجعة الإدارة لتجديد وثائقك'),
+                      style: const TextStyle(color: Color(0x99F87171), fontSize: 11)),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: 24),
           Wrap(
             spacing: 12,

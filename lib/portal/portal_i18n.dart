@@ -283,9 +283,16 @@ const Map<String, String> portalArToEn = {
   'تاريخ بدء الإعادة': 'Return Started Date',
   'ملاحظة الموظف': "Employee's Note",
   'تاريخ استلام الإدارة': 'Received by Management Date',
-  'ملاحظة الإدارة': "Management's Note",
   'المهام المكتملة': 'Completed Tasks',
   'العهد المكتملة': 'Completed Custody Items',
+  'تنبيهات الصلاحية': 'Validity Alerts',
+  'هويات أوشكت على الانتهاء': 'IDs Expiring Soon',
+  'تراخيص طبية أوشكت على الانتهاء': 'Medical Licenses Expiring Soon',
+  'عقود عمل تنتهي خلال شهرين': 'Contracts Ending Within 2 Months',
+  'هويتك تنتهي قريباً': 'Your ID is expiring soon',
+  'ترخيصك الطبي ينتهي قريباً': 'Your medical license is expiring soon',
+  'عقدك ينتهي قريباً': 'Your contract is ending soon',
+  'يرجى مراجعة الإدارة لتجديد وثائقك': 'Please contact management to renew your documents',
 };
 
 String tr(bool isEnglish, String ar) => isEnglish ? (portalArToEn[ar] ?? ar) : ar;
