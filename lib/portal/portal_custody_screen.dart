@@ -16,6 +16,7 @@ class PortalCustodyScreen extends StatefulWidget {
 class _PortalCustodyScreenState extends State<PortalCustodyScreen> {
   List<Map<String, dynamic>> _items = [];
   bool _loading = true;
+  bool _showCompleted = false;
   late final RealtimeChannel _channel;
 
   static const _indigo = Color(0xFF06B6D4);
@@ -188,16 +189,54 @@ class _PortalCustodyScreenState extends State<PortalCustodyScreen> {
                 ? const Center(child: CircularProgressIndicator(color: _indigo))
                 : _items.isEmpty
                     ? _empty(tr(widget.isEnglish, 'لا توجد عهد'))
-                    : ListView.separated(
-                        itemCount: _items.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 8),
-                        itemBuilder: (_, i) {
-                          final it = _items[i];
-                          final status = it['status'] as String? ?? 'بانتظار الاستلام';
-                          final color = _colorForStatus(status);
-                          final name = it['equipment_name'] as String? ?? '';
-                          final notes = it['notes'] as String?;
-                          return Container(
+                    : _buildList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildList() {
+    final active = _items.where((it) => it['status'] != 'أعيدت للإدارة').toList();
+    final completed = _items.where((it) => it['status'] == 'أعيدت للإدارة').toList();
+    return ListView(
+      children: [
+        ...active.map((it) => Padding(padding: const EdgeInsets.only(bottom: 8), child: _itemCard(it))),
+        if (completed.isNotEmpty) ...[
+          GestureDetector(
+            onTap: () => setState(() => _showCompleted = !_showCompleted),
+            child: Container(
+              margin: const EdgeInsets.only(bottom: 8, top: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: const Color(0x0AFFFFFF),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0x14FFFFFF)),
+              ),
+              child: Row(
+                children: [
+                  Icon(_showCompleted ? Icons.expand_less : Icons.expand_more,
+                      size: 16, color: const Color(0x99FFFFFF)),
+                  const SizedBox(width: 8),
+                  Text('${tr(widget.isEnglish, 'العهد المكتملة')} (${completed.length})',
+                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0x99FFFFFF))),
+                ],
+              ),
+            ),
+          ),
+          if (_showCompleted)
+            ...completed.map((it) => Padding(padding: const EdgeInsets.only(bottom: 8), child: _itemCard(it))),
+        ],
+      ],
+    );
+  }
+
+  Widget _itemCard(Map<String, dynamic> it) {
+    final status = it['status'] as String? ?? 'بانتظار الاستلام';
+    final color = _colorForStatus(status);
+    final name = it['equipment_name'] as String? ?? '';
+    final notes = it['notes'] as String?;
+    return Container(
                             padding: const EdgeInsets.all(14),
                             decoration: BoxDecoration(
                               color: const Color(0x0AFFFFFF),
@@ -281,12 +320,6 @@ class _PortalCustodyScreenState extends State<PortalCustodyScreen> {
                               ],
                             ),
                           );
-                        },
-                      ),
-          ),
-        ],
-      ),
-    );
   }
 }
 

@@ -16,6 +16,7 @@ class PortalTasksScreen extends StatefulWidget {
 class _PortalTasksScreenState extends State<PortalTasksScreen> {
   List<Map<String, dynamic>> _tasks = [];
   bool _loading = true;
+  bool _showCompleted = false;
   late final RealtimeChannel _channel;
 
   static const _indigo = Color(0xFF06B6D4);
@@ -94,23 +95,61 @@ class _PortalTasksScreenState extends State<PortalTasksScreen> {
                 ? const Center(child: CircularProgressIndicator(color: _indigo))
                 : _tasks.isEmpty
                     ? _empty(tr(widget.isEnglish, 'لا توجد مهام'))
-                    : ListView.separated(
-                        itemCount: _tasks.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 8),
-                        itemBuilder: (_, i) {
-                          final t = _tasks[i];
-                          final status = t['status'] as String? ?? 'قيد الانتظار';
-                          final done = status != 'قيد الانتظار';
-                          final color = done ? _green : _amber;
-                          final title = t['title'] as String? ?? '';
-                          final details = t['details'] as String?;
-                          DateTime? dueAt;
-                          final dueAtStr = t['due_at'] as String?;
-                          if (dueAtStr != null) {
-                            try { dueAt = DateTime.parse(dueAtStr).toLocal(); } catch (_) {}
-                          }
-                          final overdue = dueAt != null && !done && dueAt.isBefore(DateTime.now());
-                          return Container(
+                    : _buildList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildList() {
+    final active = _tasks.where((t) => t['status'] != 'مكتملة').toList();
+    final completed = _tasks.where((t) => t['status'] == 'مكتملة').toList();
+    return ListView(
+      children: [
+        ...active.map((t) => Padding(padding: const EdgeInsets.only(bottom: 8), child: _taskCard(t))),
+        if (completed.isNotEmpty) ...[
+          GestureDetector(
+            onTap: () => setState(() => _showCompleted = !_showCompleted),
+            child: Container(
+              margin: const EdgeInsets.only(bottom: 8, top: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: const Color(0x0AFFFFFF),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0x14FFFFFF)),
+              ),
+              child: Row(
+                children: [
+                  Icon(_showCompleted ? Icons.expand_less : Icons.expand_more,
+                      size: 16, color: const Color(0x99FFFFFF)),
+                  const SizedBox(width: 8),
+                  Text('${tr(widget.isEnglish, 'المهام المكتملة')} (${completed.length})',
+                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0x99FFFFFF))),
+                ],
+              ),
+            ),
+          ),
+          if (_showCompleted)
+            ...completed.map((t) => Padding(padding: const EdgeInsets.only(bottom: 8), child: _taskCard(t))),
+        ],
+      ],
+    );
+  }
+
+  Widget _taskCard(Map<String, dynamic> t) {
+    final status = t['status'] as String? ?? 'قيد الانتظار';
+    final done = status != 'قيد الانتظار';
+    final color = done ? _green : _amber;
+    final title = t['title'] as String? ?? '';
+    final details = t['details'] as String?;
+    DateTime? dueAt;
+    final dueAtStr = t['due_at'] as String?;
+    if (dueAtStr != null) {
+      try { dueAt = DateTime.parse(dueAtStr).toLocal(); } catch (_) {}
+    }
+    final overdue = dueAt != null && !done && dueAt.isBefore(DateTime.now());
+    return Container(
                             padding: const EdgeInsets.all(14),
                             decoration: BoxDecoration(
                               color: const Color(0x0AFFFFFF),
@@ -197,12 +236,6 @@ class _PortalTasksScreenState extends State<PortalTasksScreen> {
                               ],
                             ),
                           );
-                        },
-                      ),
-          ),
-        ],
-      ),
-    );
   }
 }
 

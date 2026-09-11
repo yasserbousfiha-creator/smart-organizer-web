@@ -1798,6 +1798,7 @@ class _TasksCustodyTabState extends State<_TasksCustodyTab> {
   bool _sending = false;
   String? _selectedEmpId;
   String? _filterEmpId;
+  bool _showCompleted = false;
   final _titleCtrl = TextEditingController();
   final _detailsCtrl = TextEditingController();
   final _equipmentCtrl = TextEditingController();
@@ -2075,7 +2076,6 @@ class _TasksCustodyTabState extends State<_TasksCustodyTab> {
     final items = _filterEmpId == null
         ? allItems
         : allItems.where((it) => it['employee_id']?.toString() == _filterEmpId).toList();
-    final pendingStatus = _mode == 0 ? 'قيد الانتظار' : 'بانتظار الاستلام';
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -2286,12 +2286,54 @@ class _TasksCustodyTabState extends State<_TasksCustodyTab> {
               ),
             )
           else
-            ...items.map((it) {
+            ..._buildItemGroups(items),
+        ],
+      ),
+    );
+  }
+
+  List<Widget> _buildItemGroups(List<Map<String, dynamic>> items) {
+    final terminalStatus = _mode == 0 ? 'مكتملة' : 'أعيدت للإدارة';
+    final active = items.where((it) => it['status'] != terminalStatus).toList();
+    final completed = items.where((it) => it['status'] == terminalStatus).toList();
+    return [
+      ...active.map(_itemCard),
+      if (completed.isNotEmpty) ...[
+        GestureDetector(
+          onTap: () => setState(() => _showCompleted = !_showCompleted),
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 8, top: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: _surface,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0x14FFFFFF)),
+            ),
+            child: Row(
+              children: [
+                Icon(_showCompleted ? Icons.expand_less : Icons.expand_more,
+                    size: 16, color: const Color(0x99FFFFFF)),
+                const SizedBox(width: 8),
+                Text(
+                    '${_mode == 0 ? tr(widget.isEnglish, 'المهام المكتملة') : tr(widget.isEnglish, 'العهد المكتملة')} (${completed.length})',
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0x99FFFFFF))),
+              ],
+            ),
+          ),
+        ),
+        if (_showCompleted) ...completed.map(_itemCard),
+      ],
+    ];
+  }
+
+  String get _pendingStatus => _mode == 0 ? 'قيد الانتظار' : 'بانتظار الاستلام';
+
+  Widget _itemCard(Map<String, dynamic> it) {
               final empId = it['employee_id']?.toString() ?? '';
               final empName = _empNames[empId] ?? empId;
-              final status = it['status'] as String? ?? pendingStatus;
+              final status = it['status'] as String? ?? _pendingStatus;
               final color = _mode == 0
-                  ? (status != pendingStatus ? _green : _amber)
+                  ? (status != _pendingStatus ? _green : _amber)
                   : _custodyColor(status);
               final title = _mode == 0
                   ? (it['title'] as String? ?? '')
@@ -2398,10 +2440,6 @@ class _TasksCustodyTabState extends State<_TasksCustodyTab> {
                   ],
                 ),
               );
-            }),
-        ],
-      ),
-    );
   }
 
   Widget _field(TextEditingController ctrl, String label, {int maxLines = 1}) {

@@ -284,6 +284,8 @@ const Map<String, String> portalArToEn = {
   'ملاحظة الموظف': "Employee's Note",
   'تاريخ استلام الإدارة': 'Received by Management Date',
   'ملاحظة الإدارة': "Management's Note",
+  'المهام المكتملة': 'Completed Tasks',
+  'العهد المكتملة': 'Completed Custody Items',
 };
 
 String tr(bool isEnglish, String ar) => isEnglish ? (portalArToEn[ar] ?? ar) : ar;
