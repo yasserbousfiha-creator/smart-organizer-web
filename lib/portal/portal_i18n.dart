@@ -182,6 +182,10 @@ const Map<String, String> portalArToEn = {
   'سبب الخصم': 'Deduction Reason',
   'صافي الراتب': 'Net Salary',
   'يرجى تأكيد استلام الراتب في أقرب وقت': 'Please confirm receipt of your payslip soon',
+  'موعد الإنجاز': 'Due Date',
+  'موعد الإنجاز (اختياري)': 'Due Date (optional)',
+  'موعد إنجاز المهمة': 'Task Due Date',
+  'مسح': 'Clear',
 
   // Requests screen
   'الطلبات': 'Requests',

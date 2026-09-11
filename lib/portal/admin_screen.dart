@@ -1802,6 +1802,7 @@ class _TasksCustodyTabState extends State<_TasksCustodyTab> {
   final _detailsCtrl = TextEditingController();
   final _equipmentCtrl = TextEditingController();
   final _notesCtrl = TextEditingController();
+  DateTime? _taskDueAt;
   late final RealtimeChannel _channel;
 
   static const _indigo = Color(0xFF06B6D4);
@@ -2004,6 +2005,24 @@ class _TasksCustodyTabState extends State<_TasksCustodyTab> {
     ));
   }
 
+  Future<void> _pickTaskDueAt() async {
+    final date = await showDatePicker(
+      context: context,
+      initialDate: _taskDueAt ?? DateTime.now(),
+      firstDate: DateTime.now().subtract(const Duration(days: 1)),
+      lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
+    );
+    if (date == null || !mounted) return;
+    final time = await showTimePicker(
+      context: context,
+      initialTime: _taskDueAt != null
+          ? TimeOfDay.fromDateTime(_taskDueAt!)
+          : TimeOfDay.now(),
+    );
+    if (time == null) return;
+    setState(() => _taskDueAt = DateTime(date.year, date.month, date.day, time.hour, time.minute));
+  }
+
   Future<void> _send() async {
     if (_selectedEmpId == null) return;
     if (_mode == 0 && _titleCtrl.text.trim().isEmpty) return;
@@ -2017,9 +2036,11 @@ class _TasksCustodyTabState extends State<_TasksCustodyTab> {
           'details': _detailsCtrl.text.trim().isEmpty ? null : _detailsCtrl.text.trim(),
           'status': 'قيد الانتظار',
           'created_by': 'admin',
+          'due_at': _taskDueAt?.toIso8601String(),
         });
         _titleCtrl.clear();
         _detailsCtrl.clear();
+        _taskDueAt = null;
       } else {
         await portalClient.from('portal_custody_items').insert({
           'employee_id': _selectedEmpId,
@@ -2145,6 +2166,40 @@ class _TasksCustodyTabState extends State<_TasksCustodyTab> {
                   _field(_titleCtrl, tr(widget.isEnglish, 'عنوان المهمة')),
                   const SizedBox(height: 10),
                   _field(_detailsCtrl, tr(widget.isEnglish, 'تفاصيل (اختياري)'), maxLines: 3),
+                  const SizedBox(height: 10),
+                  GestureDetector(
+                    onTap: _pickTaskDueAt,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: const Color(0x0AFFFFFF),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: const Color(0x1AFFFFFF)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.event_outlined, size: 16, color: Color(0x99FFFFFF)),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              _taskDueAt == null
+                                  ? tr(widget.isEnglish, 'موعد الإنجاز (اختياري)')
+                                  : intl.DateFormat('dd/MM/yyyy — HH:mm').format(_taskDueAt!),
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: _taskDueAt == null ? const Color(0x66FFFFFF) : Colors.white,
+                              ),
+                            ),
+                          ),
+                          if (_taskDueAt != null)
+                            GestureDetector(
+                              onTap: () => setState(() => _taskDueAt = null),
+                              child: const Icon(Icons.close, size: 15, color: Color(0x66FFFFFF)),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ] else ...[
                   _field(_equipmentCtrl, tr(widget.isEnglish, 'اسم الجهاز/العهدة')),
                   const SizedBox(height: 10),
@@ -2243,6 +2298,11 @@ class _TasksCustodyTabState extends State<_TasksCustodyTab> {
                   : (it['equipment_name'] as String? ?? '');
               final sub = _mode == 0 ? it['details'] as String? : it['notes'] as String?;
               final canConfirmReturn = _mode == 1 && status == 'قيد الإعادة';
+              DateTime? dueAt;
+              if (_mode == 0 && it['due_at'] != null) {
+                try { dueAt = DateTime.parse(it['due_at'] as String).toLocal(); } catch (_) {}
+              }
+              final taskOverdue = dueAt != null && status == 'قيد الانتظار' && dueAt.isBefore(DateTime.now());
               return Container(
                 margin: const EdgeInsets.only(bottom: 8),
                 padding: const EdgeInsets.all(12),
@@ -2281,6 +2341,26 @@ class _TasksCustodyTabState extends State<_TasksCustodyTab> {
                               if (sub != null && sub.isNotEmpty) ...[
                                 const SizedBox(height: 4),
                                 Text(sub, style: const TextStyle(fontSize: 11, color: Color(0x66FFFFFF))),
+                              ],
+                              if (dueAt != null) ...[
+                                const SizedBox(height: 4),
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.schedule,
+                                        size: 11,
+                                        color: taskOverdue ? const Color(0xFFF87171) : const Color(0x66FFFFFF)),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      '${tr(widget.isEnglish, 'موعد الإنجاز')}: ${intl.DateFormat('dd/MM/yyyy — HH:mm').format(dueAt)}',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: taskOverdue ? FontWeight.w600 : FontWeight.normal,
+                                        color: taskOverdue ? const Color(0xFFF87171) : const Color(0x66FFFFFF),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ],
                             ],
                           ),

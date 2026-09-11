@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart' as intl;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'portal_client.dart';
 import 'portal_i18n.dart';
@@ -103,6 +104,12 @@ class _PortalTasksScreenState extends State<PortalTasksScreen> {
                           final color = done ? _green : _amber;
                           final title = t['title'] as String? ?? '';
                           final details = t['details'] as String?;
+                          DateTime? dueAt;
+                          final dueAtStr = t['due_at'] as String?;
+                          if (dueAtStr != null) {
+                            try { dueAt = DateTime.parse(dueAtStr).toLocal(); } catch (_) {}
+                          }
+                          final overdue = dueAt != null && !done && dueAt.isBefore(DateTime.now());
                           return Container(
                             padding: const EdgeInsets.all(14),
                             decoration: BoxDecoration(
@@ -134,6 +141,26 @@ class _PortalTasksScreenState extends State<PortalTasksScreen> {
                                           if (details != null && details.isNotEmpty) ...[
                                             const SizedBox(height: 4),
                                             Text(details, style: const TextStyle(fontSize: 12, color: Color(0x99FFFFFF))),
+                                          ],
+                                          if (dueAt != null) ...[
+                                            const SizedBox(height: 4),
+                                            Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Icon(Icons.schedule,
+                                                    size: 11,
+                                                    color: overdue ? const Color(0xFFF87171) : const Color(0x77FFFFFF)),
+                                                const SizedBox(width: 4),
+                                                Text(
+                                                  '${tr(widget.isEnglish, 'موعد الإنجاز')}: ${intl.DateFormat('dd/MM/yyyy — HH:mm').format(dueAt)}',
+                                                  style: TextStyle(
+                                                    fontSize: 11,
+                                                    fontWeight: overdue ? FontWeight.w600 : FontWeight.normal,
+                                                    color: overdue ? const Color(0xFFF87171) : const Color(0x77FFFFFF),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
                                           ],
                                         ],
                                       ),
