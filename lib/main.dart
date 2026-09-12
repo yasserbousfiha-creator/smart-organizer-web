@@ -9,17 +9,13 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'portal/supabase_config.dart';
 import 'portal/portal_client.dart';
 import 'theme/app_colors.dart';
-import 'moon_abaya/moon_abaya_gate_screen.dart';
 import 'widgets/quran_radio_button.dart';
 import 'widgets/lamp_pull_button.dart';
-import 'widgets/moon_crescent_button.dart';
 import 'widgets/demo_task_section.dart';
 import 'widgets/waitlist_section.dart';
 import 'widgets/visitor_counter_badge.dart';
 import 'prayers/hidden_moon_icon.dart';
 import 'prayers/prayer_gate_screen.dart';
-import 'system_tracker/hidden_flame_icon.dart';
-import 'system_tracker/system_gate_screen.dart';
 
 void main() async {
   setPathUrlStrategy();
@@ -776,9 +772,7 @@ class SmartOrganizerApp extends StatelessWidget {
       },
       home: const LandingPage(),
       routes: {
-        '/moonabaya': (context) => const MoonAbayaGateScreen(),
         '/abdulrahman': (context) => const PrayerGateScreen(),
-        '/soufiane': (context) => const SystemGateScreen(),
       },
       onUnknownRoute: (settings) => MaterialPageRoute(builder: (_) => const LandingPage()),
     );
@@ -908,7 +902,6 @@ class _LandingPageState extends State<LandingPage>
                   key: _supportKey,
                   child: _RevealOnScroll(child: _buildSupportSection()),
                 ),
-                const Center(child: HiddenFlameIcon()),
                 _RevealOnScroll(child: WaitlistSection(isEnglish: _isEnglish)),
                 _RevealOnScroll(
                   triggerOffset: 40,
@@ -1006,7 +999,6 @@ class _LandingPageState extends State<LandingPage>
               ),
             ),
           ),
-          MoonCrescentButton(onTap: () => _openMoonAbaya(context)),
           const Spacer(),
           if (isMobile) ...[
             QuranRadioButton(compact: true, isEnglish: _isEnglish),
@@ -1613,10 +1605,6 @@ class _LandingPageState extends State<LandingPage>
       ),
     );
     });
-  }
-
-  void _openMoonAbaya(BuildContext context) {
-    Navigator.of(context).pushNamed('/moonabaya');
   }
 
   Widget _sectionBadge(String label) {
