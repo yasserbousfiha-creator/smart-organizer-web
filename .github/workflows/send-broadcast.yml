@@ -1,0 +1,66 @@
+name: Send Broadcast Notification
+
+on:
+  workflow_dispatch:
+    inputs:
+      title_ar:
+        description: "العنوان (عربي) - مطلوب"
+        required: true
+      body_ar:
+        description: "النص (عربي) - استخدم {name} لإدراج اسم المستخدم"
+        required: true
+      title_fr:
+        description: "العنوان بالفرنسية (اختياري)"
+        required: false
+      body_fr:
+        description: "النص بالفرنسية (اختياري)"
+        required: false
+      title_en:
+        description: "العنوان بالإنجليزية (اختياري)"
+        required: false
+      body_en:
+        description: "النص بالإنجليزية (اختياري)"
+        required: false
+      time:
+        description: 'وقت الوصول المحلي لكل مستخدم بصيغة HH:mm (اختياري - فارغ = فوراً)'
+        required: false
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dart-lang/setup-dart@v1
+
+      - name: Install broadcast tool dependencies
+        working-directory: tool
+        run: dart pub get
+
+      - name: Write Firebase service account credentials
+        working-directory: tool
+        run: echo '${{ secrets.FCM_SERVICE_ACCOUNT }}' > service-account.json
+
+      - name: Send broadcast
+        working-directory: tool
+        env:
+          TITLE_AR: ${{ github.event.inputs.title_ar }}
+          BODY_AR: ${{ github.event.inputs.body_ar }}
+          TITLE_FR: ${{ github.event.inputs.title_fr }}
+          BODY_FR: ${{ github.event.inputs.body_fr }}
+          TITLE_EN: ${{ github.event.inputs.title_en }}
+          BODY_EN: ${{ github.event.inputs.body_en }}
+          TIME_HHMM: ${{ github.event.inputs.time }}
+        run: |
+          ARGS=("$TITLE_AR" "$BODY_AR")
+          [ -n "$TITLE_FR" ] && ARGS+=(--fr-title "$TITLE_FR")
+          [ -n "$BODY_FR" ] && ARGS+=(--fr-body "$BODY_FR")
+          [ -n "$TITLE_EN" ] && ARGS+=(--en-title "$TITLE_EN")
+          [ -n "$BODY_EN" ] && ARGS+=(--en-body "$BODY_EN")
+          [ -n "$TIME_HHMM" ] && ARGS+=(--time "$TIME_HHMM")
+          dart run send_broadcast.dart "${ARGS[@]}"
+
+      - name: Remove credentials
+        if: always()
+        working-directory: tool
+        run: rm -f service-account.json
