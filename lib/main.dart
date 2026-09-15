@@ -1199,6 +1199,17 @@ class _LandingPageState extends State<LandingPage>
                       url: 'https://smartorganizer.shop/apk/tactico.apk',
                       correctCode: 'yasser',
                     ),
+                    _buildGradientButton(
+                      context: context,
+                      icon: Icons.handyman_rounded,
+                      title: 'ProCraft',
+                      subtitle: siteTr(_isEnglish, 'وصول خاص - يتطلب رمز دخول'),
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFB5652D), Color(0xFF7A3E17)],
+                      ),
+                      url: 'https://smartorganizer.shop/apk/procraft.apk',
+                      correctCode: 'yasserbousfiha',
+                    ),
                   ],
                 ),
               ],
