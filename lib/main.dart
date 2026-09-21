@@ -1,7 +1,9 @@
+import 'dart:convert';
 import 'dart:math' as math;
 // ignore: avoid_web_libraries_in_flutter, deprecated_member_use
 import 'dart:html' as html;
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 import 'package:url_strategy/url_strategy.dart';
 import 'package:carousel_slider/carousel_slider.dart';
@@ -43,6 +45,11 @@ const Map<String, String> _siteArToEn = {
   'تطبيق Smart Organizer هو رفيقك اليومي لإدارة مهامك وترتيب أفكارك بكفاءة. يتطلب التحميل أو الدخول باستخدام رمز المرور الخاص بك.':
       'Smart Organizer is your daily companion for managing tasks and organizing your ideas efficiently. Requires downloading the app or signing in with your access code.',
   'تحميل التطبيق': 'Download App',
+  'برنامج الموارد البشرية': 'HR Management',
+  'وصول خاص - تحميل لنظام Windows': 'Private access - Windows download',
+  'جارٍ التحقق...': 'Verifying...',
+  'تعذّر الاتصال، حاول مجددًا': 'Connection failed, try again',
+  'بدأ التحميل': 'Download started',
   'تنزيل مباشر للأندرويد': 'Direct download for Android',
   'تشغيل في المتصفح': 'Open in Browser',
   'للايفون والمنصات الأخرى': 'For iPhone & other platforms',
@@ -1210,6 +1217,17 @@ class _LandingPageState extends State<LandingPage>
                       url: 'https://smartorganizer.shop/apk/procraft.apk',
                       correctCode: 'yasserbousfiha',
                     ),
+                    _buildGradientButton(
+                      context: context,
+                      icon: Icons.desktop_windows_rounded,
+                      title: siteTr(_isEnglish, 'برنامج الموارد البشرية'),
+                      subtitle: siteTr(_isEnglish, 'وصول خاص - تحميل لنظام Windows'),
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF0EA5E9), Color(0xFF0C4A6E)],
+                      ),
+                      url: '',
+                      verifyUrl: _hrDownloadFunctionUrl,
+                    ),
                   ],
                 ),
               ],
@@ -1677,6 +1695,9 @@ class _LandingPageState extends State<LandingPage>
     required LinearGradient gradient,
     required String url,
     String correctCode = 'bousfiha',
+    // When set, the code is verified on the server (this endpoint returns a
+    // short-lived download link) instead of being compared in this file.
+    String? verifyUrl,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -1700,7 +1721,9 @@ class _LandingPageState extends State<LandingPage>
             borderRadius: BorderRadius.circular(16),
           ),
         ),
-        onPressed: () => _showPasscodeDialog(context, url, correctCode),
+        onPressed: () => verifyUrl != null
+            ? _showServerCodeDialog(context, verifyUrl)
+            : _showPasscodeDialog(context, url, correctCode),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -1896,6 +1919,176 @@ class _LandingPageState extends State<LandingPage>
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  static const String _hrDownloadFunctionUrl =
+      '${PortalConfig.url}/functions/v1/installer-download';
+
+  // Same look as _showPasscodeDialog, but the code is checked by the
+  // `installer-download` function, which only then returns a 2-minute signed
+  // link to the private installer — the code and the file are never in this
+  // page's source.
+  Future<void> _showServerCodeDialog(BuildContext context, String verifyUrl) async {
+    final codeController = TextEditingController();
+    String? error;
+    bool busy = false;
+
+    return showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSt) {
+          Future<void> submit() async {
+            if (busy || codeController.text.isEmpty) return;
+            setSt(() {
+              busy = true;
+              error = null;
+            });
+            try {
+              final resp = await http.post(
+                Uri.parse(verifyUrl),
+                headers: {
+                  'Content-Type': 'application/json',
+                  'apikey': PortalConfig.anonKey,
+                  'Authorization': 'Bearer ${PortalConfig.anonKey}',
+                },
+                body: jsonEncode({'password': codeController.text}),
+              );
+              final body = jsonDecode(resp.body) as Map<String, dynamic>;
+              if (resp.statusCode == 200 && body['url'] is String) {
+                if (ctx.mounted) Navigator.pop(ctx);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(siteTr(_isEnglish, 'بدأ التحميل')),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+                // Same-tab navigation to an attachment link: the browser
+                // downloads the file and this page stays where it is.
+                html.window.location.href = body['url'] as String;
+                return;
+              }
+              setSt(() {
+                busy = false;
+                error = resp.statusCode == 401
+                    ? siteTr(_isEnglish, 'رمز الدخول غير صحيح!')
+                    : (body['error'] as String? ??
+                        siteTr(_isEnglish, 'تعذّر الاتصال، حاول مجددًا'));
+              });
+            } catch (_) {
+              setSt(() {
+                busy = false;
+                error = siteTr(_isEnglish, 'تعذّر الاتصال، حاول مجددًا');
+              });
+            }
+          }
+
+          return Directionality(
+            textDirection: _isEnglish ? TextDirection.ltr : TextDirection.rtl,
+            child: AlertDialog(
+              backgroundColor: AppColors.surface,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+                side: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+              ),
+              title: Text(
+                siteTr(_isEnglish, 'وصول مقيّد'),
+                style: const TextStyle(
+                  fontFamily: 'Tajawal',
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
+                  color: Colors.white,
+                ),
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    siteTr(_isEnglish, 'الرجاء إدخال رمز الدخول الخاص بك للمتابعة وفتح الرابط.'),
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.6),
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  TextField(
+                    controller: codeController,
+                    obscureText: true,
+                    autofocus: true,
+                    onSubmitted: (_) => submit(),
+                    style: const TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      hintText: siteTr(_isEnglish, 'أدخل الرمز هنا'),
+                      hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
+                      filled: true,
+                      fillColor: Colors.white.withValues(alpha: 0.06),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: kBlue),
+                      ),
+                    ),
+                  ),
+                  if (error != null) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      error!,
+                      style: TextStyle(color: Colors.red.shade300, fontSize: 13),
+                    ),
+                  ],
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: Text(
+                    siteTr(_isEnglish, 'إلغاء'),
+                    style: TextStyle(color: Colors.white.withValues(alpha: 0.4)),
+                  ),
+                ),
+                Container(
+                  decoration: BoxDecoration(
+                    gradient: kMainGradient,
+                    borderRadius: BorderRadius.circular(10),
+                    boxShadow: [
+                      BoxShadow(
+                        color: kBlue.withValues(alpha: 0.35),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      shadowColor: Colors.transparent,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    onPressed: busy ? null : submit,
+                    child: Text(
+                      busy
+                          ? siteTr(_isEnglish, 'جارٍ التحقق...')
+                          : siteTr(_isEnglish, 'تحقق وافتح'),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
