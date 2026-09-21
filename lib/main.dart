@@ -1172,7 +1172,7 @@ class _LandingPageState extends State<LandingPage>
                     _buildGradientButton(
                       context: context,
                       icon: Icons.android_rounded,
-                      title: siteTr(_isEnglish, 'تحميل التطبيق'),
+                      title: 'Smart Organizer',
                       subtitle: siteTr(_isEnglish, 'تنزيل مباشر للأندرويد'),
                       gradient: kMainGradient,
                       url: 'https://smartorganizer.shop/apk/smart-organizer.apk',
@@ -1213,7 +1213,7 @@ class _LandingPageState extends State<LandingPage>
                     _buildGradientButton(
                       context: context,
                       icon: Icons.desktop_windows_rounded,
-                      title: siteTr(_isEnglish, 'برنامج الموارد البشرية'),
+                      title: 'Hr system',
                       subtitle: siteTr(_isEnglish, 'وصول خاص - تحميل لنظام Windows'),
                       gradient: const LinearGradient(
                         colors: [Color(0xFF0EA5E9), Color(0xFF0C4A6E)],
