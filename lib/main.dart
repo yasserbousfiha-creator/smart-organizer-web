@@ -1177,13 +1177,6 @@ class _LandingPageState extends State<LandingPage>
                       gradient: kMainGradient,
                       url: 'https://smartorganizer.shop/apk/smart-organizer.apk',
                     ),
-                    _buildOutlineButton(
-                      context: context,
-                      icon: Icons.language_rounded,
-                      title: siteTr(_isEnglish, 'تشغيل في المتصفح'),
-                      subtitle: siteTr(_isEnglish, 'للايفون والمنصات الأخرى'),
-                      url: 'https://celebrated-chimera-576e3d.netlify.app/',
-                    ),
                     _buildGradientButton(
                       context: context,
                       icon: Icons.school_rounded,
@@ -1752,57 +1745,6 @@ class _LandingPageState extends State<LandingPage>
       ),
     );
   }
-
-  Widget _buildOutlineButton({
-    required BuildContext context,
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required String url,
-  }) {
-    return OutlinedButton(
-      style: OutlinedButton.styleFrom(
-        foregroundColor: Colors.white,
-        side: BorderSide(
-          color: Colors.white.withValues(alpha: 0.2),
-          width: 1.5,
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 20),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        backgroundColor: Colors.white.withValues(alpha: 0.05),
-      ),
-      onPressed: () => _launchURL(url),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 26),
-          const SizedBox(width: 14),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                subtitle,
-                style: TextStyle(
-                  fontSize: 11,
-                  color: Colors.white.withValues(alpha: 0.5),
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
 
   Future<void> _showPasscodeDialog(BuildContext context, String url, [String correctCode = 'bousfiha']) async {
     final codeController = TextEditingController();
