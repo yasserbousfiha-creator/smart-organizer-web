@@ -159,7 +159,6 @@
     function render(data) {
       const d = data.device;
       const history = data.history || [];
-      const lastBy = d.last_maintenance_by ? ` (${escapeHtml(d.last_maintenance_by)})` : '';
       let html = `
         <div class="card">
           <p class="device-name">${escapeHtml(d.name)}</p>
@@ -170,8 +169,11 @@
             ${row('الرقم التسلسلي', d.serial_number)}
             ${row('القسم', d.location)}
             ${row('دورية الصيانة', d.interval_months ? d.interval_months + ' أشهر' : '—')}
-            ${row('آخر صيانة', d.last_maintenance_date ? fmtDateTime(d.last_maintenance_date) + lastBy : '—')}
+            ${row('آخر صيانة', d.last_maintenance_date ? fmtDateTime(d.last_maintenance_date) : '—')}
+            ${row('آخر فني', d.last_maintenance_by)}
             ${row('الصيانة القادمة', fmt(d.next_due_date))}
+            ${row('أضيف بواسطة', d.added_by)}
+            ${row('تاريخ الإضافة', d.created_at ? fmt(d.created_at) : '—')}
           </table>
         </div>
         <div class="section-title">سجل الصيانة (${history.length})</div>
