@@ -114565,21 +114565,19 @@ $1(a){var s,r,q=t.n_,p=A.b([],q),o=this.a
 if(o.length===0)p.push(A.aBW("\u0644\u0627 \u064a\u0648\u062c\u062f \u0633\u062c\u0644 \u0635\u064a\u0627\u0646\u0629 \u0628\u0639\u062f",B.b50,null))
 else{s=new A.yw(B.aUe,1,B.xf)
 r=this.b
-q=A.b([new A.rQ(A.b([A.q2(r,"\u0627\u0644\u062c\u0647\u0627\u0632",!0),A.q2(r,"\u0627\u0644\u062a\u0627\u0631\u064a\u062e",!0),A.q2(r,"\u0627\u0644\u0646\u0648\u0639",!0),A.q2(r,"\u0627\u0644\u0641\u0646\u064a/\u0627\u0644\u0645\u0633\u0624\u0648\u0644",!0),A.q2(r,"\u0645\u0644\u0627\u062d\u0638\u0627\u062a",!0)],q),B.UH)],t.nk)
+q=A.b([new A.rQ(A.b([A.q2(r,"\u0645\u0644\u0627\u062d\u0638\u0627\u062a",!0),A.q2(r,"\u0627\u0644\u0641\u0646\u064a/\u0627\u0644\u0645\u0633\u0624\u0648\u0644",!0),A.q2(r,"\u0627\u0644\u0646\u0648\u0639",!0),A.q2(r,"\u0627\u0644\u062a\u0627\u0631\u064a\u062e",!0),A.q2(r,"\u0627\u0644\u062c\u0647\u0627\u0632",!0)],q),B.UH)],t.nk)
 o=new A.Hy(o,A.Y(o).i("Hy<1>"))
 B.m.L(q,o.gkR(o).eO(0,new A.aZ3(this.c,r),t.Wy))
 r=t.n
 p.push(new A.a10(q,new A.aBE(s,s,s,s,s,s),A.b([],r),A.b([],r),new A.a11(),B.aSs))}return p},
 $S:652}
 A.aZ3.prototype={
-$1(a){var s,r,q,p,o=a.b,n=J.a2(o),m=this.a.h(0,n.h(o,"device_id")),l=A.b5b(null,(a.a&1)===0?B.aUh:B.M1),k=this.b,j=A.V(m==null?null:J.f(m,"name"))
-j=A.q2(k,j==null?"\u062c\u0647\u0627\u0632 \u0645\u062d\u0630\u0648\u0641":j,!1)
-s=A.q2(k,A.brI(A.V(n.h(o,"performed_at"))),!1)
-r=A.q2(k,J.c(n.h(o,"type"),"\u0637\u0627\u0631\u0626\u0629")?"\u0637\u0627\u0631\u0626\u0629":"\u062f\u0648\u0631\u064a\u0629",!1)
-q=A.V(n.h(o,"technician"))
-q=A.q2(k,q==null?"\u2014":q,!1)
-p=A.V(n.h(o,"notes"))
-return new A.rQ(A.b([j,s,r,q,A.q2(k,(p==null?null:p.length!==0)===!0?A.aT(n.h(o,"notes")):"\u2014",!1)],t.n_),l)},
+$1(a){var s,r=a.b,q=J.a2(r),p=this.a.h(0,q.h(r,"device_id")),o=A.b5b(null,(a.a&1)===0?B.aUh:B.M1),n=this.b,m=A.V(q.h(r,"notes")),l=A.q2(n,(m==null?null:m.length!==0)===!0?A.aT(q.h(r,"notes")):"\u2014",!1),k=A.V(q.h(r,"technician"))
+m=A.q2(n,k==null?"\u2014":k,!1)
+k=A.q2(n,J.c(q.h(r,"type"),"\u0637\u0627\u0631\u0626\u0629")?"\u0637\u0627\u0631\u0626\u0629":"\u062f\u0648\u0631\u064a\u0629",!1)
+q=A.q2(n,A.brI(A.V(q.h(r,"performed_at"))),!1)
+s=A.V(p==null?null:J.f(p,"name"))
+return new A.rQ(A.b([l,m,k,q,A.q2(n,s==null?"\u062c\u0647\u0627\u0632 \u0645\u062d\u0630\u0648\u0641":s,!1)],t.n_),o)},
 $S:653}
 A.Z6.prototype={
 aDt(a){A.bd2(B.bh,new A.aul(this),a,!0,B.Ql,t.z)},
@@ -142835,11 +142833,11 @@ B.aZg=new A.aM(B.cH,!1,!1,!0,!1,B.a3)
 B.aZD=new A.aM(B.cI,!1,!0,!0,!1,B.a3)
 B.aZt=new A.aM(B.cI,!1,!1,!0,!1,B.a3)
 B.Lp=new A.c9([B.aZy,B.ae,B.aZ4,B.ae,B.QZ,B.ae,B.QW,B.ae,B.aZp,B.ae,B.aZg,B.ae,B.aZD,B.ae,B.aZt,B.ae],t.Fp)
-B.a_z=new A.uB(2.2)
+B.a_B=new A.uB(2.3)
 B.zn=new A.uB(1.6)
 B.a_A=new A.uB(1.1)
-B.a_B=new A.uB(2.3)
-B.aSs=new A.c9([0,B.a_z,1,B.zn,2,B.a_A,3,B.zn,4,B.a_B],A.aB("c9<p,BA>"))
+B.a_z=new A.uB(2.2)
+B.aSs=new A.c9([0,B.a_B,1,B.zn,2,B.a_A,3,B.zn,4,B.a_z],A.aB("c9<p,BA>"))
 B.az=new A.fS(0,"font")
 B.jJ=new A.fS(1,"noBreak")
 B.G=new A.fS(2,"initial")
