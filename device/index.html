@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>حالة الصيانة</title>
+<style>
+  :root {
+    --indigo: #4f46e5;
+    --bg: #0f172a;
+    --card: #1e293b;
+    --border: #334155;
+    --text: #f1f5f9;
+    --muted: #94a3b8;
+    --green: #22c55e;
+    --amber: #f59e0b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: 24px 14px;
+  }
+  .wrap { width: 100%; max-width: 480px; }
+  .logo-row { display: flex; justify-content: center; margin-bottom: 18px; }
+  .logo-row img { height: 56px; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .device-name { font-size: 20px; font-weight: 700; margin: 0 0 12px; }
+  .details { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .details th, .details td { padding: 8px 4px; border-bottom: 1px solid var(--border); text-align: right; }
+  .details th { color: var(--muted); font-weight: 600; width: 40%; }
+  .details tr:last-child th, .details tr:last-child td { border-bottom: none; }
+  .section-title { font-size: 14px; font-weight: 700; margin: 22px 0 10px; color: var(--muted); }
+  .entry {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+  }
+  .entry-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+  .entry-date { font-weight: 600; font-size: 14px; }
+  .badge {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 20px;
+  }
+  .badge.regular { background: rgba(34,197,94,.15); color: var(--green); }
+  .badge.emergency { background: rgba(245,158,11,.15); color: var(--amber); }
+  .entry-next { color: var(--muted); font-size: 12px; margin: 2px 0; }
+  .entry-notes { font-size: 13px; margin-top: 4px; }
+  .entry-tech { color: var(--muted); font-size: 11px; margin-top: 6px; }
+  .report { display: block; width: 100%; margin-top: 10px; border-radius: 10px; border: 1px solid var(--border); }
+  .empty, .error, .loading { text-align: center; color: var(--muted); padding: 40px 10px; }
+  .error { color: #f87171; }
+  .viewer {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.92);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    padding: 12px;
+  }
+  .viewer.open { display: flex; }
+  .viewer img { max-width: 100%; max-height: 100%; object-fit: contain; }
+  .viewer-close {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    background: var(--card);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="logo-row"><img src="logo.png" alt="logo"></div>
+    <div id="content" class="loading">جارٍ التحميل...</div>
+  </div>
+  <div id="viewer" class="viewer" onclick="closeViewer()">
+    <button class="viewer-close" onclick="closeViewer()">إغلاق</button>
+    <img id="viewer-img" alt="تقرير الصيانة">
+  </div>
+  <script>
+    const FN_URL = 'https://zzbjjbottjcpqbzydnyx.supabase.co/functions/v1/ppm-public-status';
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('t') || params.get('token');
+    const content = document.getElementById('content');
+
+    function fmt(iso) {
+      if (!iso) return '—';
+      const d = new Date(iso);
+      if (isNaN(d.getTime())) return iso;
+      const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, '0'), day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    }
+
+    function fmtDateTime(iso) {
+      if (!iso) return '—';
+      const d = new Date(iso);
+      if (isNaN(d.getTime())) return iso;
+      const hh = String(d.getHours()).padStart(2, '0'), mm = String(d.getMinutes()).padStart(2, '0');
+      return `${fmt(iso)} ${hh}:${mm}`;
+    }
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+
+    function row(label, value) {
+      const shown = value === null || value === undefined || value === '' ? '—' : escapeHtml(value);
+      return `<tr><th>${label}</th><td>${shown}</td></tr>`;
+    }
+
+    async function load() {
+      if (!token) {
+        content.className = 'error';
+        content.textContent = 'رابط غير صالح.';
+        return;
+      }
+      try {
+        const res = await fetch(FN_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token }),
+        });
+        if (!res.ok) {
+          content.className = 'error';
+          content.textContent = res.status === 404 ? 'لم يتم العثور على هذا الجهاز.' : 'تعذّر تحميل البيانات.';
+          return;
+        }
+        const data = await res.json();
+        render(data);
+      } catch (e) {
+        content.className = 'error';
+        content.textContent = 'تعذّر الاتصال بالخادم.';
+      }
+    }
+
+    function render(data) {
+      const d = data.device;
+      const history = data.history || [];
+      let html = `
+        <div class="card">
+          <p class="device-name">${escapeHtml(d.name)}</p>
+          <table class="details">
+            ${row('الرقم', d.device_number)}
+            ${row('الشركة المصنعة', d.manufacturer)}
+            ${row('الموديل/الإصدار', d.model_version)}
+            ${row('الرقم التسلسلي', d.serial_number)}
+            ${row('القسم', d.location)}
+            ${row('دورية الصيانة', d.interval_months ? d.interval_months + ' أشهر' : '—')}
+            ${row('آخر صيانة', d.last_maintenance_date ? fmtDateTime(d.last_maintenance_date) : '—')}
+            ${row('آخر فني', d.last_maintenance_by)}
+            ${row('الصيانة القادمة', fmt(d.next_due_date))}
+            ${row('أضيف بواسطة', d.added_by)}
+            ${row('تاريخ الإضافة', d.created_at ? fmt(d.created_at) : '—')}
+          </table>
+        </div>
+        <div class="section-title">سجل الصيانة (${history.length})</div>
+      `;
+      if (history.length === 0) {
+        html += '<div class="empty">لا يوجد سجل صيانة بعد</div>';
+      } else {
+        for (const h of history) {
+          const isEmergency = h.type === 'طارئة';
+          html += `
+            <div class="entry">
+              <div class="entry-top">
+                <span class="entry-date">${fmtDateTime(h.performed_at)}</span>
+                <span class="badge ${isEmergency ? 'emergency' : 'regular'}">${isEmergency ? 'طارئة' : 'دورية'}</span>
+              </div>
+              <p class="entry-next">الصيانة القادمة: ${fmt(h.next_due_date)}</p>
+              ${h.notes ? `<p class="entry-notes">${escapeHtml(h.notes)}</p>` : ''}
+              ${h.technician ? `<p class="entry-tech">بواسطة: ${escapeHtml(h.technician)}</p>` : ''}
+              ${(h.report_urls || []).map((u) => `<img class="report" src="${escapeHtml(u)}" alt="تقرير الصيانة" onclick="openViewer(this.src)">`).join('')}
+            </div>
+          `;
+        }
+      }
+      content.className = '';
+      content.innerHTML = html;
+    }
+
+    function openViewer(src) {
+      document.getElementById('viewer-img').src = src;
+      document.getElementById('viewer').classList.add('open');
+    }
+
+    function closeViewer() {
+      document.getElementById('viewer').classList.remove('open');
+      document.getElementById('viewer-img').src = '';
+    }
+
+    load();
+  </script>
+</body>
+</html>

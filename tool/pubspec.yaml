@@ -1,0 +1,9 @@
+name: broadcast_tool
+description: "أداة إرسال الإشعار الجماعي - يشغّلها فقط .github/workflows/send-broadcast.yml"
+publish_to: 'none'
+
+environment:
+  sdk: ^3.0.0
+
+dependencies:
+  googleapis_auth: ^1.6.0
