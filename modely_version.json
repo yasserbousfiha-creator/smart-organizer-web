@@ -1,8 +1,8 @@
 {
-  "version": "1.2.2",
-  "build": 5,
+  "version": "1.2.3",
+  "build": 6,
   "notes": {
-    "ar": "ساعات الدوام للمودل، ملاحظة عند الاعتذار أو الإلغاء، فتح القائمة بالسحب، والخانات ترتفع فوق الكيبورد.",
-    "en": "Model working hours, a note when declining or cancelling, swipe to open the menu, and fields stay above the keyboard."
+    "ar": "فتح القائمة بالسحب صار أسهل، ومسافة أكبر فوق شريط أندرويد.",
+    "en": "Easier swipe to open the menu, and more room above Android's navigation bar."
   }
 }
