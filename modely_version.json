@@ -1,4 +1,8 @@
 {
-  "version": "1.1.0",
-  "build": 2
+  "version": "1.2.0",
+  "build": 3,
+  "notes": {
+    "ar": "هوية جديدة بالتركوازي والذهبي، شاشة ترحيبية، والتحديث من داخل التطبيق.",
+    "en": "New turquoise and gold identity, a welcome screen, and in-app updates."
+  }
 }
