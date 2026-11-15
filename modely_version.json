@@ -1,8 +1,8 @@
 {
-  "version": "1.2.0",
-  "build": 3,
+  "version": "1.2.1",
+  "build": 4,
   "notes": {
-    "ar": "هوية جديدة بالتركوازي والذهبي، شاشة ترحيبية، والتحديث من داخل التطبيق.",
-    "en": "New turquoise and gold identity, a welcome screen, and in-app updates."
+    "ar": "شاشة ترحيبية جديدة، زر الإعدادات، اقتراح المودل لوقت آخر، ومودلز رجال وأطفال.",
+    "en": "New welcome screen, a Settings button, models can suggest another time, and men and kids models."
   }
 }
