@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#ffffff">
+  <title>تحميل تطبيق مودلي</title>
+  <link rel="icon" type="image/png" href="icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;600&family=Readex+Pro:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    :root { --bg: #f7f2f5; --surface: #ffffff; --ink: #1e1520; --muted: #6b5e68; --accent: #8a2a55; --accent-dark: #6e1f43; --line: #ece3e8; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px 16px; background: var(--bg); color: var(--ink); font-family: "IBM Plex Sans Arabic", system-ui, sans-serif; line-height: 1.7; }
+    .card { width: 100%; max-width: 400px; background: var(--surface); border: 1px solid var(--line); border-radius: 22px; padding: 32px 24px; text-align: center; }
+    .icon { width: 92px; height: 92px; border-radius: 22px; }
+    h1 { font-family: "Readex Pro", sans-serif; font-size: 26px; margin: 14px 0 2px; }
+    .sub { color: var(--muted); font-size: 15px; margin: 0 0 20px; }
+    .meta { color: var(--muted); font-size: 13px; margin: 0 0 6px; }
+    .btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 54px; border-radius: 16px; background: var(--accent); color: #fff; font: inherit; font-weight: 600; font-size: 16px; text-decoration: none; }
+    .btn:hover { background: var(--accent-dark); }
+    .note { color: var(--muted); font-size: 13px; margin: 18px 0 0; }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <img class="icon" src="icon.png" alt="">
+    <h1>مودلي</h1>
+    <p class="sub">احجز مودل لإعلانك بالساعة، في الطائف</p>
+    <p class="meta" id="ver">نسخة تجريبية · أندرويد</p>
+    <a class="btn" href="/apk/modely.apk" download="Modely.apk">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>
+      تحميل التطبيق (APK)
+    </a>
+    <p class="note">بعد التحميل افتح الملف واسمح بالتثبيت من مصادر غير معروفة إذا طُلب منك ذلك.</p>
+  </main>
+  <script>
+    fetch("/modely_version.json?t=" + Date.now())
+      .then((r) => r.json())
+      .then((v) => { document.getElementById("ver").textContent = "نسخة تجريبية · أندرويد · الإصدار " + v.version; })
+      .catch(() => {});
+  </script>
+</body>
+</html>
