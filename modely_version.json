@@ -1,8 +1,8 @@
 {
-  "version": "1.2.1",
-  "build": 4,
+  "version": "1.2.2",
+  "build": 5,
   "notes": {
-    "ar": "شاشة ترحيبية جديدة، زر الإعدادات، اقتراح المودل لوقت آخر، ومودلز رجال وأطفال.",
-    "en": "New welcome screen, a Settings button, models can suggest another time, and men and kids models."
+    "ar": "ساعات الدوام للمودل، ملاحظة عند الاعتذار أو الإلغاء، فتح القائمة بالسحب، والخانات ترتفع فوق الكيبورد.",
+    "en": "Model working hours, a note when declining or cancelling, swipe to open the menu, and fields stay above the keyboard."
   }
 }
