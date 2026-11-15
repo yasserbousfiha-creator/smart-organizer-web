@@ -1,8 +1,8 @@
 {
-  "version": "1.2.3",
-  "build": 6,
+  "version": "1.2.4",
+  "build": 7,
   "notes": {
-    "ar": "فتح القائمة بالسحب صار أسهل، ومسافة أكبر فوق شريط أندرويد.",
-    "en": "Easier swipe to open the menu, and more room above Android's navigation bar."
+    "ar": "تنسيق بطاقات الأسعار، مسافة أكبر فوق شريط أندرويد، وعبارة ترحيب جديدة.",
+    "en": "Tidier price cards, more room above Android's navigation bar, and a new welcome line."
   }
 }
