@@ -1,0 +1,1 @@
+window.GOSEE_CONFIG = {"url":"https://cloqvzdhtauecmfauuee.supabase.co","anonKey":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNsb3F2emRodGF1ZWNtZmF1dWVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTUyNTYyMDQsImV4cCI6MjExMDgzMjIwNH0.3l6RlhDVlHFUpuetoJBJ1s_oL_PUvbCkpNk1mhgNBAw"};
