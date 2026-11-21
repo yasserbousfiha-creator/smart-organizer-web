@@ -1,6 +1,6 @@
 {
-  "version": "1.5.0",
-  "build": 10,
+  "version": "1.5.1",
+  "build": 11,
   "notes": {
     "ar": "حسابك صار بالبريد الإلكتروني وكلمة السر: تقدر تسجّل الخروج والدخول من أي جوال، وتحذف حسابك نهائياً. الإشعارات وإشعارات العروض من الإعدادات، والمظهر فاتح مع خيار تلقائي.",
     "en": "Your account now uses an email and password: sign out and in on any phone, or delete the account for good. Notifications and offer notices are in Settings; the look is light, with an Auto option."
