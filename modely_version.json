@@ -1,8 +1,8 @@
 {
-  "version": "1.2.4",
-  "build": 7,
+  "version": "1.3.0",
+  "build": 8,
   "notes": {
-    "ar": "تنسيق بطاقات الأسعار، مسافة أكبر فوق شريط أندرويد، وعبارة ترحيب جديدة.",
-    "en": "Tidier price cards, more room above Android's navigation bar, and a new welcome line."
+    "ar": "اسمنا الجديد GOSEE: شعار جديد وألوانه داخل التطبيق.",
+    "en": "Our new name is GOSEE: a new logo, with its colours throughout the app."
   }
 }
