@@ -87,7 +87,7 @@
     const r = route();
     const waiting = D.bookings.filter((b) => b.status === "pending").length;
     const money = D.bookings.filter(isReceipt).length + D.bookings.filter((b) => b.payout_status === "due").length + D.bookings.filter((b) => b.refund_status === "due").length;
-    const pending = D.models.filter((m) => !m.is_sample && !m.verified && m.status === "active").length;
+    const pending = D.models.filter((m) => !m.verified && m.status === "active").length;
     const counts = { bookings: waiting, payments: money, models: pending };
     $("menu").innerHTML = PAGES.map(([k, t]) => `<a href="#/${k}" class="${r === k ? "on" : ""}" ${r === k ? 'aria-current="page"' : ""}>${svg(k)}${t}${counts[k] ? `<span class="count">${counts[k]}</span>` : ""}</a>`).join("");
   }
@@ -178,7 +178,7 @@
       <div class="row">
         <section class="card wide" style="padding:0" aria-label="قائمة الطلبات"><div class="table-box">
           ${rows.length ? `<table><thead><tr><th>الطلب</th><th>العميل ← المودل</th><th>الموعد</th><th>الإجمالي</th><th>الحالة</th></tr></thead><tbody>
-            ${rows.map((b) => `<tr class="click ${b.id === ui.sel ? "sel" : ""}" data-sel="${b.id}" tabindex="0"><td class="code">${code(b)}</td><td>${parties(b)}${model(b.model_id).is_sample ? ' <span class="pill s-sample">تجريبي</span>' : ""}</td><td>${when(b)}</td><td>${sar(b.total)}</td><td>${pill(b)}</td></tr>`).join("")}
+            ${rows.map((b) => `<tr class="click ${b.id === ui.sel ? "sel" : ""}" data-sel="${b.id}" tabindex="0"><td class="code">${code(b)}</td><td>${parties(b)}${model(b.model_id).status === "deleted" ? ' <span class="pill s-sample">حساب محذوف</span>' : ""}</td><td>${when(b)}</td><td>${sar(b.total)}</td><td>${pill(b)}</td></tr>`).join("")}
           </tbody></table>` : `<p class="empty">لا طلبات هنا.</p>`}
         </div></section>
         <aside class="card narrow" id="detail" aria-label="تفاصيل الطلب">${ui.sel ? detail(D.bookings.find((b) => b.id === ui.sel)) : `<p class="empty">اختر طلباً.</p>`}</aside>
@@ -203,7 +203,7 @@
       <div class="card-head"><h2>${code(b)}</h2>${pill(b)}</div>
       <div class="facts">
         <div><span>العميل</span><b>${esc(b.client_name)}</b><span>${b.client_kind === "company" ? "شركة" : "فرد"}${c.phone ? ` · <a href="tel:${esc(c.phone)}" dir="ltr">${esc(c.phone)}</a>` : ""}</span></div>
-        <div><span>المودل</span><b>${esc(m.name)}</b><span>${m.is_sample ? "حساب تجريبي" : pv.phone ? `<a href="tel:${esc(pv.phone)}" dir="ltr">${esc(pv.phone)}</a>` : ""}</span></div>
+        <div><span>المودل</span><b>${esc(m.name)}</b><span>${m.status === "deleted" ? "حذفت حسابها" : pv.phone ? `<a href="tel:${esc(pv.phone)}" dir="ltr">${esc(pv.phone)}</a>` : ""}</span></div>
         <div><span>الموعد</span><b>${when(b)}</b><span>${hoursLabel(b.hours)}</span></div>
         <div><span>المكان والاستخدام</span><b>${PLACE[b.place] || ""}${b.address ? `، ${esc(b.address)}` : ""}</b><span>${USAGE[b.usage] || esc(b.usage)}</span></div>
       </div>
@@ -314,14 +314,15 @@
   // ── models ──────────────────────────────────────────────────────────────────────────────────────────────
   const KIND = { woman: "امرأة", man: "رجل", child: "طفل" };
   function pageModels() {
-    const list = [...D.models].sort((a, b) => (a.is_sample - b.is_sample) || (a.verified - b.verified) || a.name.localeCompare(b.name));
-    return `<header class="head"><h1>المودلز</h1><span class="sub">${D.models.filter((m) => !m.is_sample).length} حساب حقيقي · ${D.models.filter((m) => m.is_sample).length} تجريبي</span></header>
+    const gone = (m) => (m.status === "deleted" ? 1 : 0);
+    const list = [...D.models].sort((a, b) => (gone(a) - gone(b)) || (a.verified - b.verified) || a.name.localeCompare(b.name));
+    return `<header class="head"><h1>المودلز</h1><span class="sub">${D.models.filter((m) => m.status !== "deleted").length} حساب${D.models.some((m) => m.status === "deleted") ? ` · ${D.models.filter((m) => m.status === "deleted").length} محذوف` : ""}</span></header>
       <section class="card" style="padding:0"><div class="table-box"><table><thead><tr><th>المودل</th><th>النوع</th><th>الساعة / نصف يوم / يوم</th><th>الجلسات</th><th>التقييم</th><th>الجوال</th><th>IBAN</th><th>الحالة</th><th></th></tr></thead><tbody>
-        ${list.map((m) => { const pv = D.priv[m.id] || {}; const photo = m.photos?.[0]; return `<tr><td><div style="display:flex;align-items:center;gap:10px">${photo && /^https?:/.test(photo) ? `<img class="photo" src="${esc(photo)}" alt="">` : `<span class="photo"></span>`}<span><b>${esc(m.name)}</b>${m.is_sample ? ' <span class="pill s-sample">تجريبي</span>' : ""}<br><small class="note">${esc(m.bio).slice(0, 60)}</small></span></div></td>
+        ${list.map((m) => { const pv = D.priv[m.id] || {}; const photo = m.photos?.[0]; return `<tr><td><div style="display:flex;align-items:center;gap:10px">${photo && /^https?:/.test(photo) ? `<img class="photo" src="${esc(photo)}" alt="">` : `<span class="photo"></span>`}<span><b>${esc(m.name)}</b><br><small class="note">${esc(m.bio).slice(0, 60)}</small></span></div></td>
           <td>${KIND[m.kind] || ""}${m.age ? ` · ${m.age}` : ""}</td><td>${n(m.hourly)} / ${n(m.half_day)} / ${n(m.full_day)}</td><td>${m.completed}</td><td>${m.rating_count ? `${m.rating} (${m.rating_count})` : "-"}</td>
           <td class="ltr">${esc(pv.phone || "")}</td><td class="ltr">${esc(pv.iban || "")}</td>
-          <td>${m.status === "suspended" ? '<span class="pill s-cancelled">موقوف</span>' : m.verified ? '<span class="pill s-confirmed">موثّق</span>' : '<span class="pill s-pending">بانتظار التوثيق</span>'}</td>
-          <td><div class="actions">${m.is_sample ? "" : `<button class="btn small" data-act="verify" data-id="${m.id}" data-on="${!m.verified}">${m.verified ? "إلغاء التوثيق" : "توثيق"}</button><button class="btn ${m.status === "suspended" ? "" : "danger"} small" data-act="suspend" data-id="${m.id}" data-on="${m.status !== "suspended"}">${m.status === "suspended" ? "تفعيل" : "إيقاف"}</button>`}</div></td></tr>`; }).join("")}
+          <td>${m.status === "deleted" ? '<span class="pill s-sample">حذف حسابه</span>' : m.status === "suspended" ? '<span class="pill s-cancelled">موقوف</span>' : m.verified ? '<span class="pill s-confirmed">موثّق</span>' : '<span class="pill s-pending">بانتظار التوثيق</span>'}</td>
+          <td><div class="actions">${m.status === "deleted" ? "" : `<button class="btn small" data-act="verify" data-id="${m.id}" data-on="${!m.verified}">${m.verified ? "إلغاء التوثيق" : "توثيق"}</button><button class="btn ${m.status === "suspended" ? "" : "danger"} small" data-act="suspend" data-id="${m.id}" data-on="${m.status !== "suspended"}">${m.status === "suspended" ? "تفعيل" : "إيقاف"}</button>`}</div></td></tr>`; }).join("")}
       </tbody></table></div></section>`;
   }
 
