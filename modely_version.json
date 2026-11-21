@@ -1,8 +1,8 @@
 {
-  "version": "1.3.0",
-  "build": 8,
+  "version": "1.4.0",
+  "build": 9,
   "notes": {
-    "ar": "اسمنا الجديد GOSEE: شعار جديد وألوانه داخل التطبيق.",
-    "en": "Our new name is GOSEE: a new logo, with its colours throughout the app."
+    "ar": "طلباتك ومحادثاتك صارت محفوظة على حسابك، والعربون تتأكد منه إدارة GOSEE بعد رفع الإيصال. للمودلز: أضيفي جوالك والآيبان من «ملفي» لتصلك مستحقاتك.",
+    "en": "Your requests and chats are now saved to your account, and GOSEE confirms the deposit after you upload the receipt. Models: add your mobile and IBAN in My profile to receive your payouts."
   }
 }
