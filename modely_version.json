@@ -1,8 +1,8 @@
 {
-  "version": "1.4.0",
-  "build": 9,
+  "version": "1.5.0",
+  "build": 10,
   "notes": {
-    "ar": "طلباتك ومحادثاتك صارت محفوظة على حسابك، والعربون تتأكد منه إدارة GOSEE بعد رفع الإيصال. للمودلز: أضيفي جوالك والآيبان من «ملفي» لتصلك مستحقاتك.",
-    "en": "Your requests and chats are now saved to your account, and GOSEE confirms the deposit after you upload the receipt. Models: add your mobile and IBAN in My profile to receive your payouts."
+    "ar": "حسابك صار بالبريد الإلكتروني وكلمة السر: تقدر تسجّل الخروج والدخول من أي جوال، وتحذف حسابك نهائياً. الإشعارات وإشعارات العروض من الإعدادات، والمظهر فاتح مع خيار تلقائي.",
+    "en": "Your account now uses an email and password: sign out and in on any phone, or delete the account for good. Notifications and offer notices are in Settings; the look is light, with an Auto option."
   }
 }
