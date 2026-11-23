@@ -87,6 +87,12 @@
     .error { color: var(--error); font-size: 13.5px; min-height: 22px; margin: 8px 0 0; }
     .note { color: var(--ink-soft); font-size: 12.5px; margin: 18px 0 0; }
     [hidden] { display: none !important; }
+    /* The eye to show / hide the password (2026-11-23). */
+    .pw-wrap { position: relative; display: block; }
+    .pw-wrap input { padding-left: 46px; }
+    .pw-eye { position: absolute; top: 0; bottom: 0; left: 0; width: 46px; display: flex; align-items: center; justify-content: center; background: none; border: 0; padding: 0; color: inherit; opacity: .6; cursor: pointer; }
+    .pw-eye:hover, .pw-eye[aria-pressed="true"] { opacity: 1; }
+    .pw-eye svg { width: 20px; height: 20px; }
   </style>
 </head>
 <body>
@@ -97,7 +103,7 @@
 
     <form id="gate">
       <label for="pw">كلمة السر</label>
-      <input id="pw" type="password" autocomplete="current-password" required>
+      <span class="pw-wrap"><input id="pw" type="password" autocomplete="current-password" required><button type="button" class="pw-eye" id="pw-eye" aria-label="إظهار كلمة السر"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button></span>
       <button class="btn" type="submit">متابعة</button>
       <p class="error" id="err" role="alert"></p>
     </form>
@@ -140,6 +146,18 @@
       err.textContent = "";
       if (!(await unlock(document.getElementById("pw").value))) err.textContent = "كلمة السر غير صحيحة.";
     });
+  </script>
+  <script>
+    (() => {
+      const pw = document.getElementById("pw"), eye = document.getElementById("pw-eye");
+      eye.addEventListener("click", () => {
+        const show = pw.type === "password";
+        pw.type = show ? "text" : "password";
+        eye.setAttribute("aria-pressed", String(show));
+        eye.setAttribute("aria-label", show ? "إخفاء كلمة السر" : "إظهار كلمة السر");
+        pw.focus();
+      });
+    })();
   </script>
 </body>
 </html>
