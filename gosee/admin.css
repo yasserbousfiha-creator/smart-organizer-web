@@ -165,3 +165,9 @@ td.ltr { direction: ltr; text-align: end; }
 .zoom { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.85); display: flex; align-items: center; justify-content: center; z-index: 70; cursor: zoom-out; padding: 16px; }
 .zoom img { max-width: 100%; max-height: 100%; }
 .photo { width: 44px; height: 44px; border-radius: 10px; object-fit: cover; background: #eadcd9; flex: none; }
+/* The eye beside every password field (user's request 2026-11-23). */
+.pw-wrap { position: relative; display: block; }
+.pw-wrap input { padding-right: 44px; }
+.pw-eye { position: absolute; top: 0; bottom: 0; right: 0; width: 44px; display: flex; align-items: center; justify-content: center; background: none; border: 0; color: var(--muted); cursor: pointer; padding: 0; }
+.pw-eye:hover { color: var(--ink); }
+.pw-eye svg { width: 18px; height: 18px; }

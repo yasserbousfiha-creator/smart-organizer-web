@@ -9,6 +9,36 @@
   const n = (v) => Number(v || 0).toLocaleString("en-US");
   const sar = (v) => `${n(v)} ر.س`;
 
+  // An eye beside every password field, those in the page and those drawn later (user's request 2026-11-23).
+  const EYE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+  const EYE_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18"/><path d="M10.6 5.1A10.4 10.4 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3.2 4.1M6.6 6.6A17 17 0 0 0 2 12s3.5 7 10 7a9.7 9.7 0 0 0 5.4-1.6"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>';
+  const addEye = (input) => {
+    if (input.dataset.eye) return;
+    input.dataset.eye = "1";
+    const wrap = document.createElement("span");
+    wrap.className = "pw-wrap";
+    input.parentNode.insertBefore(wrap, input);
+    wrap.appendChild(input);
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "pw-eye";
+    const sync = () => {
+      const shown = input.type === "text";
+      btn.innerHTML = shown ? EYE_OFF : EYE;
+      btn.setAttribute("aria-label", shown ? "إخفاء كلمة المرور" : "إظهار كلمة المرور");
+    };
+    btn.addEventListener("click", () => {
+      input.type = input.type === "password" ? "text" : "password";
+      sync();
+      input.focus();
+    });
+    sync();
+    wrap.appendChild(btn);
+  };
+  const eyes = () => document.querySelectorAll('input[type="password"]:not([data-eye])').forEach(addEye);
+  new MutationObserver(eyes).observe(document.body, { childList: true, subtree: true });
+  eyes();
+
   // ── data ────────────────────────────────────────────────────────────────────────────────────────────────
   const D = { bookings: [], models: [], priv: {}, clients: {}, settings: null, events: {} };
   const ui = { filter: "open", sel: null, q: "", payTab: "receipts", rec: null, receiptUrls: {}, payPick: new Set() };
