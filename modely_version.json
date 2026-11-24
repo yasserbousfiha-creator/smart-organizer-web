@@ -1,8 +1,8 @@
 {
-  "version": "1.6.0",
-  "build": 12,
+  "version": "1.6.1",
+  "build": 13,
   "notes": {
-    "ar": "بعد تأكيد الحجز تقدر ترسل في المحادثة رسائل صوتية وصوراً وملفات، ومع علامات القراءة مثل واتساب. تقدر تتصفح المودلز بدون حساب، وتسجّل الدخول بحساب Google.",
-    "en": "Once a booking is confirmed, send voice notes, photos and files in the chat, with read ticks like WhatsApp. Browse models without an account, and sign in with Google."
+    "ar": "GOSEE صار على موقعه الجديد goseeapp.co. التحديثات القادمة توصلك منه تلقائياً.",
+    "en": "GOSEE now lives at goseeapp.co. Future updates come from there automatically."
   }
 }
